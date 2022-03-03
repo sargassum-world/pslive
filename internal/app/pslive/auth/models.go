@@ -3,9 +3,9 @@ package auth
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 
 	"github.com/sargassum-world/pslive/internal/clients/sessions"
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Identity struct {

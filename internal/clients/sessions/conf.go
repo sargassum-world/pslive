@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
-
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 

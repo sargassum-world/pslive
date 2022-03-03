@@ -2,11 +2,12 @@
 package routes
 
 import (
+	"github.com/sargassum-world/fluitans/pkg/godest"
+
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/home"
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Handlers struct {

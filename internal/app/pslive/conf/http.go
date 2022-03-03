@@ -2,7 +2,6 @@ package conf
 
 import (
 	"github.com/pkg/errors"
-
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 

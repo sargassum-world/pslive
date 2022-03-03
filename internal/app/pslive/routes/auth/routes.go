@@ -2,10 +2,11 @@
 package auth
 
 import (
+	"github.com/sargassum-world/fluitans/pkg/godest"
+
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/authn"
 	"github.com/sargassum-world/pslive/internal/clients/sessions"
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Handlers struct {

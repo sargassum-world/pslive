@@ -8,12 +8,12 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-
-	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
-	"github.com/sargassum-world/pslive/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/httperr"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
+
+	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/sessions"
 )
 
 type ErrorData struct {

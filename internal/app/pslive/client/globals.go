@@ -3,16 +3,16 @@ package client
 
 import (
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/authn"
 	"github.com/sargassum-world/pslive/internal/clients/sessions"
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Clients struct {
-	Authn         *authn.Client
-	Sessions      *sessions.Client
+	Authn    *authn.Client
+	Sessions *sessions.Client
 }
 
 type Globals struct {
@@ -39,8 +39,8 @@ func NewGlobals(l godest.Logger) (*Globals, error) {
 	return &Globals{
 		Config: config,
 		Clients: &Clients{
-			Authn:         authnClient,
-			Sessions:      sessionsClient,
+			Authn:    authnClient,
+			Sessions: sessionsClient,
 		},
 	}, nil
 }
