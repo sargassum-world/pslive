@@ -1,0 +1,35 @@
+before:
+  hooks:
+    - go mod download
+builds:
+- id: "pslive"
+  main: ./cmd/pslive
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - darwin
+    - linux
+    - windows
+  goarch:
+    - amd64
+archives:
+- format_overrides:
+    - goos: windows
+      format: zip
+release:
+  github:
+  prerelease: auto
+dockers:
+  -
+    image_templates:
+    - "ghcr.io/sargassum-world/{{ .ProjectName }}:latest"
+    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}"
+    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
+    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"

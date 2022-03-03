@@ -1,0 +1,26 @@
+@charset 'utf-8';
+
+details[data-accordion-item] {
+  .accordion-header {
+    padding-left: $gap;
+    padding-right: $gap;
+    padding-top: 0.75 * $gap;
+    padding-bottom: 0.75 * $gap;
+    cursor: pointer;
+    text-align: left;
+
+    .icon {
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+  }
+  summary {
+    list-style-type: none;
+  }
+  summary::marker {
+    display: none;
+  }
+}
+details[data-accordion-item][open] .accordion-header .accordion-icon {
+  transform: rotate(0.5turn);
+}

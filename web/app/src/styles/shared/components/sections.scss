@@ -1,0 +1,11 @@
+@charset 'utf-8';
+
+.section-description {
+  margin-bottom: $gap;
+}
+.empty-section {
+  padding-top: 0;
+  padding-bottom: 0;
+  transition: padding-top 0.2s ease-out 0.8s;
+  transition: padding-bottom 0.2s ease-out 0.8s;
+}

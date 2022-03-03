@@ -1,0 +1,111 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}Sign In{{end}}
+{{define "description"}}Sign in to Planktoscope Live.{{end}}
+
+{{define "content"}}
+  <main class="main-container">
+    <section class="section content">
+      {{if .Auth.Identity.Authenticated}}
+        <h1>Sign Out</h1>
+      {{else}}
+        <h1>Sign In</h1>
+      {{end}}
+      {{range $message := .Data.ErrorMessages}}
+        <article class="message is-danger card-width is-block">
+          <div class="message-header">
+            <p>Error</p>
+          </div>
+          <div class="message-body">
+            {{$message}}
+          </div>
+        </article>
+      {{end}}
+      {{if .Data.NoAuth}}
+        <div class="message is-danger card-width is-block">
+          <div class="message-header">
+            <p>Security Warning</p>
+          </div>
+          <div class="message-body">
+            This server was started with authentication disabled, so everyone has can sign in as
+            admin with a blank username and password!
+          </div>
+        </div>
+      {{end}}
+      {{if .Auth.Identity.Authenticated}}
+        <article class="message is-success card-width is-block">
+          <div class="message-body">
+            <p class="mb-4">You are currently signed in as {{.Auth.Identity.User}}.</p>
+            <form
+              action="/sessions"
+              method="POST"
+              data-turbo-frame="_top"
+              data-controller="form-submission turbo-cache csrf"
+              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
+            >
+              {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
+              <input type="hidden" name="state" value="unauthenticated">
+              <input
+                type="hidden"
+                name="omit-csrf-inputs"
+                value="false"
+                data-controller="csrf-behavior"
+              >
+              <div class="field">
+                <div class="control" data-form-submission-target="submitter">
+                  <input
+                    type="submit"
+                    class="button is-primary"
+                    value="Sign Out"
+                    data-form-submission-target="submit"
+                    data-csrf-target="submit"
+                  >
+                </div>
+              </div>
+            </form>
+          </div>
+        </article>
+      {{else}}
+        <div class="card card-width is-block">
+          <div class="card-content">
+            <form
+              action="/sessions"
+              method="POST"
+              data-turbo-frame="_top"
+              data-controller="form-submission turbo-cache csrf"
+              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
+              data-form-submission-target="submitter"
+            >
+              {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
+              <input type="hidden" name="state" value="authenticated">
+              <input type="hidden" name="return" value="{{.Data.ReturnURL}}">
+              <div class="field">
+                <label class="label" for="username">Username</label>
+                <div class="control">
+                  <input class="input" type="text" id="username" name="username" autofocus>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="password">Password</label>
+                <div class="control">
+                  <input class="input" type="password" id="password" name="password">
+                </div>
+              </div>
+              <div class="field">
+                <div class="control" data-form-submission-target="submitter">
+                  <input
+                    type="submit"
+                    class="button is-primary"
+                    value="Sign in"
+                    data-form-submission-target="submit"
+                    data-csrf-target="submit"
+                  >
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      {{end}}
+    </section>
+  </main>
+{{end}}

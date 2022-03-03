@@ -1,0 +1,24 @@
+@charset 'utf-8';
+
+// Basic Colors
+
+$primary: $turquoise;
+$success: $green;
+$danger: $red;
+$border: $scheme-main-grey-bis;
+$border-hover: $scheme-main-grey-ter;
+$border-light: $scheme-main-grey;
+$border-light-hover: $scheme-main-grey-ter;
+$text: $scheme-invert-grey;
+$text-light: $scheme-invert-grey-bis;
+$text-strong: $scheme-invert-grey;
+$link-hover: $scheme-invert-ter;
+$link-hover-border: $scheme-main-grey-ter;
+$link-focus: $scheme-invert-ter;
+$link-active: $scheme-main-grey;
+$link-active-border: $scheme-main-grey-bis;
+
+// Component Customizations
+
+$card-shadow: none;
+$modal-overlay-background: rgba(10, 19, 31, 0.75);

@@ -1,0 +1,48 @@
+{
+  "name": "fluitans",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "rollup -c",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "format": "prettier --write ./src/**/*.{js,svelte,html,ts}",
+    "lint": "tsc --noEmit && prettier --write ./src/**/*.{js,svelte,html,ts} && eslint src/**/*.{js,ts,svelte}",
+    "lint:fix": "tsc --noEmit && prettier --write ./src/**/*.{js,svelte,html,ts} && eslint --fix src/**/*.{js,ts,svelte}"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
+    "@rollup/plugin-typescript": "^8.0.0",
+    "@tsconfig/svelte": "^2.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.29.3",
+    "@typescript-eslint/parser": "^4.29.3",
+    "bulma": "^0.9.3",
+    "eslint": "^7.32.0",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-svelte3": "^3.2.1",
+    "prettier": "^2.4.1",
+    "prettier-plugin-svelte": "^2.4.0",
+    "purify-css": "^1.2.5",
+    "rollup": "^2.3.4",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-scss": "^3.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "sass": "^1.43.2",
+    "svelte": "^3.0.0",
+    "svelte-check": "^2.0.0",
+    "svelte-dark-mode": "^2.0.0",
+    "svelte-preprocess": "^4.0.0",
+    "tslib": "^2.0.0",
+    "typescript": "^4.0.0"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^4.5.1",
+    "@fontsource/oxygen-mono": "^4.5.0",
+    "@hotwired/turbo": "^7.0.1",
+    "async-mutex": "^0.3.2",
+    "stimulus": "2.0.0",
+    "stimulus-use": "^0.41.0"
+  }
+}

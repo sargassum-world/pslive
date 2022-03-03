@@ -1,0 +1,110 @@
+{{define "nav/navbar.assets"}}
+  <link rel="preload" as="image" type="image/svg+xml" href="{{staticHashed "logo.svg"}}" data-turbo-track="reload">
+  <link rel="preload" as="image" type="image/svg+xml" href="{{staticHashed "icons/white-balance-sunny.svg"}}" data-turbo-track="reload">
+{{end}}
+
+{{define "nav/navbar.brand"}}
+  <img class="navbar-brand-logo" src="{{staticHashed "logo.svg"}}" alt="PSLive logo" />
+  Live
+{{end}}
+
+{{define "nav/navbar.menu.start"}}
+{{end}}
+
+{{define "nav/navbar.menu.end-authenticated"}}
+  {{
+    template "shared/nav/navlink.partial.tmpl" dict
+    "Display" true
+    "Href" "/login"
+    "Name" "Sign Out"
+    "MetaPath" .Meta.Path
+  }}
+{{end}}
+{{define "nav/navbar.menu.end-unauthenticated"}}
+  {{
+    template "shared/nav/navlink.partial.tmpl" dict
+    "Display" true
+    "Href" (list "/login?return=" (queryEscape .Meta.RequestURI) | join "")
+    "Name" "Sign In"
+    "MetaPath" .Meta.Path
+  }}
+{{end}}
+
+{{define "nav/navbar"}}
+  <nav
+    role="navigation"
+    id="main-nav"
+    class="navbar"
+    aria-label="Main navigation"
+    data-controller="navigation-menu"
+  >
+    <div class="navbar-brand left-burger">
+      <a
+        href="#navigation-menu"
+        id="navigation-menu-toggle"
+        class="navbar-burger"
+        role="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        data-turbo="false"
+        data-action="click->navigation-menu#toggle"
+        data-navigation-menu-target="toggle"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+      <a
+        href="/"
+        class="navbar-item brand-with-logo"
+        id="main-nav-brand"
+        data-turbo-permanent
+        data-action="click->navigation-menu#close"
+      >
+        {{block "nav/navbar.brand" .}}{{end}}
+      </a>
+    </div>
+    <div id="navigation-menu" class="navbar-menu" data-navigation-menu-target="menu">
+      <div class="navbar-start">
+        {{block "nav/navbar.menu.start" .}}{{end}}
+      </div>
+      <div class="navbar-end">
+        {{if .Auth.Identity.Authenticated}}
+          {{block "nav/navbar.menu.end-authenticated" .}}{{end}}
+        {{else}}
+          {{block "nav/navbar.menu.end-unauthenticated" .}}{{end}}
+        {{end}}
+        <div class="navbar-item end-buttons">
+          <div class="buttons">
+            <a
+              href="#"
+              id="navigation-menu-close"
+              class="navbar-burger is-active"
+              role="button"
+              aria-label="Close navigation menu"
+              data-turbo="false"
+              data-navigation-menu-target="close"
+            >
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+              <span aria-hidden="true"></span>
+            </a>
+            {{block "nav/navbar.menu.end.buttons" .}}{{end}}
+            <button
+              class="button icon-button is-text is-hidden"
+              id="main-nav-theme-toggle"
+              data-turbo-permanent
+              data-controller="theme"
+              data-action="click->theme#toggle"
+              aria-label="Toggle theme"
+            >
+              <span class="icon is-small">
+                <img src="{{staticHashed "icons/white-balance-sunny.svg"}}" alt="Toggle theme">
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+{{end}}

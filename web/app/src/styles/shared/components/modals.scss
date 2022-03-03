@@ -1,0 +1,71 @@
+@charset 'utf-8';
+
+div[data-svelte-dialog-portal] {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 40;
+}
+div[data-svelte-dialog-overlay] {
+  background-color: transparent;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  z-index: 41;
+}
+.modal {
+  // Bulma's default for "position: fixed" causes the modal to freeze the application
+  // on the Jetson Nano (aarch64, Ubuntu 18.04), for some reason
+  position: absolute;
+}
+.modal-background {
+  background-color: $modal-overlay-background;
+}
+.drawer-container {
+  position: relative;
+  background-color: $modal-dialog-background;
+  padding: $gap;
+
+  @include from($navside-breakpoint) {
+    padding: 2 * $gap;
+  }
+}
+.drawer-container.right-drawer {
+  width: 100%;
+  max-width: 24em;
+  margin-left: auto;
+  margin-right: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  height: 100vh;
+}
+.drawer-container.scroller {
+  scrollbar-color: $scrollbar-color $modal-dialog-background;
+}
+.drawer-container.scroller::-webkit-scrollbar-track {
+  background: $modal-dialog-background;
+}
+.drawer-container.scroller::-webkit-scrollbar-thumb {
+  border-color: $modal-dialog-background;
+}
+.drawer-container .modal-title {
+  margin-bottom: $gap;
+
+  @include from($navside-breakpoint) {
+    margin-bottom: 2 * $gap;
+  }
+}
+.modal-title h2 {
+  display: inline;
+}
+.modal-title .delete {
+  display: block;
+  float: right;
+}

@@ -1,0 +1,12 @@
+@charset 'utf-8';
+
+.breadcrumb.main-breadcrumb {
+  padding-left: $gap;
+  padding-top: $gap;
+  margin-bottom: 0;
+
+  @include from($navside-breakpoint) {
+    padding-left: 2 * $gap;
+    padding-top: 2 * $gap;
+  }
+}

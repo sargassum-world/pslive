@@ -1,0 +1,20 @@
+{{$display := get . "Display"}}
+{{$href := get . "Href"}}
+{{$name := get . "Name"}}
+{{$metaPath := get . "MetaPath"}}
+{{$clearCache := get . "ClearCache"}}
+
+{{if $display}}
+  <a
+    href="{{$href}}"
+    {{if hasPrefix $href $metaPath}}
+      class="navbar-item nav-link is-active"
+    {{else}}
+      class="navbar-item nav-link"
+    {{end}}
+    data-controller="navigation-link{{if get . "ClearCache"}} turbo-cache{{end}}"
+    data-action="click->navigation-menu#close{{if $clearCache}} click->turbo-cache#clear{{end}}"
+  >
+    {{$name}}
+  </a>
+{{end}}
