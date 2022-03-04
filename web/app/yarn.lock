@@ -145,6 +145,11 @@
     estree-walker "^1.0.1"
     picomatch "^2.2.2"
 
+"@sargassum-world/styles@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@sargassum-world/styles/-/styles-0.2.0.tgz#1835b0cc6245f67f00bb0375076f8b18774da5a0"
+  integrity sha512-/zXKNTKATsj0/zmOoaL8zPFN/eyPmtrgdh2+249dVOJqxmObeWzAnKgH5Nre1D67dSfvBK6VqvX0uDy8mpaACA==
+
 "@stimulus/core@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@stimulus/core/-/core-2.0.0.tgz#140c85318d6a8a8210c0faf182223b8459348877"

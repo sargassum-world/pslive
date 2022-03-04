@@ -1,8 +1,8 @@
 @charset 'utf-8';
 
 // Shared base
-@import 'styles/shared/global.scss';
-@import 'styles/shared/typography.vars.scss';
+@import 'node_modules/@sargassum-world/styles/global.scss';
+@import 'node_modules/@sargassum-world/styles/typography.vars.scss';
 @import 'node_modules/bulma/sass/utilities/mixins.sass';
 
 // Application-specific parameters
@@ -10,15 +10,15 @@
 @import 'styles/app/layout.vars.scss';
 
 // Shared
-@import 'styles/shared/layout.scss';
-@import 'styles/shared/colors-base.vars.scss';
+@import 'node_modules/@sargassum-world/styles/layout.scss';
+@import 'node_modules/@sargassum-world/styles/colors-base.vars.scss';
 @import 'node_modules/bulma/sass/utilities/initial-variables.sass';
 
 // Theme colors
-@import 'styles/shared/colors-dark.vars.scss';
+@import 'node_modules/@sargassum-world/styles/colors-dark.vars.scss';
 
 // Shared
-@import 'styles/shared/theme.vars.scss';
+@import 'node_modules/@sargassum-world/styles/theme.vars.scss';
 
 // Bulma imports
 @import 'node_modules/bulma/bulma.sass';
@@ -27,8 +27,8 @@
 @import 'styles/app/fouc-post.scss';
 
 // Overrides & components
-@import 'styles/shared/theme-overrides/_all.scss';
-@import 'styles/shared/components/_all.scss';
+@import 'node_modules/@sargassum-world/styles/theme-overrides.scss';
+@import 'node_modules/@sargassum-world/styles/components.scss';
 @import 'styles/app/components/_all.scss';
 @import 'styles/app/sprinkles.scss';
 

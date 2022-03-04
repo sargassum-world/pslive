@@ -41,6 +41,7 @@
     "@fontsource/atkinson-hyperlegible": "^4.5.1",
     "@fontsource/oxygen-mono": "^4.5.0",
     "@hotwired/turbo": "^7.0.1",
+    "@sargassum-world/styles": "^0.2.0",
     "async-mutex": "^0.3.2",
     "stimulus": "2.0.0",
     "stimulus-use": "^0.41.0"
