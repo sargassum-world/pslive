@@ -13,6 +13,7 @@
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-node-resolve": "^11.0.0",
     "@rollup/plugin-typescript": "^8.0.0",
+    "@sargassum-world/styles": "^0.2.0",
     "@tsconfig/svelte": "^2.0.1",
     "@typescript-eslint/eslint-plugin": "^4.29.3",
     "@typescript-eslint/parser": "^4.29.3",
@@ -41,7 +42,6 @@
     "@fontsource/atkinson-hyperlegible": "^4.5.1",
     "@fontsource/oxygen-mono": "^4.5.0",
     "@hotwired/turbo": "^7.0.1",
-    "@sargassum-world/styles": "^0.2.0",
     "async-mutex": "^0.3.2",
     "stimulus": "2.0.0",
     "stimulus-use": "^0.41.0"
