@@ -3,7 +3,6 @@ import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
-import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 import scss from 'rollup-plugin-scss';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
@@ -15,7 +14,7 @@ const buildDir = 'public/build';
 
 function themeGenerator(theme) {
 	return {
-		input: `src/theme-${theme}.ts`,
+		input: `src/theme-${theme}.js`,
 		output: {
 			sourcemap: !production,
 			format: 'iife',
@@ -36,8 +35,9 @@ function themeGenerator(theme) {
 					writeFileSync(`${buildDir}/theme-${theme}.css`, styles);
 					purify(
 						[
+							'node_modules/@sargassum-world/**/*.js',
+							'node_modules/@sargassum-world/**/*.svelte',
 							'src/**/*.js',
-							'src/**/*.ts',
 							'src/**/*.svelte',
 							'../templates/**/*.tmpl',
 						],
@@ -66,7 +66,7 @@ function themeGenerator(theme) {
 
 function bundleGenerator(type, appName, context) {
 	return {
-		input: `src/main-${type}.ts`,
+		input: `src/main-${type}.js`,
 		output: {
 			sourcemap: !production,
 			format: 'iife',
@@ -100,7 +100,7 @@ function bundleGenerator(type, appName, context) {
 			}),
 			// we'll extract any component CSS out into
 			// a separate file - better for performance
-			css({ output: 'bundle.css' }),
+			css({ output: `${buildDir}/bundle-${type}.css` }),
 
 			// If you have external dependencies installed from
 			// npm, you'll most likely need these plugins. In
@@ -112,10 +112,6 @@ function bundleGenerator(type, appName, context) {
 				dedupe: ['svelte']
 			}),
 			commonjs(),
-			typescript({
-				sourceMap: !production,
-				inlineSources: !production
-			}),
 
 			// If we're building for production (npm run build
 			// instead of npm run dev), minify
