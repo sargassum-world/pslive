@@ -76,6 +76,7 @@ func (s *Server) Register(e *echo.Echo) {
 		),
 		"object-src 'none'",
 		"child-src 'self'",
+		"img-src *",
 		"base-uri 'none'",
 		"form-action 'self'",
 		"frame-ancestors 'none'",

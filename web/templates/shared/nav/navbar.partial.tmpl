@@ -9,6 +9,12 @@
 {{end}}
 
 {{define "nav/navbar.menu.start"}}
+  {{
+    template "shared/nav/navlink.partial.tmpl" dict
+    "Display" true
+    "Href" "/planktoscopes"
+    "Name" "Devices" "MetaPath" .Meta.Path
+  }}
 {{end}}
 
 {{define "nav/navbar.menu.end-authenticated"}}

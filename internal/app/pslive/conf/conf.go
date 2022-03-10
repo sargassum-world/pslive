@@ -6,8 +6,7 @@ import (
 )
 
 type Config struct {
-	DomainName string
-	HTTP       HTTPConfig
+	HTTP HTTPConfig
 }
 
 func GetConfig() (c Config, err error) {
