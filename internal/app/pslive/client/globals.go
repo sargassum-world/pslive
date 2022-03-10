@@ -8,14 +8,14 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
-	"github.com/sargassum-world/pslive/internal/clients/planktoscopes"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 )
 
 type Clients struct {
 	Authn    *authn.Client
 	Sessions *session.Client
 
-	Planktoscopes *planktoscopes.Client
+	Instruments *instruments.Client
 }
 
 type Globals struct {
@@ -43,11 +43,11 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
 
-	pcConfig, err := planktoscopes.GetConfig()
+	pcConfig, err := instruments.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up planktoscopes config")
+		return nil, errors.Wrap(err, "couldn't set up instruments config")
 	}
-	g.Clients.Planktoscopes = planktoscopes.NewClient(pcConfig, l)
+	g.Clients.Instruments = instruments.NewClient(pcConfig, l)
 
 	return g, nil
 }

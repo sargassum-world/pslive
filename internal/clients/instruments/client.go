@@ -1,5 +1,5 @@
-// Package planktoscopes provides a high-level client for management of planktoscopes
-package planktoscopes
+// Package instruments provides a high-level client for management of imaging instruments
+package instruments
 
 import (
 	"github.com/sargassum-world/fluitans/pkg/godest"

@@ -1,0 +1,27 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}Instruments{{end}}
+{{define "description"}}Live Instruments{{end}}
+
+{{define "content"}}
+  <main class="main-container" tabindex="-1" data-controller="default-scrollable">
+    <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="/">Instruments</a></li>
+        <li class="is-active"><a href="/instruments" aria-current="page">Instruments</a></li>
+      </ul>
+    </nav>
+
+    <section class="section content">
+      <h1>Instruments</h1>
+      <ul>
+      {{range $instrument := .Data}}
+        <li>
+          <a href="/instruments/{{$instrument.Name}}">{{$instrument.Name}}</a>:
+          {{$instrument.Description}}
+        </li>
+      {{end}}
+      </ul>
+    </section>
+  </main>
+{{end}}

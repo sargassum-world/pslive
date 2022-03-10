@@ -1,38 +1,38 @@
-package planktoscopes
+package instruments
 
 import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
-const envPrefix = "PLANKTOSCOPE_"
+const envPrefix = "INSTRUMENT_"
 
 type Config struct {
-	Planktoscope Planktoscope
+	Instrument Instrument
 }
 
 func GetConfig() (c Config, err error) {
-	c.Planktoscope, err = GetPlanktoscope()
+	c.Instrument, err = GetInstrument()
 	if err != nil {
-		return Config{}, errors.Wrap(err, "couldn't make Planktoscope config")
+		return Config{}, errors.Wrap(err, "couldn't make Instrument config")
 	}
 	return c, nil
 }
 
-func GetPlanktoscope() (p Planktoscope, err error) {
+func GetInstrument() (p Instrument, err error) {
 	url, err := env.GetURL(envPrefix+"MJPEGSTREAM", "")
 	if err != nil {
-		return Planktoscope{}, errors.Wrap(err, "couldn't make server url config")
+		return Instrument{}, errors.Wrap(err, "couldn't make server url config")
 	}
 	p.MJPEGStream = url.String()
 	if len(p.MJPEGStream) == 0 {
-		return Planktoscope{}, nil
+		return Instrument{}, nil
 	}
 
 	p.Name = env.GetString(envPrefix+"NAME", url.Host)
 	p.Description = env.GetString(
 		envPrefix+"DESC",
-		"The default Planktoscope device specified in the environment variables.",
+		"The default instrument specified in the environment variables.",
 	)
 	return p, nil
 }
