@@ -25,6 +25,6 @@ func New(r godest.TemplateRenderer, clients *client.Clients) *Handlers {
 func (h *Handlers) Register(er godest.EchoRouter, em godest.Embeds) {
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
-	home.New(h.r, h.clients.Sessions).Register(er)
+	home.New(h.r).Register(er, h.clients.Sessions)
 	auth.New(h.r, h.clients.Authn, h.clients.Sessions).Register(er)
 }

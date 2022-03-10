@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
-	"github.com/sargassum-world/pslive/internal/clients/sessions"
 )
 
 type CSRFData struct {
@@ -22,17 +23,8 @@ type CSRFData struct {
 
 func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Get session
-		sess, err := h.sc.Get(c)
-		if err != nil {
-			return err
-		}
-		if err := sess.Save(c.Request(), c.Response()); err != nil {
-			return err
-		}
-
 		// Produce output
-		h.r.SetUncacheable(c.Response().Header())
+		godest.SetUncacheable(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
 			HeaderName: h.sc.Config.CSRFOptions.HeaderName,
 			FieldName:  h.sc.Config.CSRFOptions.FieldName,
@@ -47,16 +39,10 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (h *Handlers) HandleLoginGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleLoginGet() auth.HandlerWithSession {
 	t := "auth/login.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context, a auth.Auth) error {
-		// Check authentication & authorization
-		sess, err := h.sc.Get(c)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth, sess *sessions.Session) error {
 		// Consume & save session
 		errorMessages, err := session.GetErrorMessages(sess)
 		if err != nil {
@@ -88,13 +74,14 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *sessions.Client,
+	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *session.Client,
 ) error {
 	// Update session
-	sess, err := sc.Regenerate(c)
+	sess, err := sc.Get(c.Request())
 	if err != nil {
 		return err
 	}
+	session.Regenerate(sess)
 	auth.SetIdentity(sess, username)
 	// This allows client-side Javascript to specify for server-side session data that we only need
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
@@ -113,9 +100,9 @@ func handleAuthenticationSuccess(
 	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.Client) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, sc *session.Client) error {
 	// Update session
-	sess, serr := sc.Get(c)
+	sess, serr := sc.Get(c.Request())
 	if serr != nil {
 		return serr
 	}
@@ -170,10 +157,11 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
-			sess, err := h.sc.Invalidate(c)
+			sess, err := h.sc.Get(c.Request())
 			if err != nil {
 				return err
 			}
+			session.Invalidate(sess)
 			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				return err
 			}

@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/unrolled/secure"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
@@ -41,19 +42,17 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 	)
 	if err != nil {
 		s = nil
-		err = errors.Wrap(err, "couldn't make template renderer")
-		return
+		return nil, errors.Wrap(err, "couldn't make template renderer")
 	}
 
 	s.Globals, err = client.NewGlobals(e.Logger)
 	if err != nil {
 		s = nil
-		err = errors.Wrap(err, "couldn't make app globals")
-		return
+		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
-	return
+	return s, nil
 }
 
 func (s *Server) Register(e *echo.Echo) {
@@ -101,9 +100,10 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(s.Globals.Clients.Sessions.NewCSRFMiddleware(
+	e.Use(echo.WrapMiddleware(session.NewCSRFMiddleware(
+		s.Globals.Clients.Sessions.Config,
 		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
-	))
+	)))
 	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 

@@ -2,14 +2,13 @@ package auth
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
-
-	sessionsc "github.com/sargassum-world/pslive/internal/clients/sessions"
+	"github.com/pkg/errors"
+	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 // Identity
@@ -25,20 +24,19 @@ func SetIdentity(s *sessions.Session, username string) {
 
 func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	if s.IsNew {
-		return
+		return Identity{}, nil
 	}
 
 	rawIdentity, ok := s.Values["identity"]
 	if !ok {
 		// A zero value for Identity indicates that the session has no identity associated with it
-		return
+		return Identity{}, nil
 	}
 	identity, ok = rawIdentity.(Identity)
 	if !ok {
-		err = fmt.Errorf("unexpected type for field identity in session")
-		return
+		return Identity{}, errors.Errorf("unexpected type for field identity in session")
 	}
-	return
+	return identity, nil
 }
 
 // CSRF
@@ -53,7 +51,7 @@ func SetCSRFBehavior(s *sessions.Session, inlineToken bool) {
 
 func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 	if s.IsNew {
-		return
+		return CSRFBehavior{}, nil
 	}
 
 	rawBehavior, ok := s.Values["csrfBehavior"]
@@ -61,14 +59,13 @@ func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 		// By default, HTML responses won't inline the CSRF input fields (so responses can be cached),
 		// because the app only allows POST requests after user authentication. This default behavior
 		// can be overridden, e.g. on the login form for user authentication, with OverrideCSRFInlining.
-		return
+		return CSRFBehavior{}, nil
 	}
 	behavior, ok = rawBehavior.(CSRFBehavior)
 	if !ok {
-		err = fmt.Errorf("unexpected type for field csrfBehavior in session")
-		return
+		return CSRFBehavior{}, errors.Errorf("unexpected type for field csrfBehavior in session")
 	}
-	return
+	return behavior, nil
 }
 
 func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
@@ -82,36 +79,42 @@ func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
 
 // Access
 
-func Get(c echo.Context, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
-	return GetFromRequest(c.Request(), s, sc)
+func Get(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
+	return GetFromRequest(r, s, sc)
 }
 
-func GetFromRequest(r *http.Request, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
+func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
-		return
+		return Auth{}, err
 	}
 
 	a.CSRF.Config = sc.Config.CSRFOptions
 	a.CSRF.Behavior, err = GetCSRFBehavior(s)
 	if err != nil {
-		return
+		return Auth{}, err
 	}
 	if a.CSRF.Behavior.InlineToken {
 		a.CSRF.Token = csrf.Token(r)
 	}
-	return
+	return a, nil
 }
 
-func GetWithSession(c echo.Context, sc *sessionsc.Client) (a Auth, s *sessions.Session, err error) {
-	s, err = sc.Get(c)
+func GetWithSession(
+	r *http.Request, sc *session.Client, l godest.Logger,
+) (a Auth, s *sessions.Session, err error) {
+	s, err = sc.Get(r)
 	if err != nil {
-		return Auth{}, nil, err
+		// If the user doesn't have a valid session, create one
+		if s, err = sc.New(r); err != nil {
+			// When an error is returned, a new (valid) session is still created
+			l.Warnf("created new session to replace invalid session")
+		}
+		// We let the caller save the new session
 	}
-	a, err = Get(c, *s, sc)
+	a, err = Get(r, *s, sc)
 	if err != nil {
 		return Auth{}, s, err
 	}
-
-	return
+	return a, s, nil
 }

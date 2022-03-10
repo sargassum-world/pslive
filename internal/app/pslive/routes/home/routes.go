@@ -4,29 +4,27 @@ package home
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
-	"github.com/sargassum-world/pslive/internal/clients/sessions"
 )
 
 type Handlers struct {
-	r  godest.TemplateRenderer
-	sc *sessions.Client
+	r godest.TemplateRenderer
 }
 
-func New(r godest.TemplateRenderer, sc *sessions.Client) *Handlers {
+func New(r godest.TemplateRenderer) *Handlers {
 	return &Handlers{
-		r:  r,
-		sc: sc,
+		r: r,
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewAuthAwareRouter(er, h.sc)
+func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
+	ar := auth.NewRouter(er, sc)
 	ar.GET("/", h.HandleHomeGet())
 }
 
-func (h *Handlers) HandleHomeGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleHomeGet() auth.Handler {
 	t := "home/home.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

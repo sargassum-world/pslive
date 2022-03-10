@@ -13,10 +13,8 @@ func getHTTPConfig() (c HTTPConfig, err error) {
 	const defaultGzipLevel = 1
 	rawGzipLevel, err := env.GetInt64("FLUITANS_HTTP_GZIPLEVEL", defaultGzipLevel)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make gzip level config")
-		return
+		return HTTPConfig{}, errors.Wrap(err, "couldn't make gzip level config")
 	}
 	c.GzipLevel = int(rawGzipLevel)
-
-	return
+	return c, nil
 }

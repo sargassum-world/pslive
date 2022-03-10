@@ -4,15 +4,15 @@ package client
 import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/authn"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
-	"github.com/sargassum-world/pslive/internal/clients/authn"
-	"github.com/sargassum-world/pslive/internal/clients/sessions"
 )
 
 type Clients struct {
 	Authn    *authn.Client
-	Sessions *sessions.Client
+	Sessions *session.Client
 }
 
 type Globals struct {
@@ -20,27 +20,25 @@ type Globals struct {
 	Clients *Clients
 }
 
-func NewGlobals(l godest.Logger) (*Globals, error) {
-	config, err := conf.GetConfig()
+func NewGlobals(l godest.Logger) (g *Globals, err error) {
+	g = &Globals{}
+	g.Config, err = conf.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
 	}
+	g.Clients = &Clients{}
 
-	authnClient, err := authn.NewClient(l)
+	authnConfig, err := authn.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up authn client")
+		return nil, errors.Wrap(err, "couldn't set up authn config")
 	}
+	g.Clients.Authn = authn.NewClient(authnConfig)
 
-	sessionsClient, err := sessions.NewMemStoreClient(l)
+	sessionsConfig, err := session.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up sessions client")
+		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
+	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
 
-	return &Globals{
-		Config: config,
-		Clients: &Clients{
-			Authn:    authnClient,
-			Sessions: sessionsClient,
-		},
-	}, nil
+	return g, nil
 }

@@ -1,4 +1,3 @@
-// Package pslive provides the Planktoscope Live server.
 package pslive
 
 import (
@@ -13,7 +12,6 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
-	"github.com/sargassum-world/pslive/internal/clients/sessions"
 )
 
 type ErrorData struct {
@@ -22,15 +20,15 @@ type ErrorData struct {
 	Messages []string
 }
 
-func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HTTPErrorHandler {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
 
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(c, sc)
+		a, sess, serr := auth.GetWithSession(c.Request(), sc, c.Logger())
 		if serr != nil {
-			c.Logger().Error(errors.Wrap(serr, "couldn't get session+auth in error handler"))
+			c.Logger().Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
 
 		// Process error code
@@ -44,21 +42,19 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.H
 		}
 
 		// Consume & save session
-		if sess != nil {
-			messages, merr := session.GetErrorMessages(sess)
-			if merr != nil {
-				c.Logger().Error(errors.Wrap(
-					merr, "couldn't get error messages from session in error handler",
-				))
-			}
-			errorData.Messages = messages
-			if err := sess.Save(c.Request(), c.Response()); err != nil {
-				c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
-			}
+		messages, merr := session.GetErrorMessages(sess)
+		if merr != nil {
+			c.Logger().Error(errors.Wrap(
+				merr, "couldn't get error messages from session in error handler",
+			))
+		}
+		errorData.Messages = messages
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
 		}
 
 		// Produce output
-		tr.SetUncacheable(c.Response().Header())
+		godest.SetUncacheable(c.Response().Header())
 		if perr := tr.Page(
 			c.Response(), c.Request(), code, "app/httperr.page.tmpl", errorData, a,
 		); perr != nil {
@@ -68,22 +64,19 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.H
 }
 
 func NewCSRFErrorHandler(
-	tr godest.TemplateRenderer, l echo.Logger, sc *sessions.Client,
+	tr godest.TemplateRenderer, l echo.Logger, sc *session.Client,
 ) http.HandlerFunc {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
-		sess, serr := session.Get(r, sc.Config.CookieName, sc.Store)
+		a, sess, serr := auth.GetWithSession(r, sc, l)
 		if serr != nil {
-			l.Error(errors.Wrap(serr, "couldn't get session in error handler"))
+			l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
-		var a auth.Auth
-		if sess != nil {
-			a, serr = auth.GetFromRequest(r, *sess, sc)
-			if serr != nil {
-				l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
-			}
+		// Save the session in case it was freshly generated
+		if err := sess.Save(r, w); err != nil {
+			l.Error(errors.Wrap(serr, "couldn't save session in error handler"))
 		}
 
 		// Generate error code
@@ -101,7 +94,7 @@ func NewCSRFErrorHandler(
 		}
 
 		// Produce output
-		tr.SetUncacheable(w.Header())
+		godest.SetUncacheable(w.Header())
 		if rerr := tr.Page(w, r, code, "app/httperr.page.tmpl", errorData, a); rerr != nil {
 			l.Error(errors.Wrap(rerr, "couldn't render error page in error handler"))
 		}
