@@ -1,8 +1,11 @@
+{{$instrument := (get . "Instrument")}}
 {{$controller := (get . "Controller")}}
 {{$auth := (get . "Auth")}}
 
 {{
   template "instruments/planktoscope/pump.partial.tmpl" dict
+  "Instrument" $instrument
   "Pump" $controller.Pump
+  "PumpSettings" $controller.PumpSettings
   "Auth" $auth
 }}

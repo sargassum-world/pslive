@@ -20,6 +20,7 @@ func GetConfig() (c Config, err error) {
 }
 
 func GetInstrument() (p Instrument, err error) {
+	p.Type = "planktoscopev2.3"
 	mjpegStreamURL, err := env.GetURL(envPrefix+"MJPEGSTREAM", "")
 	if err != nil {
 		return Instrument{}, errors.Wrap(err, "couldn't make MJPEG stream url config")

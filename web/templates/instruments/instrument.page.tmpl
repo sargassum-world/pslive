@@ -7,7 +7,6 @@
   <main class="main-container" tabindex="-1" data-controller="default-scrollable">
     <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
       <ul>
-        <li><a href="/">Instruments</a></li>
         <li><a href="/instruments">Instruments</a></li>
         <li class="is-active"><a href="/instruments/{{.Data.Instrument.Name}}" aria-current="page">{{.Data.Instrument.Name}}</a></li>
       </ul>
@@ -17,9 +16,12 @@
       <h1>Instrument {{.Data.Instrument.Name}}</h1>
       <turbo-frame id="instrument-{{.Data.Instrument.Name}}-info">
         <p>{{.Data.Instrument.Description}}</p>
+        <h2>Video Stream</h2>
         <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
+        <h2>Controller</h2>
         {{
           template "instruments/planktoscope/controller.partial.tmpl" dict
+          "Instrument" .Data.Instrument
           "Controller" .Data.Controller
           "Auth" .Auth
         }}

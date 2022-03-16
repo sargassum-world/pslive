@@ -16,8 +16,8 @@ type Clients struct {
 	Authn    *authn.Client
 	Sessions *session.Client
 
-	Instruments  *instruments.Client
-	Planktoscope *planktoscope.Client
+	Instruments   *instruments.Client
+	Planktoscopes map[string]*planktoscope.Client
 }
 
 type Globals struct {
@@ -55,7 +55,10 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope config")
 	}
-	g.Clients.Planktoscope, err = planktoscope.NewClient(planktoscopeConfig, l)
+	g.Clients.Planktoscopes = make(map[string]*planktoscope.Client)
+	g.Clients.Planktoscopes[instrumentsConfig.Instrument.Controller], err = planktoscope.NewClient(
+		planktoscopeConfig, l,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
 	}

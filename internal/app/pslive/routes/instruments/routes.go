@@ -11,21 +11,25 @@ import (
 )
 
 type Handlers struct {
-	r  godest.TemplateRenderer
-	ic *instruments.Client
-	pc *planktoscope.Client
+	r   godest.TemplateRenderer
+	ic  *instruments.Client
+	pcs map[string]*planktoscope.Client
 }
 
-func New(r godest.TemplateRenderer, ic *instruments.Client, pc *planktoscope.Client) *Handlers {
+func New(
+	r godest.TemplateRenderer, ic *instruments.Client, pcs map[string]*planktoscope.Client,
+) *Handlers {
 	return &Handlers{
-		r:  r,
-		ic: ic,
-		pc: pc,
+		r:   r,
+		ic:  ic,
+		pcs: pcs,
 	}
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
 	ar := auth.NewRouter(er, sc)
+	az := auth.RequireAuthz(sc)
 	ar.GET("/instruments", h.HandleInstrumentsGet())
 	ar.GET("/instruments/:name", h.HandleInstrumentGet())
+	er.POST("/instruments/:name/pump", h.HandleInstrumentPumpPost(), az)
 }

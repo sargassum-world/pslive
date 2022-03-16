@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 )
 
@@ -18,7 +19,7 @@ type Pump struct {
 func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 	type PumpStatus struct {
 		Status   string  `json:"status"`
-		Duration float32 `json:"duration"`
+		Duration float64 `json:"duration"`
 	}
 	var payload PumpStatus
 	if err := json.Unmarshal(rawPayload, &payload); err != nil {
@@ -46,9 +47,67 @@ func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 }
 
 func (c *Client) updatePumpState(newState Pump) {
-	c.stateLock.Lock()
-	defer c.stateLock.Unlock()
+	c.stateL.Lock()
+	defer c.stateL.Unlock()
 
 	c.pump = newState
-	// TODO: notify clients that the state has updated
+	c.pumpB.BroadcastNext()
+	// TODO: push updated state to clients
+}
+
+func (c *Client) StopPump() (mqtt.Token, error) {
+	command := struct {
+		Action string `json:"action"`
+	}{
+		Action: "stop",
+	}
+	marshaled, err := json.Marshal(command)
+	if err != nil {
+		return nil, err
+	}
+	token := c.MQTT.Publish("actuator/pump", mqttAtLeastOnce, false, marshaled)
+	return token, nil
+}
+
+type PumpSettings struct {
+	Forward  bool
+	Volume   float64
+	Flowrate float64
+}
+
+func (c *Client) StartPump(forward bool, volume, flowrate float64) (mqtt.Token, error) {
+	command := struct {
+		Action    string  `json:"action"`
+		Direction string  `json:"direction"`
+		Volume    float64 `json:"volume"`
+		Flowrate  float64 `json:"flowrate"`
+	}{
+		Action:   "move",
+		Volume:   volume,
+		Flowrate: flowrate,
+	}
+	if forward {
+		command.Direction = "FORWARD"
+	} else {
+		command.Direction = "BACKWARD"
+	}
+	marshaled, err := json.Marshal(command)
+	if err != nil {
+		return nil, err
+	}
+
+	c.stateL.Lock()
+	defer c.stateL.Unlock()
+
+	c.pumpSettings.Forward = forward
+	c.pumpSettings.Volume = volume
+	c.pumpSettings.Flowrate = flowrate
+	// TODO: push updated settings to clients
+
+	token := c.MQTT.Publish("actuator/pump", mqttExactlyOnce, false, marshaled)
+	return token, nil
+}
+
+func (c *Client) PumpStateBroadcasted() <-chan struct{} {
+	return c.pumpB.Broadcasted()
 }

@@ -119,9 +119,9 @@ func (s *Server) Register(e *echo.Echo) {
 }
 
 func (s *Server) RunBackgroundWorkers() {
-	eg, _ := errgroup.WithContext(context.Background())
+	eg, egctx := errgroup.WithContext(context.Background())
 	eg.Go(func() error {
-		return workers.EstablishPlanktoscopeControllerConnection(s.Globals.Clients.Planktoscope)
+		return workers.EstablishPlanktoscopeControllerConnections(egctx, s.Globals.Clients.Planktoscopes)
 	})
 	if err := eg.Wait(); err != nil {
 		s.Logger.Error(err)

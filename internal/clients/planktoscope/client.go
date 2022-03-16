@@ -10,8 +10,14 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
+const (
+	mqttAtLeastOnce = 1
+	mqttExactlyOnce = 2
+)
+
 type Planktoscope struct {
-	Pump Pump
+	Pump         Pump
+	PumpSettings PumpSettings
 }
 
 type Client struct {
@@ -19,14 +25,25 @@ type Client struct {
 	Logger godest.Logger
 	MQTT   mqtt.Client
 
-	stateLock sync.Mutex
-	pump      Pump
+	stateL       *sync.RWMutex
+	pump         Pump
+	pumpB        *Broadcaster
+	pumpSettings PumpSettings
 }
 
 func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client = &Client{}
 	client.Config = c
 	client.Logger = l
+	client.stateL = &sync.RWMutex{}
+	client.pumpB = NewBroadcaster()
+	const defaultVolume = 1
+	const defaultFlowrate = 0.1
+	client.pumpSettings = PumpSettings{
+		Forward:  true,
+		Volume:   defaultVolume,
+		Flowrate: defaultFlowrate,
+	}
 
 	c.MQTT.SetOnConnectHandler(client.handleConnected)
 	c.MQTT.SetConnectionLostHandler(client.handleConnectionLost)
@@ -36,11 +53,12 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 }
 
 func (c *Client) GetState() Planktoscope {
-	c.stateLock.Lock()
-	defer c.stateLock.Unlock()
+	c.stateL.RLock()
+	defer c.stateL.RUnlock()
 
 	return Planktoscope{
-		Pump: c.pump,
+		Pump:         c.pump,
+		PumpSettings: c.pumpSettings,
 	}
 }
 
@@ -56,13 +74,18 @@ func (c *Client) EstablishConnection() error {
 
 func (c *Client) handleConnected(cm mqtt.Client) {
 	c.Logger.Infof("connected to MQTT broker %s", c.Config.Broker().String())
-	// FIXME: we might not want to use QOS 1 everywhere (depends on which messages are idempotent)
-	cm.Subscribe("#", 1, c.handleMessage)
+	// FIXME: we might not want to use Once 1 everywhere (depends on which messages are idempotent)
+	token := cm.Subscribe("#", mqttAtLeastOnce, c.handleMessage)
+	go func(t mqtt.Token) {
+		if t.Wait(); t.Error() != nil {
+			c.Logger.Error(errors.Wrap(t.Error(), "couldn't subscribe to #"))
+		}
+	}(token)
 }
 
 func (c *Client) handleConnectionLost(_ mqtt.Client, err error) {
-	c.stateLock.Lock()
-	defer c.stateLock.Unlock()
+	c.stateL.Lock()
+	defer c.stateL.Unlock()
 
 	c.pump.StateKnown = false
 	c.Logger.Warn(err)

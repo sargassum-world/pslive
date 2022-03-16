@@ -1,14 +1,145 @@
+{{$instrument := (get . "Instrument")}}
+{{$pumpSettings := (get . "PumpSettings")}}
 {{$pump := (get . "Pump")}}
 {{$auth := (get . "Auth")}}
 
-{{if $auth.Identity.Authenticated}}
-<p>TODO: add a UI to start/stop the pump at some rate</p>
-{{end}}
-<p>
-  Pump:
-  {{if not $pump.StateKnown}}
-    <span class="tag is-warning">Unknown</span>
-  {{else}}
-    <span class="tag is-info">{{if $pump.Pumping}}Started{{else}}Stopped{{end}}</span>
-  {{end}}
-</p>
+<turbo-frame id="instrument-{{$instrument.Name}}-controller-pump">
+  <div class="card section-card is-block">
+    <div class="card-content">
+      <h3>
+        Pump
+        {{if not $pump.StateKnown}}
+          <span class="tag is-warning">Unknown</span>
+        {{else}}
+          <span class="tag is-info">{{if $pump.Pumping}}Started{{else}}Stopped{{end}}</span>
+        {{end}}
+      </h3>
+      <form
+        action="/instruments/{{$instrument.Name}}/pump"
+        method="POST"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+
+        <div class="field is-horizontal">
+          <div class="field-label">
+            <label class="label">Direction</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-narrow">
+              <div class="control">
+                <label class="radio">
+                  <input
+                    type="radio"
+                    name="direction"
+                    value="forward"
+                    {{if $pumpSettings.Forward}}checked{{end}}
+                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
+                  />
+                  Forward
+                </label>
+                <label class="radio">
+                  <input
+                    type="radio"
+                    name="direction"
+                    value="backward"
+                    {{if not $pumpSettings.Forward}}checked{{end}}
+                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
+                  />
+                  Backward
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Volume</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="field has-addons">
+                <div class="control">
+                  <input
+                    type="number"
+                    class="input"
+                    name="volume"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
+                    value="{{$pumpSettings.Volume}}"
+                  />
+                </div>
+                <div class="control">
+                  <span class="button is-static">mL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Flow Rate</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="field has-addons">
+                <div class="control">
+                  <input
+                    type="number"
+                    class="input"
+                    name="flowrate"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
+                    value="{{$pumpSettings.Flowrate}}"
+                  />
+                </div>
+                <div class="control">
+                  <span class="button is-static">mL/min</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{if $auth.Identity.Authenticated}}
+          <div class="field is-horizontal">
+            <div class="field-label is-normal"><!--Left empty for spacing--></div>
+            <div class="field-body" >
+              <div class="field" data-form-submission-target="submitter">
+                <div class="field has-addons">
+                  <div class="control">
+                    <input
+                      class="button"
+                      type="submit"
+                      name="pumping"
+                      value="Start"
+                      data-form-submission-target="submit"
+                      data-csrf-target="submit"
+                    >
+                  </div>
+                  <div class="control">
+                    <input
+                      class="button"
+                      type="submit"
+                      name="pumping"
+                      value="Stop"
+                      data-form-submission-target="submit"
+                      data-csrf-target="submit"
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {{end}}
+      </form>
+    </div>
+  </div>
+</turbo-frame>

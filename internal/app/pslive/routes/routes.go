@@ -29,6 +29,6 @@ func (h *Handlers) Register(er godest.EchoRouter, em godest.Embeds) {
 	home.New(h.r).Register(er, h.clients.Sessions)
 	auth.New(h.r, h.clients.Authn, h.clients.Sessions).Register(er)
 	instruments.New(
-		h.r, h.clients.Instruments, h.clients.Planktoscope,
+		h.r, h.clients.Instruments, h.clients.Planktoscopes,
 	).Register(er, h.clients.Sessions)
 }
