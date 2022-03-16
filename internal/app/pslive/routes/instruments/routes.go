@@ -7,16 +7,19 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
 type Handlers struct {
 	r  godest.TemplateRenderer
-	pc *instruments.Client
+	ic *instruments.Client
+	pc *planktoscope.Client
 }
 
-func New(r godest.TemplateRenderer, pc *instruments.Client) *Handlers {
+func New(r godest.TemplateRenderer, ic *instruments.Client, pc *planktoscope.Client) *Handlers {
 	return &Handlers{
 		r:  r,
+		ic: ic,
 		pc: pc,
 	}
 }

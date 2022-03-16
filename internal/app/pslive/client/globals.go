@@ -9,13 +9,15 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
 type Clients struct {
 	Authn    *authn.Client
 	Sessions *session.Client
 
-	Instruments *instruments.Client
+	Instruments  *instruments.Client
+	Planktoscope *planktoscope.Client
 }
 
 type Globals struct {
@@ -43,11 +45,20 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
 
-	pcConfig, err := instruments.GetConfig()
+	instrumentsConfig, err := instruments.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up instruments config")
 	}
-	g.Clients.Instruments = instruments.NewClient(pcConfig, l)
+	g.Clients.Instruments = instruments.NewClient(instrumentsConfig, l)
+
+	planktoscopeConfig, err := planktoscope.GetConfig(instrumentsConfig.Instrument.Controller)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up planktoscope config")
+	}
+	g.Clients.Planktoscope, err = planktoscope.NewClient(planktoscopeConfig, l)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
+	}
 
 	return g, nil
 }

@@ -21,7 +21,7 @@ func main() {
 		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => " +
 			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
-	e.Logger.SetLevel(log.WARN)
+	e.Logger.SetLevel(log.DEBUG)
 
 	// Prepare server
 	s, err := pslive.NewServer(e)
@@ -32,5 +32,6 @@ func main() {
 	s.Register(e)
 
 	// Start server
+	go s.RunBackgroundWorkers()
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

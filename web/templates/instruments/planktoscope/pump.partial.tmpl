@@ -1,0 +1,14 @@
+{{$pump := (get . "Pump")}}
+{{$auth := (get . "Auth")}}
+
+{{if $auth.Identity.Authenticated}}
+<p>TODO: add a UI to start/stop the pump at some rate</p>
+{{end}}
+<p>
+  Pump:
+  {{if not $pump.StateKnown}}
+    <span class="tag is-warning">Unknown</span>
+  {{else}}
+    <span class="tag is-info">{{if $pump.Pumping}}Started{{else}}Stopped{{end}}</span>
+  {{end}}
+</p>

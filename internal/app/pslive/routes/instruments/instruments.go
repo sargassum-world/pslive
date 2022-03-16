@@ -11,7 +11,7 @@ func (h *Handlers) HandleInstrumentsGet() auth.Handler {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		instruments, err := h.pc.GetInstruments()
+		instruments, err := h.ic.GetInstruments()
 		if err != nil {
 			return err
 		}

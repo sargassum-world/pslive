@@ -18,11 +18,11 @@
       <turbo-frame id="instrument-{{.Data.Instrument.Name}}-info">
         <p>{{.Data.Instrument.Description}}</p>
         <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
-        {{if .Auth.Identity.Authenticated}}
-          <p>
-            TODO: advanced remote control panel (demo with toggling light)
-          </p>
-        {{end}}
+        {{
+          template "instruments/planktoscope/controller.partial.tmpl" dict
+          "Controller" .Data.Controller
+          "Auth" .Auth
+        }}
       </turbo-frame>
     </section>
   </main>

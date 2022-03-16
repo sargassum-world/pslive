@@ -2,6 +2,7 @@
 package pslive
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,11 +15,13 @@ import (
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/unrolled/secure"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
+	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
 	imw "github.com/sargassum-world/pslive/internal/middleware"
 	"github.com/sargassum-world/pslive/web"
 )
@@ -29,6 +32,7 @@ type Server struct {
 	Renderer godest.TemplateRenderer
 	Globals  *client.Globals
 	Handlers *routes.Handlers
+	Logger   godest.Logger
 }
 
 func NewServer(e *echo.Echo) (s *Server, err error) {
@@ -52,6 +56,7 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
+	s.Logger = e.Logger
 	return s, nil
 }
 
@@ -111,4 +116,14 @@ func (s *Server) Register(e *echo.Echo) {
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Clients.Sessions)
 	s.Handlers.Register(e, s.Embeds)
+}
+
+func (s *Server) RunBackgroundWorkers() {
+	eg, _ := errgroup.WithContext(context.Background())
+	eg.Go(func() error {
+		return workers.EstablishPlanktoscopeControllerConnection(s.Globals.Clients.Planktoscope)
+	})
+	if err := eg.Wait(); err != nil {
+		s.Logger.Error(err)
+	}
 }

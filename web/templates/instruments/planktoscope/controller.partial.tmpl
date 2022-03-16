@@ -1,0 +1,8 @@
+{{$controller := (get . "Controller")}}
+{{$auth := (get . "Auth")}}
+
+{{
+  template "instruments/planktoscope/pump.partial.tmpl" dict
+  "Pump" $controller.Pump
+  "Auth" $auth
+}}

@@ -8,14 +8,18 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
 type InstrumentData struct {
 	Instrument instruments.Instrument
+	Controller planktoscope.Planktoscope
 }
 
-func getInstrumentData(name string, pc *instruments.Client) (*InstrumentData, error) {
-	instrument, err := pc.FindInstrument(name)
+func getInstrumentData(
+	name string, ic *instruments.Client, pc *planktoscope.Client,
+) (*InstrumentData, error) {
+	instrument, err := ic.FindInstrument(name)
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +29,12 @@ func getInstrumentData(name string, pc *instruments.Client) (*InstrumentData, er
 		)
 	}
 
+	// TODO: select the planktoscope client based on the instrument
+	planktoscope := pc.GetState()
+
 	return &InstrumentData{
 		Instrument: *instrument,
+		Controller: planktoscope,
 	}, nil
 }
 
@@ -38,7 +46,7 @@ func (h *Handlers) HandleInstrumentGet() auth.Handler {
 		name := c.Param("name")
 
 		// Run queries
-		instrumentData, err := getInstrumentData(name, h.pc)
+		instrumentData, err := getInstrumentData(name, h.ic, h.pc)
 		if err != nil {
 			return err
 		}
