@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/deepmap/oapi-codegen v1.8.3
-	github.com/golangci/golangci-lint v1.42.1
+	github.com/golangci/golangci-lint v1.45.0
 	github.com/goreleaser/goreleaser v1.6.3
-	mvdan.cc/gofumpt v0.2.1
+	mvdan.cc/gofumpt v0.3.0
 )
