@@ -64,14 +64,49 @@ func (h *Handlers) HandleInstrumentGet() auth.Handler {
 
 // Pumping
 
+func handlePumpSettings(
+	pumpingRaw, direction, volumeRaw, flowrateRaw string, pc *planktoscope.Client,
+) (err error) {
+	pumping := (strings.ToLower(pumpingRaw) == "start") || (strings.ToLower(pumpingRaw) == "restart")
+	var token mqtt.Token
+	if !pumping {
+		if token, err = pc.StopPump(); err != nil {
+			return err
+		}
+	} else {
+		// TODO: use echo's request binding functionality instead of strconv.ParseFloat
+		// TODO: perform input validation and handle invalid inputs
+		forward := strings.ToLower(direction) == "forward"
+		const floatWidth = 64
+		volume, err := strconv.ParseFloat(volumeRaw, floatWidth)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse volume"))
+		}
+		flowrate, err := strconv.ParseFloat(flowrateRaw, floatWidth)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse flowrate"))
+		}
+		if token, err = pc.StartPump(forward, volume, flowrate); err != nil {
+			return err
+		}
+	}
+
+	stateUpdated := pc.PumpStateBroadcasted()
+	// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
+	// warning message that we haven't heard any pump state updates from the planktoscope.
+	if token.Wait(); token.Error() != nil {
+		return token.Error()
+	}
+	<-stateUpdated
+	return nil
+}
+
 func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
 	t := "instruments/planktoscope/pump.partial.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		name := c.Param("name")
-		rawPumping := strings.ToLower(c.FormValue("pumping"))
-		pumping := (rawPumping == "start") || (rawPumping == "restart")
 
 		// Run queries
 		instrument, err := h.ic.FindInstrument(name)
@@ -82,36 +117,12 @@ func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
 		if !ok {
 			return errors.Errorf("planktoscope client for instrument %s not found", name)
 		}
-		var token mqtt.Token
-		if !pumping {
-			if token, err = pc.StopPump(); err != nil {
-				return err
-			}
-		} else {
-			// TODO: use echo's request binding functionality instead of strconv.ParseFloat
-			// TODO: perform input validation and handle invalid inputs
-			forward := strings.ToLower(c.FormValue("direction")) == "forward"
-			const floatWidth = 64
-			volume, err := strconv.ParseFloat(c.FormValue("volume"), floatWidth)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse volume"))
-			}
-			flowrate, err := strconv.ParseFloat(c.FormValue("flowrate"), floatWidth)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse flowrate"))
-			}
-			if token, err = pc.StartPump(forward, volume, flowrate); err != nil {
-				return err
-			}
+		if err = handlePumpSettings(
+			c.FormValue("pumping"), c.FormValue("direction"),
+			c.FormValue("volume"), c.FormValue("flowrate"), pc,
+		); err != nil {
+			return err
 		}
-
-		stateUpdated := pc.PumpStateBroadcasted()
-		// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
-		// warning message that we haven't heard any pump state updates from the planktoscope.
-		if token.Wait(); token.Error() != nil {
-			return token.Error()
-		}
-		<-stateUpdated
 
 		// Render Turbo Stream if accepted
 		if turbo.StreamAccepted(c.Request().Header) {
