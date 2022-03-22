@@ -21,7 +21,7 @@ func main() {
 		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => " +
 			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
-	e.Logger.SetLevel(log.INFO)
+	e.Logger.SetLevel(log.DEBUG)
 
 	// Prepare server
 	s, err := pslive.NewServer(e)

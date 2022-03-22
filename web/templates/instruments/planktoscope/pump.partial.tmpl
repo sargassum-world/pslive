@@ -119,7 +119,8 @@
                       class="button"
                       type="submit"
                       name="pumping"
-                      value="Start"
+                      value="Stop"
+                      {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
                       data-form-submission-target="submit"
                       data-csrf-target="submit"
                     >
@@ -129,7 +130,11 @@
                       class="button"
                       type="submit"
                       name="pumping"
-                      value="Stop"
+                      {{if and $pump.StateKnown $pump.Pumping}}
+                        value="Restart"
+                      {{else}}
+                        value="Start"
+                      {{end}}
                       data-form-submission-target="submit"
                       data-csrf-target="submit"
                     >

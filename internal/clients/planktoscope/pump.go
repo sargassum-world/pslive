@@ -39,6 +39,9 @@ func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 	case "Interrupted":
 		newState.Pumping = false
 		newState.Duration = 0
+	case "Done":
+		newState.Pumping = false
+		newState.Duration = 0
 	}
 	newState.Deadline = newState.Start.Add(newState.Duration)
 	c.updatePumpState(newState)

@@ -31,5 +31,5 @@ func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
 	az := auth.RequireAuthz(sc)
 	ar.GET("/instruments", h.HandleInstrumentsGet())
 	ar.GET("/instruments/:name", h.HandleInstrumentGet())
-	er.POST("/instruments/:name/pump", h.HandleInstrumentPumpPost(), az)
+	ar.POST("/instruments/:name/pump", h.HandleInstrumentPumpPost(), az)
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -63,14 +64,14 @@ func (h *Handlers) HandleInstrumentGet() auth.Handler {
 
 // Pumping
 
-func (h *Handlers) HandleInstrumentPumpPost() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		// Negotiate response content type
-		fmt.Println(c.Request().Header["Accept"])
-
+func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
+	t := "instruments/planktoscope/pump.partial.tmpl"
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		name := c.Param("name")
-		pumping := strings.ToLower(c.FormValue("pumping")) == "start"
+		rawPumping := strings.ToLower(c.FormValue("pumping"))
+		pumping := (rawPumping == "start") || (rawPumping == "restart")
 
 		// Run queries
 		instrument, err := h.ic.FindInstrument(name)
@@ -88,6 +89,7 @@ func (h *Handlers) HandleInstrumentPumpPost() echo.HandlerFunc {
 			}
 		} else {
 			// TODO: use echo's request binding functionality instead of strconv.ParseFloat
+			// TODO: perform input validation and handle invalid inputs
 			forward := strings.ToLower(c.FormValue("direction")) == "forward"
 			const floatWidth = 64
 			volume, err := strconv.ParseFloat(c.FormValue("volume"), floatWidth)
@@ -105,11 +107,27 @@ func (h *Handlers) HandleInstrumentPumpPost() echo.HandlerFunc {
 
 		stateUpdated := pc.PumpStateBroadcasted()
 		// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
-		// warning message that we haven't heard any pump state updates from the planktoscope
+		// warning message that we haven't heard any pump state updates from the planktoscope.
 		if token.Wait(); token.Error() != nil {
 			return token.Error()
 		}
 		<-stateUpdated
+
+		// Render Turbo Stream if accepted
+		if turbo.StreamAccepted(c.Request().Header) {
+			state := pc.GetState()
+			return h.r.TurboStreams(c.Response(), turbo.Stream{
+				Action:   turbo.StreamReplace,
+				Target:   "instrument-" + name + "-controller-pump",
+				Template: t,
+				Data: map[string]interface{}{
+					"Instrument":   instrument,
+					"PumpSettings": state.PumpSettings,
+					"Pump":         state.Pump,
+					"Auth":         a,
+				},
+			})
+		}
 
 		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%s", name))

@@ -35,6 +35,7 @@ function themeGenerator(theme) {
 					writeFileSync(`${buildDir}/theme-${theme}.css`, styles);
 					purify(
 						[
+							'node_modules/@hotwired/**/*.js',
 							'node_modules/@sargassum-world/**/*.js',
 							'node_modules/@sargassum-world/**/*.svelte',
 							'src/**/*.js',

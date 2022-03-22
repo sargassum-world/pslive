@@ -1,12 +1,12 @@
-import * as Turbo from '@hotwired/turbo';
 import {
-	CSRFController,
-	DefaultScrollableController,
-	FormSubmissionController,
-	NavigationLinkController,
-	NavigationMenuController,
-	ThemeController,
-	TurboCacheController,
+  CSRFController,
+  DefaultScrollableController,
+  FormSubmissionController,
+  NavigationLinkController,
+  NavigationMenuController,
+  ThemeController,
+  TurboCacheController,
+  Turbo,
 } from '@sargassum-world/stimulated';
 import { Application } from 'stimulus';
 
