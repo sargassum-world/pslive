@@ -28,5 +28,7 @@ func (h *Handlers) Register(er godest.EchoRouter, em godest.Embeds) {
 	assets.NewTemplated(h.r).Register(er)
 	home.New(h.r).Register(er, h.clients.Sessions)
 	auth.New(h.r, h.clients.Authn, h.clients.Sessions).Register(er)
-	instruments.New(h.r, h.clients.Instruments).Register(er, h.clients.Sessions)
+	instruments.New(
+		h.r, h.clients.Instruments, h.clients.Planktoscopes,
+	).Register(er, h.clients.Sessions)
 }

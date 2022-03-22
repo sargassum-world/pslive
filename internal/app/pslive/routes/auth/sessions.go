@@ -24,7 +24,7 @@ type CSRFData struct {
 func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Produce output
-		godest.SetUncacheable(c.Response().Header())
+		godest.WithUncacheable()(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
 			HeaderName: h.sc.Config.CSRFOptions.HeaderName,
 			FieldName:  h.sc.Config.CSRFOptions.FieldName,

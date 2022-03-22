@@ -20,16 +20,26 @@ func GetConfig() (c Config, err error) {
 }
 
 func GetInstrument() (p Instrument, err error) {
-	url, err := env.GetURL(envPrefix+"MJPEGSTREAM", "")
+	p.Type = "planktoscopev2.3"
+	mjpegStreamURL, err := env.GetURL(envPrefix+"MJPEGSTREAM", "")
 	if err != nil {
-		return Instrument{}, errors.Wrap(err, "couldn't make server url config")
+		return Instrument{}, errors.Wrap(err, "couldn't make MJPEG stream url config")
 	}
-	p.MJPEGStream = url.String()
+	p.MJPEGStream = mjpegStreamURL.String()
 	if len(p.MJPEGStream) == 0 {
 		return Instrument{}, nil
 	}
 
-	p.Name = env.GetString(envPrefix+"NAME", url.Host)
+	controllerURL, err := env.GetURL(envPrefix+"CONTROLLER", "")
+	if err != nil {
+		return Instrument{}, errors.Wrap(err, "couldn't make controller url config")
+	}
+	p.Controller = controllerURL.String()
+	if len(p.MJPEGStream) == 0 {
+		return Instrument{}, nil
+	}
+
+	p.Name = env.GetString(envPrefix+"NAME", mjpegStreamURL.Host)
 	p.Description = env.GetString(
 		envPrefix+"DESC",
 		"The default instrument specified in the environment variables.",
