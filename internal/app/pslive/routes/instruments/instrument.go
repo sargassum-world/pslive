@@ -9,7 +9,7 @@ import (
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -44,7 +44,7 @@ func getInstrumentData(
 	}, nil
 }
 
-func (h *Handlers) HandleInstrumentGet() auth.Handler {
+func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 	t := "instruments/instrument.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -101,7 +101,7 @@ func handlePumpSettings(
 	return nil
 }
 
-func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
+func (h *Handlers) HandleInstrumentPumpPost() auth.HTTPHandlerFunc {
 	t := "instruments/planktoscope/pump.partial.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -124,20 +124,23 @@ func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
 			return err
 		}
 
+		state := pc.GetState()
+		// TODO: also/instead broadcast when the mqtt broker pushes out a state update
+		message := turbostreams.Message{
+			Action:   turbostreams.ActionReplace,
+			Target:   "/instruments/" + name + "/controller/pump",
+			Template: t,
+			Data: map[string]interface{}{
+				"Instrument":   instrument,
+				"PumpSettings": state.PumpSettings,
+				"Pump":         state.Pump,
+				"Auth":         a,
+			},
+		}
+		h.tsh.Broadcast(message.Target, message)
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
-			state := pc.GetState()
-			return h.r.TurboStreams(c.Response(), turbo.Stream{
-				Action:   turbo.StreamReplace,
-				Target:   "instrument-" + name + "-controller-pump",
-				Template: t,
-				Data: map[string]interface{}{
-					"Instrument":   instrument,
-					"PumpSettings": state.PumpSettings,
-					"Pump":         state.Pump,
-					"Auth":         a,
-				},
-			})
+		if turbostreams.Accepted(c.Request().Header) {
+			return h.r.TurboStream(c.Response(), message)
 		}
 
 		// Redirect user

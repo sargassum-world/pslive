@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/labstack/echo/v4"
@@ -32,6 +33,6 @@ func main() {
 	s.Register(e)
 
 	// Start server
-	go s.RunBackgroundWorkers()
+	go s.RunBackgroundWorkers(context.TODO())
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

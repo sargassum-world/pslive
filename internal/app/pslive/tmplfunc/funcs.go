@@ -6,14 +6,17 @@ import (
 	"net/url"
 )
 
-func FuncMap(h HashedNamers) template.FuncMap {
+type TurboStreamSigner func(streamName string) (hash string)
+
+func FuncMap(h HashedNamers, tss TurboStreamSigner) template.FuncMap {
 	return template.FuncMap{
-		"queryEscape":  url.QueryEscape,
-		"derefBool":    DerefBool,
-		"derefInt":     DerefInt,
-		"derefFloat32": DerefFloat32,
-		"derefString":  DerefString,
-		"appHashed":    h.AppHashed,
-		"staticHashed": h.StaticHashed,
+		"queryEscape":     url.QueryEscape,
+		"derefBool":       DerefBool,
+		"derefInt":        DerefInt,
+		"derefFloat32":    DerefFloat32,
+		"derefString":     DerefString,
+		"appHashed":       h.AppHashed,
+		"staticHashed":    h.StaticHashed,
+		"signTurboStream": tss,
 	}
 }

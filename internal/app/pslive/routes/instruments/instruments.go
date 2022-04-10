@@ -6,7 +6,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 )
 
-func (h *Handlers) HandleInstrumentsGet() auth.Handler {
+func (h *Handlers) HandleInstrumentsGet() auth.HTTPHandlerFunc {
 	t := "instruments/instruments.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
