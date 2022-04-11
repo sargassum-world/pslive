@@ -5,17 +5,40 @@
   <meta name="description" content="{{block "description" .}}{{end}}">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#00d1b2">
+  <meta name="action-cable-url" content="/cable">
 
   <title>{{block "title" .}}{{end}} | Planktoscope Live</title>
 
   <style type="text/css">{{.Inlines.CSS.BundleEager}}</style>
   <noscript><link rel="stylesheet" href="{{appHashed "theme-light.min.css"}}"></noscript>
-  <link id="light-theme" as="style" rel="preload" href="{{appHashed "theme-light.min.css"}}" turbo-data-track="reload">
-  <link id="dark-theme" as="style" rel="preload" href="{{appHashed "theme-dark.min.css"}}" turbo-data-track="reload">
+  <link
+    id="light-theme"
+    as="style"
+    rel="preload"
+    href="{{appHashed "theme-light.min.css"}}"
+    turbo-data-track="reload"
+  >
+  <link
+    id="dark-theme"
+    as="style"
+    rel="preload"
+    href="{{appHashed "theme-dark.min.css"}}"
+    turbo-data-track="reload"
+  >
   <script>{{.Inlines.JS.BundleEager}}</script>
   {{block "nav/navbar.assets" .}}{{end}}
-  <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-400-normal.woff2" crossorigin>
-  <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-700-normal.woff2" crossorigin>
+  <link
+    rel="preload"
+    as="font"
+    type="font/woff2"
+    href="/fonts/atkinson-hyperlegible-latin-400-normal.woff2"
+  >
+  <link
+    rel="preload"
+    as="font"
+    type="font/woff2"
+    href="/fonts/atkinson-hyperlegible-latin-700-normal.woff2"
+  >
   <link rel="preload" as="script" href="{{appHashed "bundle-deferred.js"}}">
   <link rel="icon" href="{{staticHashed "icon.svg"}}" type="image/svg+xml">
   <link rel="icon alternate" href="/favicon.ico" size="any">

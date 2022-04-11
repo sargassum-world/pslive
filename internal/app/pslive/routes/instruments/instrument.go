@@ -9,7 +9,7 @@ import (
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -44,7 +44,7 @@ func getInstrumentData(
 	}, nil
 }
 
-func (h *Handlers) HandleInstrumentGet() auth.Handler {
+func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 	t := "instruments/instrument.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -63,6 +63,25 @@ func (h *Handlers) HandleInstrumentGet() auth.Handler {
 }
 
 // Pumping
+
+const pumpPartial = "instruments/planktoscope/pump.partial.tmpl"
+
+func replacePumpStream(
+	name string, instrument *instruments.Instrument, a auth.Auth, pc *planktoscope.Client,
+) turbostreams.Message {
+	state := pc.GetState()
+	return turbostreams.Message{
+		Action:   turbostreams.ActionReplace,
+		Target:   "/instruments/" + name + "/controller/pump",
+		Template: pumpPartial,
+		Data: map[string]interface{}{
+			"Instrument":   instrument,
+			"PumpSettings": state.PumpSettings,
+			"Pump":         state.Pump,
+			"Auth":         a,
+		},
+	}
+}
 
 func handlePumpSettings(
 	pumpingRaw, direction, volumeRaw, flowrateRaw string, pc *planktoscope.Client,
@@ -101,8 +120,43 @@ func handlePumpSettings(
 	return nil
 }
 
-func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
-	t := "instruments/planktoscope/pump.partial.tmpl"
+func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
+	t := pumpPartial
+	h.r.MustHave(t)
+	return func(c turbostreams.Context) error {
+		// Parse params
+		name := c.Param("name")
+
+		// Run queries
+		instrument, err := h.ic.FindInstrument(name)
+		if err != nil {
+			return err
+		}
+		pc, ok := h.pcs[instrument.Controller]
+		if !ok {
+			return errors.Errorf("planktoscope client for instrument %s not found", name)
+		}
+
+		// Publish on MQTT update
+		for {
+			ctx := c.Context()
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-pc.PumpStateBroadcasted():
+				if err := ctx.Err(); err != nil {
+					// Context was also canceled and it should have priority
+					return err
+				}
+				message := replacePumpStream(name, instrument, auth.Auth{}, pc)
+				c.Publish(message)
+			}
+		}
+	}
+}
+
+func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
+	t := pumpPartial
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
@@ -125,22 +179,12 @@ func (h *Handlers) HandleInstrumentPumpPost() auth.Handler {
 		}
 
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
-			state := pc.GetState()
-			return h.r.TurboStreams(c.Response(), turbo.Stream{
-				Action:   turbo.StreamReplace,
-				Target:   "instrument-" + name + "-controller-pump",
-				Template: t,
-				Data: map[string]interface{}{
-					"Instrument":   instrument,
-					"PumpSettings": state.PumpSettings,
-					"Pump":         state.Pump,
-					"Auth":         a,
-				},
-			})
+		if turbostreams.Accepted(c.Request().Header) {
+			message := replacePumpStream(name, instrument, a, pc)
+			return h.r.TurboStream(c.Response(), message)
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%s", name))
+		return c.Redirect(http.StatusSeeOther, "/instruments/"+name)
 	}
 }

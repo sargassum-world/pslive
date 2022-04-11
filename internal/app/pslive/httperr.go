@@ -20,13 +20,13 @@ type ErrorData struct {
 	Messages []string
 }
 
-func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr godest.TemplateRenderer, ss session.Store) echo.HTTPErrorHandler {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
 
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(c.Request(), sc, c.Logger())
+		a, sess, serr := auth.GetWithSession(c.Request(), ss, c.Logger())
 		if serr != nil {
 			c.Logger().Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
@@ -64,13 +64,13 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HT
 }
 
 func NewCSRFErrorHandler(
-	tr godest.TemplateRenderer, l echo.Logger, sc *session.Client,
+	tr godest.TemplateRenderer, l echo.Logger, ss session.Store,
 ) http.HandlerFunc {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(r, sc, l)
+		a, sess, serr := auth.GetWithSession(r, ss, l)
 		if serr != nil {
 			l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}

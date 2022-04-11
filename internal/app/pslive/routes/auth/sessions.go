@@ -26,8 +26,8 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 		// Produce output
 		godest.WithUncacheable()(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
-			HeaderName: h.sc.Config.CSRFOptions.HeaderName,
-			FieldName:  h.sc.Config.CSRFOptions.FieldName,
+			HeaderName: h.ss.CSRFOptions().HeaderName,
+			FieldName:  h.ss.CSRFOptions().FieldName,
 			Token:      csrf.Token(c.Request()),
 		})
 	}
@@ -39,7 +39,7 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (h *Handlers) HandleLoginGet() auth.HandlerWithSession {
+func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 	t := "auth/login.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth, sess *sessions.Session) error {
@@ -74,10 +74,10 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *session.Client,
+	c echo.Context, username, returnURL string, omitCSRFToken bool, ss session.Store,
 ) error {
 	// Update session
-	sess, err := sc.Get(c.Request())
+	sess, err := ss.Get(c.Request())
 	if err != nil {
 		return err
 	}
@@ -100,9 +100,9 @@ func handleAuthenticationSuccess(
 	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(c echo.Context, returnURL string, sc *session.Client) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.Store) error {
 	// Update session
-	sess, serr := sc.Get(c.Request())
+	sess, serr := ss.Get(c.Request())
 	if serr != nil {
 		return serr
 	}
@@ -151,16 +151,17 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 				return err
 			}
 			if !identified {
-				return handleAuthenticationFailure(c, returnURL, h.sc)
+				return handleAuthenticationFailure(c, returnURL, h.ss)
 			}
-			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, h.sc)
+			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, h.ss)
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
-			sess, err := h.sc.Get(c.Request())
+			sess, err := h.ss.Get(c.Request())
 			if err != nil {
 				return err
 			}
+			h.acc.Cancel(sess.ID)
 			session.Invalidate(sess)
 			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				return err

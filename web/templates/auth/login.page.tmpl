@@ -41,7 +41,11 @@
               method="POST"
               data-turbo-frame="_top"
               data-controller="form-submission turbo-cache csrf"
-              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
+              data-action="
+                submit->form-submission#submit
+                submit->turbo-cache#clear
+                submit->csrf#addToken
+              "
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
               <input type="hidden" name="state" value="unauthenticated">
@@ -58,7 +62,6 @@
                     class="button is-primary"
                     value="Sign Out"
                     data-form-submission-target="submit"
-                    data-csrf-target="submit"
                   >
                 </div>
               </div>
@@ -73,7 +76,11 @@
               method="POST"
               data-turbo-frame="_top"
               data-controller="form-submission turbo-cache csrf"
-              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
+              data-action="
+                submit->form-submission#submit
+                submit->turbo-cache#clear
+                submit->csrf#addToken
+              "
               data-form-submission-target="submitter"
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
@@ -98,7 +105,6 @@
                     class="button is-primary"
                     value="Sign in"
                     data-form-submission-target="submit"
-                    data-csrf-target="submit"
                   >
                 </div>
               </div>

@@ -48,11 +48,7 @@ function themeGenerator(theme) {
 							minify: true,
 							info: true,
 							cleanCssOptions: {
-								level: {
-									2: {
-										all: true,
-									},
-								},
+								level: 1,
 							},
 						},
 					);

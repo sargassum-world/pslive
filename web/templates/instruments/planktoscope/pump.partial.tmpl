@@ -2,8 +2,15 @@
 {{$pumpSettings := (get . "PumpSettings")}}
 {{$pump := (get . "Pump")}}
 {{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 
-<turbo-frame id="instrument-{{$instrument.Name}}-controller-pump">
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (print "/instruments/" $instrument.Name "/controller/pump")
+  }}
+{{end}}
+<turbo-frame id="/instruments/{{$instrument.Name}}/controller/pump">
   <div class="card section-card is-block">
     <div class="card-content">
       <h3>
@@ -15,7 +22,7 @@
         {{end}}
       </h3>
       <form
-        action="/instruments/{{$instrument.Name}}/pump"
+        action="/instruments/{{$instrument.Name}}/controller/pump"
         method="POST"
         data-controller="form-submission csrf"
         data-action="submit->form-submission#submit submit->csrf#addToken"
@@ -122,7 +129,6 @@
                       value="Stop"
                       {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
                       data-form-submission-target="submit"
-                      data-csrf-target="submit"
                     >
                   </div>
                   <div class="control">
@@ -136,7 +142,6 @@
                         value="Start"
                       {{end}}
                       data-form-submission-target="submit"
-                      data-csrf-target="submit"
                     >
                   </div>
                 </div>

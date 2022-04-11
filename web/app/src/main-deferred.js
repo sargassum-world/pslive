@@ -5,12 +5,18 @@ import {
   NavigationLinkController,
   NavigationMenuController,
   ThemeController,
+  TurboCableStreamSourceElement,
   TurboCacheController,
   Turbo,
 } from '@sargassum-world/stimulated';
 import { Application } from 'stimulus';
 
 Turbo.session.drive = true;
+
+customElements.define(
+  'turbo-cable-stream-source',
+  TurboCableStreamSourceElement,
+);
 
 const Stimulus = Application.start();
 Stimulus.register('csrf', CSRFController);

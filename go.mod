@@ -8,13 +8,14 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/labstack/gommon v0.3.1
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/fluitans v0.4.0
+	github.com/sargassum-world/fluitans v0.5.0
 	github.com/unrolled/secure v1.10.0
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
+	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29 // indirect
+	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
 )
