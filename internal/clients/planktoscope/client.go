@@ -116,5 +116,11 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
 			).Error())
 		}
+	case "actuator/pump":
+		if err := c.handlePumpActuatorUpdate(topic, m.Payload()); err != nil {
+			c.Logger.Errorf(errors.Wrapf(
+				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
+			).Error())
+		}
 	}
 }

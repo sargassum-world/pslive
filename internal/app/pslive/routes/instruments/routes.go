@@ -39,6 +39,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	hr.GET("/instruments", h.HandleInstrumentsGet())
 	hr.GET("/instruments/:name", h.HandleInstrumentGet())
 	tsr.SUB("/instruments/:name/controller/pump", turbostreams.EmptyHandler)
+	tsr.PUB("/instruments/:name/controller/pump", h.HandlePumpPub())
 	tsr.MSG("/instruments/:name/controller/pump", handling.HandleTSMsg(h.r, ss))
-	hr.POST("/instruments/:name/controller/pump", h.HandleInstrumentPumpPost(), haz)
+	hr.POST("/instruments/:name/controller/pump", h.HandlePumpPost(), haz)
 }
