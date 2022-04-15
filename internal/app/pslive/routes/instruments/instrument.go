@@ -178,10 +178,11 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 			return err
 		}
 
-		// Render Turbo Stream if accepted
+		// We rely on Turbo Streams over websockets, so we return an empty response here to avoid a race
+		// of two Turbo Stream replace messages (where the one from this POST response could be stale
+		// and overwrite a fresher message over websockets)
 		if turbostreams.Accepted(c.Request().Header) {
-			message := replacePumpStream(name, instrument, a, pc)
-			return h.r.TurboStream(c.Response(), message)
+			return h.r.TurboStream(c.Response())
 		}
 
 		// Redirect user
