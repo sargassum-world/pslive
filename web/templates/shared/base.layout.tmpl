@@ -27,17 +27,20 @@
   >
   <script>{{.Inlines.JS.BundleEager}}</script>
   {{block "nav/navbar.assets" .}}{{end}}
+  <!-- crossorigin is needed to preload fonts correctly -->
   <link
     rel="preload"
     as="font"
     type="font/woff2"
     href="/fonts/atkinson-hyperlegible-latin-400-normal.woff2"
+    crossorigin
   >
   <link
     rel="preload"
     as="font"
     type="font/woff2"
     href="/fonts/atkinson-hyperlegible-latin-700-normal.woff2"
+    crossorigin
   >
   <link rel="preload" as="script" href="{{appHashed "bundle-deferred.js"}}">
   <link rel="icon" href="{{staticHashed "icon.svg"}}" type="image/svg+xml">
