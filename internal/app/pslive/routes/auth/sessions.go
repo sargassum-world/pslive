@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
@@ -37,6 +38,8 @@ type LoginData struct {
 	NoAuth        bool
 	ReturnURL     string
 	ErrorMessages []string
+	OryFlow       string
+	OryCSRF       string
 }
 
 func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
@@ -48,13 +51,30 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		if err != nil {
 			return err
 		}
+		if serr := sess.Save(c.Request(), c.Response()); serr != nil {
+			return serr
+		}
+
+		flow, cookie, err := h.oc.InitializeLoginFlow(c.Request().Context())
+		if err != nil {
+			return err
+		}
+		cookie.Domain = ""
+		c.SetCookie(cookie)
+
+		// Make login page
 		loginData := LoginData{
-			NoAuth:        h.ac.Config.NoAuth,
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
+			OryFlow:       flow.Id,
 		}
-		if err := sess.Save(c.Request(), c.Response()); err != nil {
-			return err
+		for _, node := range flow.Ui.Nodes {
+			inputAttrs := node.Attributes.UiNodeInputAttributes
+			if inputAttrs != nil && inputAttrs.Name == "csrf_token" {
+				if csrfToken, ok := inputAttrs.Value.(string); ok {
+					loginData.OryCSRF = csrfToken
+				}
+			}
 		}
 
 		// Add non-persistent overrides of session data
@@ -74,7 +94,7 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, omitCSRFToken bool, ss session.Store,
+	c echo.Context, identifier, returnURL string, omitCSRFToken bool, ss session.Store,
 ) error {
 	// Update session
 	sess, err := ss.Get(c.Request())
@@ -82,7 +102,7 @@ func handleAuthenticationSuccess(
 		return err
 	}
 	session.Regenerate(sess)
-	auth.SetIdentity(sess, username)
+	auth.SetIdentity(sess, identifier)
 	// This allows client-side Javascript to specify for server-side session data that we only need
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
 	// bodies, in order to make HTML responses cacheable.
@@ -115,7 +135,6 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.St
 	// Redirect user
 	u, err := sanitizeReturnURL(returnURL)
 	if err != nil {
-		// TODO: log the error, too
 		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 	r := url.URL{Path: "/login"}
@@ -127,33 +146,38 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.St
 
 func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Parse params
 		state := c.FormValue("state")
-
-		// Run queries
 		switch state {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 				"invalid session %s", state,
 			))
 		case "authenticated":
-			username := c.FormValue("username")
+			// Parse params
+			identifier := c.FormValue("identifier")
 			password := c.FormValue("password")
 			returnURL := c.FormValue("return")
 			omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
+			oryFlow := c.FormValue("ory-flow")
+			oryCSRFToken := c.FormValue("ory-csrf-token")
+
+			// Run queries
+			login, err := h.oc.SubmitLoginFlow(
+				c.Request().Context(), oryFlow, oryCSRFToken, identifier, password, c.Request().Cookies(),
+			)
+			if err != nil {
+				h.l.Error(errors.Wrapf(err, "login failed for identifier %s", identifier))
+				return handleAuthenticationFailure(c, returnURL, h.ss)
+			}
+			if login == nil || login.Session.Active == nil || !(*login.Session.Active) {
+				h.l.Warnf("login failed for identifier %s", identifier)
+				return handleAuthenticationFailure(c, returnURL, h.ss)
+			}
 
 			// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
 			// the OWASP Session Management Cheat Sheet
 
-			// Check authentication
-			identified, err := h.ac.CheckCredentials(username, password)
-			if err != nil {
-				return err
-			}
-			if !identified {
-				return handleAuthenticationFailure(c, returnURL, h.ss)
-			}
-			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, h.ss)
+			return handleAuthenticationSuccess(c, identifier, returnURL, omitCSRFToken, h.ss)
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message

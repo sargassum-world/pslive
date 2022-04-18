@@ -5,12 +5,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/authn"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
@@ -19,7 +19,7 @@ type Globals struct {
 
 	Sessions    session.Store
 	CSRFChecker *session.CSRFTokenChecker
-	Authn       *authn.Client
+	Ory         *ory.Client
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -44,11 +44,11 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Sessions = session.NewMemStore(sessionsConfig)
 	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
-	authnConfig, err := authn.GetConfig()
+	oryConfig, err := ory.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up authn config")
+		return nil, errors.Wrap(err, "couldn't set up ory config")
 	}
-	g.Authn = authn.NewClient(authnConfig)
+	g.Ory = ory.NewClient(oryConfig)
 
 	g.ACCancellers = actioncable.NewCancellers()
 	tssConfig, err := turbostreams.GetSignerConfig()
