@@ -2,7 +2,10 @@
 package ory
 
 import (
+	"context"
+
 	ory "github.com/ory/client-go"
+	"github.com/pkg/errors"
 )
 
 type Client struct {
@@ -15,4 +18,9 @@ func NewClient(c Config) *Client {
 		Config: c,
 		Ory:    ory.NewAPIClient(c.KratosAPI),
 	}
+}
+
+func (c *Client) GetPath(ctx context.Context, endpoint, route string) (string, error) {
+	basePath, err := c.Config.KratosAPI.ServerURLWithContext(ctx, endpoint)
+	return basePath + route, errors.Wrap(err, "couldn't look up base path for Ory API")
 }

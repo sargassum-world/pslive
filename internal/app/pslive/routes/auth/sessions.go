@@ -37,11 +37,13 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 }
 
 type LoginData struct {
-	NoAuth        bool
-	ReturnURL     string
-	ErrorMessages []string
-	OryFlow       string
-	OryCSRF       string
+	NoAuth         bool
+	ReturnURL      string
+	ErrorMessages  []string
+	OryFlow        string
+	OryCSRF        string
+	OryRegisterURL string
+	OryRecoverURL  string
 }
 
 func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
@@ -78,6 +80,17 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 					loginData.OryCSRF = csrfToken
 				}
 			}
+		}
+		if loginData.OryRegisterURL, err = h.oc.GetPath(
+			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRegistrationFlow",
+			"/ui/registration",
+		); err != nil {
+			return err
+		}
+		if loginData.OryRecoverURL, err = h.oc.GetPath(
+			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRecoveryFlow", "/ui/recovery",
+		); err != nil {
+			return err
 		}
 
 		// Add non-persistent overrides of session data

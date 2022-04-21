@@ -41,13 +41,13 @@ func (c *Client) makeSelfServiceRequest(
 	}
 
 	// Prepare request URL
-	basePath, err := c.Config.KratosAPI.ServerURLWithContext(ctx, endpoint)
+	path, err := c.GetPath(ctx, endpoint, route)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't look up base path for Ory API")
+		return nil, errors.Wrap(err, "couldn't make path for Ory API endpoint")
 	}
-	u, err := url.Parse(basePath + route)
+	u, err := url.Parse(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "couldn't parse Ory API URL %s%s", basePath, route)
+		return nil, errors.Wrapf(err, "couldn't parse Ory API URL %s", path)
 	}
 	if host := c.Config.KratosAPI.Host; host != "" {
 		u.Host = host
