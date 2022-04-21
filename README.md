@@ -40,6 +40,7 @@ And then you could run the server in development mode using:
 INSTRUMENT_CONTROLLER='mqtt://ethan.d.ps.fluitans.org:1883' \
 INSTRUMENT_MJPEGSTREAM='https://mjpeg-proxy.cloud.syngnathus.sargassum.world/' \
 SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' \
+ORY_KRATOS_SERVER='https://project-1234.projects.oryapis.com' \
 TURBOSTREAMS_HASH_KEY='S+daMZsQxsqjmINunGWJhXvvxcgJtqnACba+sFuC4Tc=' \
 make run
 ```
@@ -49,6 +50,7 @@ Or you could run the built binary using:
 INSTRUMENT_CONTROLLER='mqtt://ethan.d.ps.fluitans.org:1883' \
 INSTRUMENT_MJPEGSTREAM='https://mjpeg-proxy.cloud.syngnathus.sargassum.world/' \
 SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' \
+ORY_KRATOS_SERVER='https://project-1234.projects.oryapis.com' \
 TURBOSTREAMS_HASH_KEY='S+daMZsQxsqjmINunGWJhXvvxcgJtqnACba+sFuC4Tc=' \
 ./pslive
 ```

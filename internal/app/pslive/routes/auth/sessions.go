@@ -11,9 +11,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 )
 
 type CSRFData struct {
@@ -60,6 +62,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 			return err
 		}
 		cookie.Domain = ""
+		// TODO: adjust the Secure field based on session store config options
 		c.SetCookie(cookie)
 
 		// Make login page
@@ -144,6 +147,73 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.St
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
+func handleLogin(c echo.Context, oc *ory.Client, ss session.Store, l godest.Logger) error {
+	// Parse params
+	identifier := c.FormValue("identifier")
+	password := c.FormValue("password")
+	returnURL := c.FormValue("return")
+	omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
+	oryFlow := c.FormValue("ory-flow")
+	oryCSRFToken := c.FormValue("ory-csrf-token")
+
+	// Run queries
+	login, cookies, err := oc.SubmitLoginFlow(
+		c.Request().Context(), oryFlow, oryCSRFToken, identifier, password, c.Request().Cookies(),
+	)
+	if err != nil {
+		l.Error(errors.Wrapf(err, "login failed for identifier %s", identifier))
+		return handleAuthenticationFailure(c, returnURL, ss)
+	}
+	if login == nil || login.Session.Active == nil || !(*login.Session.Active) {
+		l.Warnf("login failed for identifier %s", identifier)
+		return handleAuthenticationFailure(c, returnURL, ss)
+	}
+	for _, cookie := range cookies {
+		cookie.Domain = ""
+		// TODO: adjust the Secure field based on session store config options
+		c.SetCookie(cookie)
+	}
+
+	// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
+	// the OWASP Session Management Cheat Sheet
+
+	return handleAuthenticationSuccess(c, identifier, returnURL, omitCSRFToken, ss)
+}
+
+func handleLogout(
+	c echo.Context, oc *ory.Client, ss session.Store, acc *actioncable.Cancellers,
+) error {
+	// Invalidate the session cookie
+	// TODO: add a client-side controller to automatically submit a logout request after the
+	// idle timeout expires, and display an inactivity logout message
+	sess, err := ss.Get(c.Request())
+	if err != nil {
+		return err
+	}
+	acc.Cancel(sess.ID)
+	session.Invalidate(sess)
+	if err = sess.Save(c.Request(), c.Response()); err != nil {
+		return err
+	}
+
+	// Perform Ory Kratos logout
+	cookies, err := oc.PerformLogout(c.Request().Context(), c.Request().Cookies())
+	if err != nil {
+		return err
+	}
+	for _, cookie := range cookies {
+		cookie.Domain = ""
+		if strings.HasPrefix(cookie.Name, "ory_session_") {
+			cookie.MaxAge = -1
+		}
+		// TODO: adjust the Secure field based on session store config options
+		c.SetCookie(cookie)
+	}
+
+	// Redirect user
+	return c.Redirect(http.StatusSeeOther, "/")
+}
+
 func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		state := c.FormValue("state")
@@ -153,46 +223,9 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 				"invalid session %s", state,
 			))
 		case "authenticated":
-			// Parse params
-			identifier := c.FormValue("identifier")
-			password := c.FormValue("password")
-			returnURL := c.FormValue("return")
-			omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
-			oryFlow := c.FormValue("ory-flow")
-			oryCSRFToken := c.FormValue("ory-csrf-token")
-
-			// Run queries
-			login, err := h.oc.SubmitLoginFlow(
-				c.Request().Context(), oryFlow, oryCSRFToken, identifier, password, c.Request().Cookies(),
-			)
-			if err != nil {
-				h.l.Error(errors.Wrapf(err, "login failed for identifier %s", identifier))
-				return handleAuthenticationFailure(c, returnURL, h.ss)
-			}
-			if login == nil || login.Session.Active == nil || !(*login.Session.Active) {
-				h.l.Warnf("login failed for identifier %s", identifier)
-				return handleAuthenticationFailure(c, returnURL, h.ss)
-			}
-
-			// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
-			// the OWASP Session Management Cheat Sheet
-
-			return handleAuthenticationSuccess(c, identifier, returnURL, omitCSRFToken, h.ss)
+			return handleLogin(c, h.oc, h.ss, h.l)
 		case "unauthenticated":
-			// TODO: add a client-side controller to automatically submit a logout request after the
-			// idle timeout expires, and display an inactivity logout message
-			sess, err := h.ss.Get(c.Request())
-			if err != nil {
-				return err
-			}
-			h.acc.Cancel(sess.ID)
-			session.Invalidate(sess)
-			if err := sess.Save(c.Request(), c.Response()); err != nil {
-				return err
-			}
+			return handleLogout(c, h.oc, h.ss, h.acc)
 		}
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, "/")
 	}
 }
