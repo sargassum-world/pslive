@@ -23,5 +23,10 @@ func GetConfig() (c Config, err error) {
 		{URL: serverURL.String()},
 	}
 
+	accessToken := env.GetString(envPrefix+"ACCESS_TOKEN", "")
+	if accessToken != "" {
+		c.KratosAPI.AddDefaultHeader("Authorization", "Bearer "+accessToken)
+	}
+
 	return c, nil
 }

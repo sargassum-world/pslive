@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
+	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
@@ -16,6 +17,7 @@ import (
 
 type Globals struct {
 	Config conf.Config
+	Cache  clientcache.Cache
 
 	Sessions    session.Store
 	CSRFChecker *session.CSRFTokenChecker
@@ -37,6 +39,9 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
 	}
+	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
+		return nil, errors.Wrap(err, "couldn't set up client cache")
+	}
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
@@ -48,7 +53,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up ory config")
 	}
-	g.Ory = ory.NewClient(oryConfig)
+	g.Ory = ory.NewClient(oryConfig, g.Cache, l)
 
 	g.ACCancellers = actioncable.NewCancellers()
 	tssConfig, err := turbostreams.GetSignerConfig()

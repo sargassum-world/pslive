@@ -190,7 +190,7 @@ func handleLogin(c echo.Context, oc *ory.Client, ss session.Store, l godest.Logg
 	// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
 	// the OWASP Session Management Cheat Sheet
 
-	return handleAuthenticationSuccess(c, identifier, returnURL, omitCSRFToken, ss)
+	return handleAuthenticationSuccess(c, login.Session.Identity.Id, returnURL, omitCSRFToken, ss)
 }
 
 func handleLogout(

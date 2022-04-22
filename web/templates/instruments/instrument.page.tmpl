@@ -20,6 +20,14 @@
       <h1>Instrument {{.Data.Instrument.Name}}</h1>
       <turbo-frame id="/instruments/{{.Data.Instrument.Name}}/info">
         <p>{{.Data.Instrument.Description}}</p>
+        <p>
+          Administrator:
+          {{if eq .Data.AdminIdentifier ""}}
+            <tag class="tag is-danger">None</tag>
+          {{else}}
+            <a href="/users/{{.Data.AdminIdentifier}}">{{.Data.AdminIdentifier}}</a>
+          {{end}}
+        </p>
         <h2>Video Stream</h2>
         <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
         <h2>Controller</h2>

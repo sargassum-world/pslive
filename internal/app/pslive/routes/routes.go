@@ -11,6 +11,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/cable"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/home"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/instruments"
+	"github.com/sargassum-world/pslive/internal/app/pslive/routes/users"
 )
 
 type Handlers struct {
@@ -38,6 +39,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, h.globals.Ory, acc, l).Register(er)
 	instruments.New(
-		h.r, h.globals.TSBroker.Hub(), h.globals.Instruments, h.globals.Planktoscopes,
+		h.r, h.globals.TSBroker.Hub(), h.globals.Instruments, h.globals.Planktoscopes, h.globals.Ory,
 	).Register(er, tsr, ss)
+	users.New(h.r, h.globals.Ory).Register(er, ss)
 }

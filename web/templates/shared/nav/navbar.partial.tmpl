@@ -31,6 +31,12 @@
     "Href" "/instruments"
     "Name" "Instruments" "MetaPath" .Meta.Path
   }}
+  {{
+    template "shared/nav/navlink.partial.tmpl" dict
+    "Display" true
+    "Href" "/users"
+    "Name" "Users" "MetaPath" .Meta.Path
+  }}
 {{end}}
 
 {{define "nav/navbar.menu.end-authenticated"}}

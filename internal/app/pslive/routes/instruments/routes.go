@@ -9,6 +9,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
@@ -19,17 +20,19 @@ type Handlers struct {
 
 	ic  *instruments.Client
 	pcs map[string]*planktoscope.Client
+	oc  *ory.Client
 }
 
 func New(
 	r godest.TemplateRenderer, tsh *turbostreams.MessagesHub,
-	ic *instruments.Client, pcs map[string]*planktoscope.Client,
+	ic *instruments.Client, pcs map[string]*planktoscope.Client, oc *ory.Client,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		tsh: tsh,
 		ic:  ic,
 		pcs: pcs,
+		oc:  oc,
 	}
 }
 

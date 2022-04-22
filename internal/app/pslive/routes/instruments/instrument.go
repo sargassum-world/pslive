@@ -1,6 +1,7 @@
 package instruments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,16 +14,19 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
 type InstrumentData struct {
-	Instrument instruments.Instrument
-	Controller planktoscope.Planktoscope
+	Instrument      instruments.Instrument
+	Controller      planktoscope.Planktoscope
+	AdminIdentifier string
 }
 
 func getInstrumentData(
-	name string, ic *instruments.Client, pcs map[string]*planktoscope.Client,
+	ctx context.Context, name string,
+	ic *instruments.Client, pcs map[string]*planktoscope.Client, oc *ory.Client,
 ) (*InstrumentData, error) {
 	instrument, err := ic.FindInstrument(name)
 	if err != nil {
@@ -34,13 +38,19 @@ func getInstrumentData(
 		)
 	}
 
+	adminIdentifier, err := oc.GetIdentifier(ctx, instrument.Administrator)
+	if err != nil {
+		return nil, err
+	}
+
 	pc, ok := pcs[instrument.Controller]
 	if !ok {
 		return nil, errors.Errorf("planktoscope client for instrument %s not found", name)
 	}
 	return &InstrumentData{
-		Instrument: *instrument,
-		Controller: pc.GetState(),
+		Instrument:      *instrument,
+		Controller:      pc.GetState(),
+		AdminIdentifier: adminIdentifier,
 	}, nil
 }
 
@@ -52,7 +62,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		instrumentData, err := getInstrumentData(name, h.ic, h.pcs)
+		instrumentData, err := getInstrumentData(c.Request().Context(), name, h.ic, h.pcs, h.oc)
 		if err != nil {
 			return err
 		}
