@@ -11,6 +11,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/cable"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/home"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/instruments"
+	"github.com/sargassum-world/pslive/internal/app/pslive/routes/privatechat"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/users"
 )
 
@@ -45,6 +46,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	instruments.New(
 		h.r, oc, tsh, h.globals.Instruments, h.globals.Planktoscopes, ps, cs,
 	).Register(er, tsr, ss)
+	privatechat.New(h.r, oc, tsh, ps, cs).Register(er, tsr, ss)
 	users.New(h.r, oc, tsh, ps, cs).Register(er, tsr, ss)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)

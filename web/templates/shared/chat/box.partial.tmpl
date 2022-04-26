@@ -19,11 +19,11 @@
       <article class="message is-info chat-message">
         <div class="message-body">
           <p>
-            Welcome to the chat!
+            Welcome!
             {{if not $auth.Identity.Authenticated}}
-              Only logged-in users can send messages to the chat.
+              Only logged-in users can send messages to this chat.
             {{else if $isPublic}}
-              Please remember that anyone can view the chat, even people who are not logged in.
+              Please remember that anyone can view this chat, even people who are not logged in.
             {{end}}
           </p>
         </div>
