@@ -16,6 +16,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type CSRFData struct {
@@ -44,6 +45,7 @@ type LoginData struct {
 	OryCSRF        string
 	OryRegisterURL string
 	OryRecoverURL  string
+	UserIdentifier string
 }
 
 func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
@@ -91,6 +93,13 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRecoveryFlow", "/ui/recovery",
 		); err != nil {
 			return err
+		}
+		if a.Identity.Authenticated {
+			if loginData.UserIdentifier, err = h.oc.GetIdentifier(
+				c.Request().Context(), a.Identity.User,
+			); err != nil {
+				return err
+			}
 		}
 
 		// Add non-persistent overrides of session data
@@ -194,7 +203,7 @@ func handleLogin(c echo.Context, oc *ory.Client, ss session.Store, l godest.Logg
 }
 
 func handleLogout(
-	c echo.Context, oc *ory.Client, ss session.Store, acc *actioncable.Cancellers,
+	c echo.Context, oc *ory.Client, ss session.Store, acc *actioncable.Cancellers, ps *presence.Store,
 ) error {
 	// Invalidate the session cookie
 	// TODO: add a client-side controller to automatically submit a logout request after the
@@ -203,6 +212,7 @@ func handleLogout(
 	if err != nil {
 		return err
 	}
+	ps.Forget(sess.ID)
 	acc.Cancel(sess.ID)
 	session.Invalidate(sess)
 	if err = sess.Save(c.Request(), c.Response()); err != nil {
@@ -238,7 +248,7 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 		case "authenticated":
 			return handleLogin(c, h.oc, h.ss, h.l)
 		case "unauthenticated":
-			return handleLogout(c, h.oc, h.ss, h.acc)
+			return handleLogout(c, h.oc, h.ss, h.acc, h.ps)
 		}
 	}
 }

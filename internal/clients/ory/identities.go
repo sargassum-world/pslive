@@ -77,7 +77,14 @@ func (c *Client) getIdentifierFromOry(ctx context.Context, id string) (string, e
 	if err != nil {
 		return "", err
 	}
-	return getIdentifier(*identity)
+	identifier, err := getIdentifier(*identity)
+	if err != nil {
+		return "", err
+	}
+	if err := c.Cache.SetIdentifierByID(id, identifier, c.Config.NetworkCostWeight); err != nil {
+		return "", err
+	}
+	return identifier, nil
 }
 
 func (c *Client) GetIdentifier(ctx context.Context, id string) (string, error) {
@@ -92,7 +99,19 @@ func (c *Client) GetIdentity(ctx context.Context, id string) (Identity, error) {
 	if err != nil {
 		return Identity{}, err
 	}
-	return parseIdentity(*identity)
+	parsed, err := parseIdentity(*identity)
+	if err != nil {
+		return Identity{}, err
+	}
+
+	if err = c.Cache.SetIdentifierByID(
+		id, parsed.Identifier, c.Config.NetworkCostWeight,
+	); err != nil {
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't cache the Ory Kratos identifier for %s", id,
+		))
+	}
+	return parsed, err
 }
 
 // Identities
@@ -104,6 +123,13 @@ func (c *Client) GetIdentities(ctx context.Context) ([]Identity, error) {
 		identities[i], err = parseIdentity(identity)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't parse Ory Kratos identity")
+		}
+		if err = c.Cache.SetIdentifierByID(
+			identity.Id, identities[i].Identifier, c.Config.NetworkCostWeight,
+		); err != nil {
+			c.Logger.Error(errors.Wrapf(
+				err, "couldn't cache the Ory Kratos identifier for %s", identity.Id,
+			))
 		}
 	}
 	return identities, err

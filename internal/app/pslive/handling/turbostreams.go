@@ -1,4 +1,4 @@
-// Package handling provides utilities for handlers
+// Package handling provides reusable handlers.
 package handling
 
 import (

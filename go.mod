@@ -14,7 +14,7 @@ require (
 	github.com/labstack/gommon v0.3.1
 	github.com/ory/client-go v0.0.1-alpha.167
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/fluitans v0.5.0
+	github.com/sargassum-world/fluitans v0.5.1
 	github.com/unrolled/secure v1.10.0
 	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29 // indirect
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect

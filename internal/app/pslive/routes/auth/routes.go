@@ -8,6 +8,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type Handlers struct {
@@ -18,18 +19,21 @@ type Handlers struct {
 
 	acc *actioncable.Cancellers
 
+	ps *presence.Store
+
 	l godest.Logger
 }
 
 func New(
 	r godest.TemplateRenderer, ss session.Store, oc *ory.Client, acc *actioncable.Cancellers,
-	l godest.Logger,
+	ps *presence.Store, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		ss:  ss,
 		oc:  oc,
 		acc: acc,
+		ps:  ps,
 		l:   l,
 	}
 }

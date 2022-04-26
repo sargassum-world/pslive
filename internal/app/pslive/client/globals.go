@@ -13,6 +13,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type Globals struct {
@@ -29,6 +30,7 @@ type Globals struct {
 
 	Instruments   *instruments.Client
 	Planktoscopes map[string]*planktoscope.Client
+	Presence      *presence.Store
 
 	Logger godest.Logger
 }
@@ -79,6 +81,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
 	}
+	g.Presence = presence.NewStore()
 
 	g.Logger = l
 	return g, nil

@@ -24,7 +24,7 @@
       {{if .Auth.Identity.Authenticated}}
         <article class="message is-success card-width is-block">
           <div class="message-body">
-            <p class="mb-4">You are currently signed in as {{.Auth.Identity.User}}.</p>
+            <p class="mb-4">You are currently signed in as {{.Data.UserIdentifier}}.</p>
             <form
               action="/sessions"
               method="POST"

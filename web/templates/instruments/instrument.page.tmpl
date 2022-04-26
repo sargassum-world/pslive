@@ -25,7 +25,7 @@
           {{if eq .Data.AdminIdentifier ""}}
             <tag class="tag is-danger">None</tag>
           {{else}}
-            <a href="/users/{{.Data.AdminIdentifier}}">{{.Data.AdminIdentifier}}</a>
+            <a href="/users/{{.Data.Instrument.Administrator}}">{{.Data.AdminIdentifier}}</a>
           {{end}}
         </p>
         <h2>Video Stream</h2>
@@ -36,6 +36,14 @@
           "Instrument" .Data.Instrument
           "Controller" .Data.Controller
           "Auth" .Auth
+        }}
+        <h2>Online Users</h2>
+        {{
+          template "shared/presence/users.partial.tmpl" dict
+          "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
+          "Known" .Data.KnownViewers
+          "Anonymous" .Data.AnonymousViewers
+          "WithTurboStreamSource" true
         }}
       </turbo-frame>
     </section>
