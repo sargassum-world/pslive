@@ -1,6 +1,7 @@
 package instruments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,16 +14,22 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type InstrumentData struct {
-	Instrument instruments.Instrument
-	Controller planktoscope.Planktoscope
+	Instrument       instruments.Instrument
+	Controller       planktoscope.Planktoscope
+	KnownViewers     []presence.User
+	AnonymousViewers []string
+	AdminIdentifier  string
 }
 
 func getInstrumentData(
-	name string, ic *instruments.Client, pcs map[string]*planktoscope.Client,
+	ctx context.Context, name string,
+	oc *ory.Client, ic *instruments.Client, pcs map[string]*planktoscope.Client, ps *presence.Store,
 ) (*InstrumentData, error) {
 	instrument, err := ic.FindInstrument(name)
 	if err != nil {
@@ -34,13 +41,22 @@ func getInstrumentData(
 		)
 	}
 
+	adminIdentifier, err := oc.GetIdentifier(ctx, instrument.Administrator)
+	if err != nil {
+		return nil, errors.Wrapf(err, "couldn't look up admin identifier for instrument %s", name)
+	}
+
 	pc, ok := pcs[instrument.Controller]
 	if !ok {
 		return nil, errors.Errorf("planktoscope client for instrument %s not found", name)
 	}
+	known, anonymous := ps.List("/instruments/" + name + "/users")
 	return &InstrumentData{
-		Instrument: *instrument,
-		Controller: pc.GetState(),
+		Instrument:       *instrument,
+		Controller:       pc.GetState(),
+		AdminIdentifier:  adminIdentifier,
+		KnownViewers:     known,
+		AnonymousViewers: anonymous,
 	}, nil
 }
 
@@ -52,7 +68,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		instrumentData, err := getInstrumentData(name, h.ic, h.pcs)
+		instrumentData, err := getInstrumentData(c.Request().Context(), name, h.oc, h.ic, h.pcs, h.ps)
 		if err != nil {
 			return err
 		}

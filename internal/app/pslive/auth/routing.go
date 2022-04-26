@@ -92,7 +92,10 @@ func (r *HTTPRouter) TRACE(path string, h HTTPHandlerFunc, m ...echo.MiddlewareF
 
 // Turbo Streams
 
-type TSHandlerFunc func(c turbostreams.Context, a Auth) error
+type (
+	TSHandlerFunc            func(c turbostreams.Context, a Auth) error
+	TSHandlerFuncWithSession func(c turbostreams.Context, a Auth, sess *sessions.Session) error
+)
 
 func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
 	return func(c turbostreams.Context) error {
@@ -108,6 +111,23 @@ func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
 			return err
 		}
 		return h(c, a)
+	}
+}
+
+func HandleTSWithSession(h TSHandlerFuncWithSession, ss session.Store) turbostreams.HandlerFunc {
+	return func(c turbostreams.Context) error {
+		sess, err := ss.Lookup(c.SessionID())
+		if err != nil {
+			return errors.Wrapf(err, "couldn't lookup session to check authz on %s", c.Topic())
+		}
+		if sess == nil {
+			return h(c, Auth{}, sess)
+		}
+		a, err := GetWithoutRequest(*sess, ss)
+		if err != nil {
+			return err
+		}
+		return h(c, a, sess)
 	}
 }
 

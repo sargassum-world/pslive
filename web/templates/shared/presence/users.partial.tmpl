@@ -1,0 +1,35 @@
+{{$topic := get . "Topic"}}
+{{$known := get . "Known"}}
+{{$anonymous := get . "Anonymous"}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{if $withTurboStreamSource}}
+  {{template "shared/turbo-cable-stream-source.partial.tmpl" $topic}}
+{{end}}
+<turbo-frame id="{{$topic}}" target="_top">
+  {{if $known}}
+    {{if eq (len $known) 1}}
+      {{$user := index $known 0}}
+      <p>1 authenticated user: <a href="/users/{{$user.ID}}">{{$user.Identifier}}</a></p>
+    {{else}}
+      <p>{{len $known}} authenticated users:</p>
+      <ul>
+        {{range $user := $known}}
+          <li><a href="/users/{{$user.ID}}">{{$user.Identifier}}</a></li>
+        {{end}}
+      </ul>
+    {{end}}
+  {{end}}
+
+  {{if $anonymous}}
+    {{if eq (len $anonymous) 1}}
+      <p>1 anonymous user.</p>
+    {{else}}
+      <p>{{len $anonymous}} anonymous users.</p>
+    {{end}}
+  {{end}}
+
+  {{if not (or $anonymous $known)}}
+    <p>No users.</p>
+  {{end}}
+</turbo-frame>

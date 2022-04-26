@@ -5,21 +5,24 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/authn"
+	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type Globals struct {
 	Config conf.Config
+	Cache  clientcache.Cache
 
 	Sessions    session.Store
 	CSRFChecker *session.CSRFTokenChecker
-	Authn       *authn.Client
+	Ory         *ory.Client
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -27,6 +30,7 @@ type Globals struct {
 
 	Instruments   *instruments.Client
 	Planktoscopes map[string]*planktoscope.Client
+	Presence      *presence.Store
 
 	Logger godest.Logger
 }
@@ -37,6 +41,9 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
 	}
+	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
+		return nil, errors.Wrap(err, "couldn't set up client cache")
+	}
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
@@ -44,11 +51,11 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Sessions = session.NewMemStore(sessionsConfig)
 	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
-	authnConfig, err := authn.GetConfig()
+	oryConfig, err := ory.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up authn config")
+		return nil, errors.Wrap(err, "couldn't set up ory config")
 	}
-	g.Authn = authn.NewClient(authnConfig)
+	g.Ory = ory.NewClient(oryConfig, g.Cache, l)
 
 	g.ACCancellers = actioncable.NewCancellers()
 	tssConfig, err := turbostreams.GetSignerConfig()
@@ -74,6 +81,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
 	}
+	g.Presence = presence.NewStore()
 
 	g.Logger = l
 	return g, nil

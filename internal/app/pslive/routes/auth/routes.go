@@ -4,29 +4,37 @@ package auth
 import (
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/authn"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type Handlers struct {
 	r godest.TemplateRenderer
 
 	ss session.Store
+	oc *ory.Client
 
 	acc *actioncable.Cancellers
-	ac  *authn.Client
+
+	ps *presence.Store
+
+	l godest.Logger
 }
 
 func New(
-	r godest.TemplateRenderer, ss session.Store, acc *actioncable.Cancellers, ac *authn.Client,
+	r godest.TemplateRenderer, ss session.Store, oc *ory.Client, acc *actioncable.Cancellers,
+	ps *presence.Store, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		ss:  ss,
+		oc:  oc,
 		acc: acc,
-		ac:  ac,
+		ps:  ps,
+		l:   l,
 	}
 }
 

@@ -1,0 +1,26 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}User {{.Data.Identity.Identifier}}{{end}}
+{{define "description"}}User {{.Data.Identity.Identifier}}.{{end}}
+
+{{define "content"}}
+  <main class="main-container" tabindex="-1" data-controller="default-scrollable">
+    <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="/users">Users</a></li>
+        <li class="is-active">
+          <a href="/users/{{.Data.Identity.Identifier}}" aria-current="page">
+            {{.Data.Identity.Identifier}}
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <section class="section content">
+      <h1>User {{.Data.Identity.Identifier}}</h1>
+      <turbo-frame id="/users/{{.Data.Identity.Identifier}}/info">
+        <p>Email: {{.Data.Identity.Email}}</p>
+      </turbo-frame>
+    </section>
+  </main>
+{{end}}

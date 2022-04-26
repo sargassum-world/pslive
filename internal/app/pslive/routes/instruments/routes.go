@@ -9,27 +9,34 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
+	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
 type Handlers struct {
 	r godest.TemplateRenderer
 
+	oc *ory.Client
+
 	tsh *turbostreams.MessagesHub
 
 	ic  *instruments.Client
 	pcs map[string]*planktoscope.Client
+	ps  *presence.Store
 }
 
 func New(
-	r godest.TemplateRenderer, tsh *turbostreams.MessagesHub,
-	ic *instruments.Client, pcs map[string]*planktoscope.Client,
+	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub,
+	ic *instruments.Client, pcs map[string]*planktoscope.Client, ps *presence.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
+		oc:  oc,
 		tsh: tsh,
 		ic:  ic,
 		pcs: pcs,
+		ps:  ps,
 	}
 }
 
@@ -38,6 +45,9 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	haz := auth.RequireHTTPAuthz(ss)
 	hr.GET("/instruments", h.HandleInstrumentsGet())
 	hr.GET("/instruments/:name", h.HandleInstrumentGet())
+	tsr.SUB("/instruments/:name/users", handling.HandlePresenceSub(h.r, ss, h.oc, h.ps))
+	tsr.UNSUB("/instruments/:name/users", handling.HandlePresenceUnsub(h.r, ss, h.ps))
+	tsr.MSG("/instruments/:name/users", handling.HandleTSMsg(h.r, ss))
 	tsr.SUB("/instruments/:name/controller/pump", turbostreams.EmptyHandler)
 	tsr.PUB("/instruments/:name/controller/pump", h.HandlePumpPub())
 	tsr.MSG("/instruments/:name/controller/pump", handling.HandleTSMsg(h.r, ss))

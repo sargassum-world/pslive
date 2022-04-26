@@ -44,5 +44,9 @@ func GetInstrument() (p Instrument, err error) {
 		envPrefix+"DESC",
 		"The default instrument specified in the environment variables.",
 	)
+	p.Administrator = env.GetString(
+		envPrefix+"ADMIN",
+		"The Ory Kratos id of the identity which is authorized to administer the instrument.",
+	)
 	return p, nil
 }

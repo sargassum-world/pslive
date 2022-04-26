@@ -1,0 +1,26 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}Users{{end}}
+{{define "description"}}PSLive users{{end}}
+
+{{define "content"}}
+  <main class="main-container" tabindex="-1" data-controller="default-scrollable">
+    <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="/">Users</a></li>
+        <li class="is-active"><a href="/users" aria-current="page">Users</a></li>
+      </ul>
+    </nav>
+
+    <section class="section content">
+      <h1>Users</h1>
+      <ul>
+      {{range $user := .Data}}
+        <li>
+          <a href="/users/{{$user.ID}}">{{$user.Identifier}}</a>
+        </li>
+      {{end}}
+      </ul>
+    </section>
+  </main>
+{{end}}
