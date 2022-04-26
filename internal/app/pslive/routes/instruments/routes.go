@@ -8,6 +8,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
+	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
@@ -24,11 +25,12 @@ type Handlers struct {
 	ic  *instruments.Client
 	pcs map[string]*planktoscope.Client
 	ps  *presence.Store
+	cs  *chat.Store
 }
 
 func New(
 	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub,
-	ic *instruments.Client, pcs map[string]*planktoscope.Client, ps *presence.Store,
+	ic *instruments.Client, pcs map[string]*planktoscope.Client, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
@@ -37,6 +39,7 @@ func New(
 		ic:  ic,
 		pcs: pcs,
 		ps:  ps,
+		cs:  cs,
 	}
 }
 
@@ -58,6 +61,6 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	tsr.MSG("/instruments/:name/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: make and use a middleware which checks to ensure the instrument exists
 	hr.POST("/instruments/:name/chat/messages", handling.HandleChatMessagesPost(
-		h.r, h.oc, h.tsh,
+		h.r, h.oc, h.tsh, h.cs,
 	), haz)
 }

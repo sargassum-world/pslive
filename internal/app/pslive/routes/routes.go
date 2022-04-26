@@ -41,7 +41,8 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
 	instruments.New(
-		h.r, oc, h.globals.TSBroker.Hub(), h.globals.Instruments, h.globals.Planktoscopes, ps,
+		h.r, oc, h.globals.TSBroker.Hub(), h.globals.Instruments, h.globals.Planktoscopes,
+		ps, h.globals.Chat,
 	).Register(er, tsr, ss)
 	users.New(h.r, oc).Register(er, ss)
 

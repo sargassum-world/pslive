@@ -10,6 +10,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 )
 
@@ -18,18 +19,13 @@ const (
 	sendPartial    = "shared/chat/send.partial.tmpl"
 )
 
-func appendChatMessageStream(
-	topic, userID, userIdentifier, message string, t time.Time,
-) turbostreams.Message {
+func appendChatMessageStream(topic string, message chat.Message) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionAppend,
 		Target:   topic + "/messages",
 		Template: messagePartial,
 		Data: map[string]interface{}{
-			"UserID":         userID,
-			"UserIdentifier": userIdentifier,
-			"Time":           t,
-			"Message":        message,
+			"Message": message,
 		},
 	}
 }
@@ -47,7 +43,7 @@ func replaceChatSendStream(topic string, a auth.Auth) turbostreams.Message {
 }
 
 func HandleChatMessagesPost(
-	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub,
+	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub, cs *chat.Store,
 ) auth.HTTPHandlerFunc {
 	sendT := sendPartial
 	r.MustHave(sendT)
@@ -62,11 +58,14 @@ func HandleChatMessagesPost(
 		if err != nil {
 			return err
 		}
-		tsh.Broadcast(topic+"/messages", appendChatMessageStream(
-			topic, a.Identity.User, user, message, time.Now(),
-		))
-		// TODO: also log the message to an in-memory chat store
-		// TODO: persist the chat log
+		m := chat.Message{
+			Time:             time.Now(),
+			SenderID:         a.Identity.User,
+			SenderIdentifier: user,
+			Text:             message,
+		}
+		tsh.Broadcast(topic+"/messages", appendChatMessageStream(topic, m))
+		cs.Add(topic+"/messages", m)
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {

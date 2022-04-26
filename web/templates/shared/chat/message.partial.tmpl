@@ -1,14 +1,9 @@
-{{$time := (get . "Time")}}
-{{$userID := (get . "UserID")}}
-{{$userIdentifier := (get . "UserIdentifier")}}
 {{$message := (get . "Message")}}
 
 <div class="chat-message" data-controller="load-scroll">
   <p class="has-text-weight-bold">
-    [{{$time.Format "2006-01-02 15:04:05 MST"}}]
-    <a href="/users/{{$userID}}" data-turbo="false">{{$userIdentifier}}</a>
+    [{{$message.Time.Format "2006-01-02 15:04:05 MST"}}]
+    <a href="/users/{{$message.SenderID}}" data-turbo="false">{{$message.SenderIdentifier}}</a>
   </p>
-  <p>
-    {{$message}}
-  </p>
+  <p>{{$message.Text}}</p>
 </div>

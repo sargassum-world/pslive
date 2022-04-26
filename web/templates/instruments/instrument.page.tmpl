@@ -39,6 +39,7 @@
             {{
               template "shared/chat/box.partial.tmpl" dict
               "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
+              "Messages" .Data.ChatMessages
               "Auth" .Auth
             }}
         </div>

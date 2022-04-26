@@ -1,4 +1,5 @@
 {{$topic := (get . "Topic")}}
+{{$messages := (get . "Messages")}}
 {{$auth := (get . "Auth")}}
 
 <turbo-frame id="{{$topic}}">
@@ -8,15 +9,20 @@
   }}
   <div class="chat-messages">
     <turbo-frame id="{{print $topic "/messages"}}">
-      <article class="message is-info">
+      {{range $message := $messages}}
+        {{
+          template "shared/chat/message.partial.tmpl" dict
+          "Message" $message
+        }}
+      {{end}}
+      <article class="message is-info chat-message">
         <div class="message-body">
           <p>
             Welcome to the chat!
             {{if not $auth.Identity.Authenticated}}
               Only logged-in users can send messages to the chat.
             {{else}}
-              Any message you send will be visible to everyone who was already on this page when you
-              sent the message, but not to anyone who opens this page afterwards.
+              Please remember that anyone can view the chat, even people who are not logged in.
             {{end}}
           </p>
         </div>
