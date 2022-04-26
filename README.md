@@ -14,6 +14,10 @@ Before you start the server for the first time, you'll need to generate the weba
 
 To execute the full build pipeline, run `make`; to build the docker images, run `make build`. You will need to have installed golang and golangci-lint first; `make build` *should* automatically install golangci-lint, but this might not work; if not, you'll need to install it manually. Note that `make build` will also automatically regenerate the webapp build artifacts. The resulting built binaries can be found in directories within the dist directory corresponding to OS and CPU architecture (e.g. `./dist/pslive_window_amd64/pslive.exe` or `./dist/pslive_linux_amd64/pslive`)
 
+### External Services
+
+You'll need to [set up](https://console.ory.sh/registration) an Ory Cloud project and provision a personal access token so that pslive can access the Ory Kratos administrative API for your Ory Cloud project. You should enable user registration and password authentication on this project. You should also use the identity schema listed in the `schemas/v1.1/person.schema.json` file in this repository for your Ory Cloud identity schema.
+
 ### Environment Variables
 
 You'll need to set some environment variables to tell pslive how to assign names and how to connect to a ZeroTier network controller. Specifically, you'll need to set:

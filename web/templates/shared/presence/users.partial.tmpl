@@ -6,7 +6,7 @@
 {{if $withTurboStreamSource}}
   {{template "shared/turbo-cable-stream-source.partial.tmpl" $topic}}
 {{end}}
-<turbo-frame id="{{$topic}}">
+<turbo-frame id="{{$topic}}" target="_top">
   {{if $known}}
     {{if eq (len $known) 1}}
       {{$user := index $known 0}}

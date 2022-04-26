@@ -9,29 +9,38 @@ import (
 
 // Traits
 
-const identitySchema = "preset://email"
-
 func getEmail(identity ory.Identity) (string, error) {
 	switch schema := identity.SchemaId; schema {
-	case identitySchema:
+	default:
 		traits, ok := identity.Traits.(map[string]interface{})
 		if !ok {
 			return "", errors.New("couldn't parse Ory Kratos identity traits")
 		}
 		email, ok := traits["email"].(string)
 		if !ok {
-			return "", errors.New("couldn't extract identifier from Ory Kratos identity traits")
+			return "", errors.New("couldn't extract email from Ory Kratos identity traits")
 		}
 		return email, nil
 	case "default":
-		fallthrough
-	default:
 		return "", errors.Errorf("couldn't interpret Ory Kratos identity schema %s", schema)
 	}
 }
 
 func getIdentifier(identity ory.Identity) (string, error) {
-	return getEmail(identity)
+	switch schema := identity.SchemaId; schema {
+	default:
+		traits, ok := identity.Traits.(map[string]interface{})
+		if !ok {
+			return "", errors.New("couldn't parse Ory Kratos identity traits")
+		}
+		username, ok := traits["username"].(string)
+		if !ok {
+			return "", errors.New("couldn't extract identifier from Ory Kratos identity traits")
+		}
+		return username, nil
+	case "default":
+		return "", errors.Errorf("couldn't interpret Ory Kratos identity schema %s", schema)
+	}
 }
 
 // Identity
@@ -75,14 +84,14 @@ func (c *Client) getIdentifierFromCache(id string) (string, bool) {
 func (c *Client) getIdentifierFromOry(ctx context.Context, id string) (string, error) {
 	identity, _, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "couldn't look up identity of %s", id)
 	}
 	identifier, err := getIdentifier(*identity)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "couldn't look up identifier for %s", id)
 	}
 	if err := c.Cache.SetIdentifierByID(id, identifier, c.Config.NetworkCostWeight); err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "couldn't cache identifier for %s", id)
 	}
 	return identifier, nil
 }
@@ -97,11 +106,11 @@ func (c *Client) GetIdentifier(ctx context.Context, id string) (string, error) {
 func (c *Client) GetIdentity(ctx context.Context, id string) (Identity, error) {
 	identity, _, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, errors.Wrapf(err, "couldn't get identity of %s", id)
 	}
 	parsed, err := parseIdentity(*identity)
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, errors.Wrapf(err, "couldn't parse identity of %s", id)
 	}
 
 	if err = c.Cache.SetIdentifierByID(
@@ -111,7 +120,7 @@ func (c *Client) GetIdentity(ctx context.Context, id string) (Identity, error) {
 			err, "couldn't cache the Ory Kratos identifier for %s", id,
 		))
 	}
-	return parsed, err
+	return parsed, nil
 }
 
 // Identities
@@ -122,7 +131,7 @@ func (c *Client) GetIdentities(ctx context.Context) ([]Identity, error) {
 	for i, identity := range oryIdentities {
 		identities[i], err = parseIdentity(identity)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't parse Ory Kratos identity")
+			return nil, errors.Wrapf(err, "couldn't parse Ory Kratos identity of %s", identity.Id)
 		}
 		if err = c.Cache.SetIdentifierByID(
 			identity.Id, identities[i].Identifier, c.Config.NetworkCostWeight,

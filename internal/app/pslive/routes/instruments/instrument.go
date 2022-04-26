@@ -43,7 +43,7 @@ func getInstrumentData(
 
 	adminIdentifier, err := oc.GetIdentifier(ctx, instrument.Administrator)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "couldn't look up admin identifier for instrument %s", name)
 	}
 
 	pc, ok := pcs[instrument.Controller]
