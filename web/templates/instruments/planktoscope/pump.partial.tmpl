@@ -11,7 +11,7 @@
   }}
 {{end}}
 <turbo-frame id="/instruments/{{$instrument.Name}}/controller/pump">
-  <div class="card section-card is-block">
+  <div class="card section-card wide-card">
     <div class="card-content">
       <h3>
         Pump
@@ -129,7 +129,7 @@
                       value="Stop"
                       {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
                       data-form-submission-target="submit"
-                    >
+                    />
                   </div>
                   <div class="control">
                     <input
@@ -142,7 +142,7 @@
                         value="Start"
                       {{end}}
                       data-form-submission-target="submit"
-                    >
+                    />
                   </div>
                 </div>
               </div>

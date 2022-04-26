@@ -19,8 +19,56 @@
     <section class="section content">
       <h1>User {{.Data.Identity.Identifier}}</h1>
       <turbo-frame id="/users/{{.Data.Identity.Identifier}}/info">
-        <p>Email: {{.Data.Identity.Email}}</p>
+        {{if .Auth.Identity.Authenticated}}
+          <p>Email: {{.Data.Identity.Email}}</p>
+        {{end}}
       </turbo-frame>
+      <h2>Chat</h2>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Public Chat</h3>
+          {{
+            template "shared/presence/users.partial.tmpl" dict
+            "Topic" (print "/users/" .Data.Identity.ID "/chat/users")
+            "Known" .Data.PublicKnownViewers
+            "Anonymous" .Data.PublicAnonymousViewers
+            "WithTurboStreamSource" true
+          }}
+          {{
+            template "shared/chat/box.partial.tmpl" dict
+            "Topic" (print "/users/" .Data.Identity.ID "/chat")
+            "Messages" .Data.PublicChatMessages
+            "Auth" .Auth
+            "IsPublic" true
+          }}
+        </div>
+      </div>
+      {{if and .Auth.Identity.Authenticated (ne .Auth.Identity.User .Data.Identity.ID)}}
+        <div class="card section-card wide-card">
+          <div class="card-content">
+            <h3>Direct Chat</h3>
+            {{$first := .Data.Identity.ID}}
+            {{$second := .Auth.Identity.User}}
+            {{if lt $second $first }}
+              {{$first = .Auth.Identity.User}}
+              {{$second = .Data.Identity.ID}}
+            {{end}}
+            {{
+              template "shared/presence/users.partial.tmpl" dict
+              "Topic" (print "/private-chats/" $first "/" $second "/chat/users")
+              "Known" .Data.PrivateKnownViewers
+              "Anonymous" .Data.PrivateAnonymousViewers
+              "WithTurboStreamSource" true
+            }}
+            {{
+              template "shared/chat/box.partial.tmpl" dict
+              "Topic" (print "/private-chats/" $first "/" $second "/chat")
+              "Messages" .Data.PrivateChatMessages
+              "Auth" .Auth
+            }}
+          </div>
+        </div>
+      {{end}}
     </section>
   </main>
 {{end}}

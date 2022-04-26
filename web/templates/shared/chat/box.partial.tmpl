@@ -1,0 +1,38 @@
+{{$topic := (get . "Topic")}}
+{{$messages := (get . "Messages")}}
+{{$auth := (get . "Auth")}}
+{{$isPublic := get . "IsPublic"}}
+
+<turbo-frame id="{{$topic}}">
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (print $topic "/messages")
+  }}
+  <div class="chat-messages">
+    <turbo-frame id="{{print $topic "/messages"}}">
+      {{range $message := $messages}}
+        {{
+          template "shared/chat/message.partial.tmpl" dict
+          "Message" $message
+        }}
+      {{end}}
+      <article class="message is-info chat-message">
+        <div class="message-body">
+          <p>
+            Welcome!
+            {{if not $auth.Identity.Authenticated}}
+              Only logged-in users can send messages to this chat.
+            {{else if $isPublic}}
+              Please remember that anyone can view this chat, even people who are not logged in.
+            {{end}}
+          </p>
+        </div>
+      </article>
+    </turbo-frame>
+  </div>
+  {{
+    template "shared/chat/send.partial.tmpl" dict
+    "Topic" $topic
+    "Auth" $auth
+  }}
+</turbo-frame>

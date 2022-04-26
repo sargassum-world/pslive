@@ -10,6 +10,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
+	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
@@ -31,6 +32,7 @@ type Globals struct {
 	Instruments   *instruments.Client
 	Planktoscopes map[string]*planktoscope.Client
 	Presence      *presence.Store
+	Chat          *chat.Store
 
 	Logger godest.Logger
 }
@@ -82,6 +84,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
 	}
 	g.Presence = presence.NewStore()
+	g.Chat = chat.NewStore()
 
 	g.Logger = l
 	return g, nil

@@ -1,4 +1,4 @@
-// Package presence provides a high-level client for information about user presence on pages
+// Package presence provides a high-level store of information about user presence on pages
 package presence
 
 import (

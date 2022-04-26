@@ -13,6 +13,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
@@ -25,11 +26,13 @@ type InstrumentData struct {
 	KnownViewers     []presence.User
 	AnonymousViewers []string
 	AdminIdentifier  string
+	ChatMessages     []chat.Message
 }
 
 func getInstrumentData(
 	ctx context.Context, name string,
-	oc *ory.Client, ic *instruments.Client, pcs map[string]*planktoscope.Client, ps *presence.Store,
+	oc *ory.Client, ic *instruments.Client, pcs map[string]*planktoscope.Client,
+	ps *presence.Store, cs *chat.Store,
 ) (*InstrumentData, error) {
 	instrument, err := ic.FindInstrument(name)
 	if err != nil {
@@ -51,12 +54,14 @@ func getInstrumentData(
 		return nil, errors.Errorf("planktoscope client for instrument %s not found", name)
 	}
 	known, anonymous := ps.List("/instruments/" + name + "/users")
+	messages := cs.List("/instruments/" + name + "/chat/messages")
 	return &InstrumentData{
 		Instrument:       *instrument,
 		Controller:       pc.GetState(),
 		AdminIdentifier:  adminIdentifier,
 		KnownViewers:     known,
 		AnonymousViewers: anonymous,
+		ChatMessages:     messages,
 	}, nil
 }
 
@@ -68,7 +73,9 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		instrumentData, err := getInstrumentData(c.Request().Context(), name, h.oc, h.ic, h.pcs, h.ps)
+		instrumentData, err := getInstrumentData(
+			c.Request().Context(), name, h.oc, h.ic, h.pcs, h.ps, h.cs,
+		)
 		if err != nil {
 			return err
 		}

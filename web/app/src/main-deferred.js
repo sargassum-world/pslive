@@ -2,6 +2,8 @@ import {
   CSRFController,
   DefaultScrollableController,
   FormSubmissionController,
+  LoadFocusController,
+  LoadScrollController,
   NavigationLinkController,
   NavigationMenuController,
   ThemeController,
@@ -22,6 +24,8 @@ const Stimulus = Application.start();
 Stimulus.register('csrf', CSRFController);
 Stimulus.register('default-scrollable', DefaultScrollableController);
 Stimulus.register('form-submission', FormSubmissionController);
+Stimulus.register('load-focus', LoadFocusController);
+Stimulus.register('load-scroll', LoadScrollController);
 Stimulus.register('navigation-link', NavigationLinkController);
 Stimulus.register('navigation-menu', NavigationMenuController);
 Stimulus.register('theme', ThemeController);

@@ -30,24 +30,39 @@
             </a>
           {{end}}
         </p>
-        <h2>Video Stream</h2>
+      <div class="section-card wide-card">
         <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
-        <h2>Controller</h2>
-        {{
-          template "instruments/planktoscope/controller.partial.tmpl" dict
-          "Instrument" .Data.Instrument
-          "Controller" .Data.Controller
-          "Auth" .Auth
-        }}
-        <h2>Online Users</h2>
-        {{
-          template "shared/presence/users.partial.tmpl" dict
-          "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
-          "Known" .Data.KnownViewers
-          "Anonymous" .Data.AnonymousViewers
-          "WithTurboStreamSource" true
-        }}
-      </turbo-frame>
+      </div>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Chat</h3>
+          {{
+            template "shared/chat/box.partial.tmpl" dict
+            "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
+            "Messages" .Data.ChatMessages
+            "Auth" .Auth
+            "IsPublic" true
+          }}
+        </div>
+      </div>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Users</h3>
+          {{
+            template "shared/presence/users.partial.tmpl" dict
+            "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
+            "Known" .Data.KnownViewers
+            "Anonymous" .Data.AnonymousViewers
+            "WithTurboStreamSource" true
+          }}
+        </div>
+      </div>
+      {{
+        template "instruments/planktoscope/controller.partial.tmpl" dict
+        "Instrument" .Data.Instrument
+        "Controller" .Data.Controller
+        "Auth" .Auth
+      }}
     </section>
   </main>
 {{end}}
