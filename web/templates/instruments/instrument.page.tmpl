@@ -30,8 +30,10 @@
             </a>
           {{end}}
         </p>
-        <h2>Microscope</h2>
-        <img src="{{.Data.Instrument.MJPEGStream}}" class="mr-4 mb-4" crossorigin>
+        <h2>Controls</h2>
+        <div class="card section-card">
+          <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
+        </div>
         {{
           template "instruments/planktoscope/controller.partial.tmpl" dict
           "Instrument" .Data.Instrument

@@ -10,6 +10,15 @@
         (print $topic "/messages")
       }}
       <turbo-frame id="{{print $topic "/messages"}}">
+        <p>
+          Welcome to the chat!
+          {{if not $auth.Identity.Authenticated}}
+            Only logged-in users can send messages to the chat.
+          {{else}}
+            Any message you send will be visible to everyone who was already on this page when you
+            sent the message, but not to anyone who opens this page afterwards.
+          {{end}}
+        </p>
       </turbo-frame>
       {{
         template "shared/chat/send.partial.tmpl" dict

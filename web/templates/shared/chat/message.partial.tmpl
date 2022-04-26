@@ -1,7 +1,10 @@
+{{$time := (get . "Time")}}
 {{$userID := (get . "UserID")}}
 {{$userIdentifier := (get . "UserIdentifier")}}
 {{$message := (get . "Message")}}
 
 <p>
-  <a href="/users/{{$userID}}" data-turbo="false">{{$userIdentifier}}</a>: {{$message}}
+  [{{$time.Format "2006-01-02 15:04:05 MST"}}]
+  <a href="/users/{{$userID}}" data-turbo="false">{{$userIdentifier}}</a>:
+  {{$message}}
 </p>

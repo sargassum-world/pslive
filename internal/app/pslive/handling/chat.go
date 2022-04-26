@@ -3,6 +3,7 @@ package handling
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/sargassum-world/fluitans/pkg/godest"
@@ -17,7 +18,9 @@ const (
 	sendPartial    = "shared/chat/send.partial.tmpl"
 )
 
-func appendChatMessageStream(topic, userID, userIdentifier, message string) turbostreams.Message {
+func appendChatMessageStream(
+	topic, userID, userIdentifier, message string, t time.Time,
+) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionAppend,
 		Target:   topic + "/messages",
@@ -25,6 +28,7 @@ func appendChatMessageStream(topic, userID, userIdentifier, message string) turb
 		Data: map[string]interface{}{
 			"UserID":         userID,
 			"UserIdentifier": userIdentifier,
+			"Time":           t,
 			"Message":        message,
 		},
 	}
@@ -58,12 +62,15 @@ func HandleChatMessagesPost(
 		if err != nil {
 			return err
 		}
-		tsh.Broadcast(topic+"/messages", appendChatMessageStream(topic, a.Identity.User, user, message))
+		tsh.Broadcast(topic+"/messages", appendChatMessageStream(
+			topic, a.Identity.User, user, message, time.Now(),
+		))
+		// TODO: also log the message to an in-memory chat store
+		// TODO: persist the chat log
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {
-			message := replaceChatSendStream(topic, a)
-			return r.TurboStream(c.Response(), message)
+			return r.TurboStream(c.Response(), replaceChatSendStream(topic, a))
 		}
 
 		// Redirect user
