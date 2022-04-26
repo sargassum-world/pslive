@@ -30,35 +30,37 @@
             </a>
           {{end}}
         </p>
-        <h2>Controls</h2>
-        <div class="card section-card">
-          <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
-        </div>
-        {{
-          template "instruments/planktoscope/controller.partial.tmpl" dict
-          "Instrument" .Data.Instrument
-          "Controller" .Data.Controller
-          "Auth" .Auth
-        }}
-        <h2>Live</h2>
-        <div class="card section-card">
-          <div class="card-content">
-            <h3>Users</h3>
+      <div class="section-card wide-card">
+        <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
+      </div>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Chat</h3>
             {{
-              template "shared/presence/users.partial.tmpl" dict
-              "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
-              "Known" .Data.KnownViewers
-              "Anonymous" .Data.AnonymousViewers
-              "WithTurboStreamSource" true
+              template "shared/chat/box.partial.tmpl" dict
+              "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
+              "Auth" .Auth
             }}
-          </div>
         </div>
-        {{
-          template "shared/chat/box.partial.tmpl" dict
-          "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
-          "Auth" .Auth
-        }}
-      </turbo-frame>
+      </div>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Users</h3>
+          {{
+            template "shared/presence/users.partial.tmpl" dict
+            "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
+            "Known" .Data.KnownViewers
+            "Anonymous" .Data.AnonymousViewers
+            "WithTurboStreamSource" true
+          }}
+        </div>
+      </div>
+      {{
+        template "instruments/planktoscope/controller.partial.tmpl" dict
+        "Instrument" .Data.Instrument
+        "Controller" .Data.Controller
+        "Auth" .Auth
+      }}
     </section>
   </main>
 {{end}}

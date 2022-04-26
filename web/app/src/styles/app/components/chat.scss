@@ -1,0 +1,13 @@
+@charset 'utf-8';
+
+.chat-messages {
+  height: 26em;
+  overflow: auto;
+  margin-bottom: 0.5 * $gap;
+  margin-right: 0.5 * $gap;
+
+  @include from($navside-breakpoint) {
+    margin-bottom: $gap;
+    margin-right: $gap;
+  }
+}

@@ -12,12 +12,13 @@
       {{$user := index $known 0}}
       <p>1 authenticated user: <a href="/users/{{$user.ID}}">{{$user.Identifier}}</a></p>
     {{else}}
-      <p>{{len $known}} authenticated users:</p>
-      <ul>
-        {{range $user := $known}}
-          <li><a href="/users/{{$user.ID}}">{{$user.Identifier}}</a></li>
-        {{end}}
-      </ul>
+      <p>
+        {{len $known}} authenticated users:
+        {{range $i, $user := $known -}}
+          {{- if $i}},{{end}}
+          <a href="/users/{{$user.ID}}">{{$user.Identifier}}</a>
+        {{- end}}
+      </p>
     {{end}}
   {{end}}
 
