@@ -29,9 +29,11 @@ func New(r godest.TemplateRenderer, globals *client.Globals) *Handlers {
 func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em godest.Embeds) {
 	ss := h.globals.Sessions
 	oc := h.globals.Ory
+	tsh := h.globals.TSBroker.Hub()
 	acc := h.globals.ACCancellers
 	l := h.globals.Logger
 	ps := h.globals.Presence
+	cs := h.globals.Chat
 
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
@@ -41,10 +43,9 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
 	instruments.New(
-		h.r, oc, h.globals.TSBroker.Hub(), h.globals.Instruments, h.globals.Planktoscopes,
-		ps, h.globals.Chat,
+		h.r, oc, tsh, h.globals.Instruments, h.globals.Planktoscopes, ps, cs,
 	).Register(er, tsr, ss)
-	users.New(h.r, oc).Register(er, ss)
+	users.New(h.r, oc, tsh, ps, cs).Register(er, tsr, ss)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)
 	tsr.UNSUB("/*", turbostreams.EmptyHandler)

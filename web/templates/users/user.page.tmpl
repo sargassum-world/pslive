@@ -19,8 +19,30 @@
     <section class="section content">
       <h1>User {{.Data.Identity.Identifier}}</h1>
       <turbo-frame id="/users/{{.Data.Identity.Identifier}}/info">
-        <p>Email: {{.Data.Identity.Email}}</p>
+        {{if .Auth.Identity.Authenticated}}
+          <p>Email: {{.Data.Identity.Email}}</p>
+        {{end}}
       </turbo-frame>
+      <h2>Chat</h2>
+      <div class="card section-card wide-card">
+        <div class="card-content">
+          <h3>Public Chat</h3>
+          {{
+            template "shared/presence/users.partial.tmpl" dict
+            "Topic" (print "/users/" .Data.Identity.Identifier "/chat/public/users")
+            "Known" .Data.PublicKnownViewers
+            "Anonymous" .Data.PublicAnonymousViewers
+            "WithTurboStreamSource" true
+          }}
+          {{
+            template "shared/chat/box.partial.tmpl" dict
+            "Topic" (print "/users/" .Data.Identity.ID "/chat/public")
+            "Messages" .Data.PublicChatMessages
+            "Auth" .Auth
+            "IsPublic" true
+          }}
+        </div>
+      </div>
     </section>
   </main>
 {{end}}

@@ -1,6 +1,7 @@
 {{$topic := (get . "Topic")}}
 {{$messages := (get . "Messages")}}
 {{$auth := (get . "Auth")}}
+{{$isPublic := get . "IsPublic"}}
 
 <turbo-frame id="{{$topic}}">
   {{
@@ -21,7 +22,7 @@
             Welcome to the chat!
             {{if not $auth.Identity.Authenticated}}
               Only logged-in users can send messages to the chat.
-            {{else}}
+            {{else if $isPublic}}
               Please remember that anyone can view the chat, even people who are not logged in.
             {{end}}
           </p>

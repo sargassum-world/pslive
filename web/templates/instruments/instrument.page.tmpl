@@ -36,12 +36,13 @@
       <div class="card section-card wide-card">
         <div class="card-content">
           <h3>Chat</h3>
-            {{
-              template "shared/chat/box.partial.tmpl" dict
-              "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
-              "Messages" .Data.ChatMessages
-              "Auth" .Auth
-            }}
+          {{
+            template "shared/chat/box.partial.tmpl" dict
+            "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
+            "Messages" .Data.ChatMessages
+            "Auth" .Auth
+            "IsPublic" true
+          }}
         </div>
       </div>
       <div class="card section-card wide-card">
