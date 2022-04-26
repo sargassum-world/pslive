@@ -12,7 +12,13 @@
       {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
       <div class="field has-addons">
         <div class="control">
-          <input type="text" class="input" name="message" size="100" />
+          <input
+            type="text"
+            class="input"
+            name="message"
+            size="100"
+            data-controller="load-focus"
+          />
         </div>
         <div class="control">
           <input

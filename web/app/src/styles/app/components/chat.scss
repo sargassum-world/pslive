@@ -4,10 +4,15 @@
   height: 26em;
   overflow: auto;
   margin-bottom: 0.5 * $gap;
-  margin-right: 0.5 * $gap;
 
   @include from($navside-breakpoint) {
     margin-bottom: $gap;
-    margin-right: $gap;
+  }
+}
+
+.chat-message {
+  margin-top: 0.25 * $gap;
+  @include from($navside-breakpoint) {
+    margin-top: 0.5 * $gap;
   }
 }
