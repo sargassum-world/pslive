@@ -1,0 +1,7 @@
+{{$userID := (get . "UserID")}}
+{{$userIdentifier := (get . "UserIdentifier")}}
+{{$message := (get . "Message")}}
+
+<p>
+  <a href="/users/{{$userID}}" data-turbo="false">{{$userIdentifier}}</a>: {{$message}}
+</p>

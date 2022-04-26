@@ -1,0 +1,21 @@
+{{$topic := (get . "Topic")}}
+{{$auth := (get . "Auth")}}
+
+<div class="card section-card">
+  <div class="card-content">
+    <h3>Chat</h3>
+    <turbo-frame id="{{$topic}}">
+      {{
+        template "shared/turbo-cable-stream-source.partial.tmpl"
+        (print $topic "/messages")
+      }}
+      <turbo-frame id="{{print $topic "/messages"}}">
+      </turbo-frame>
+      {{
+        template "shared/chat/send.partial.tmpl" dict
+        "Topic" $topic
+        "Auth" $auth
+      }}
+    </turbo-frame>
+  </div>
+</div>

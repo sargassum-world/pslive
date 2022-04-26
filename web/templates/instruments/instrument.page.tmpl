@@ -30,22 +30,31 @@
             </a>
           {{end}}
         </p>
-        <h2>Video Stream</h2>
-        <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
-        <h2>Controller</h2>
+        <h2>Microscope</h2>
+        <img src="{{.Data.Instrument.MJPEGStream}}" class="mr-4 mb-4" crossorigin>
         {{
           template "instruments/planktoscope/controller.partial.tmpl" dict
           "Instrument" .Data.Instrument
           "Controller" .Data.Controller
           "Auth" .Auth
         }}
-        <h2>Online Users</h2>
+        <h2>Live</h2>
+        <div class="card section-card">
+          <div class="card-content">
+            <h3>Users</h3>
+            {{
+              template "shared/presence/users.partial.tmpl" dict
+              "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
+              "Known" .Data.KnownViewers
+              "Anonymous" .Data.AnonymousViewers
+              "WithTurboStreamSource" true
+            }}
+          </div>
+        </div>
         {{
-          template "shared/presence/users.partial.tmpl" dict
-          "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
-          "Known" .Data.KnownViewers
-          "Anonymous" .Data.AnonymousViewers
-          "WithTurboStreamSource" true
+          template "shared/chat/box.partial.tmpl" dict
+          "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
+          "Auth" .Auth
         }}
       </turbo-frame>
     </section>

@@ -1,0 +1,29 @@
+{{$topic := (get . "Topic")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="{{print $topic "/send"}}">
+  {{if $auth.Identity.Authenticated}}
+    <form
+      action="{{print $topic "/messages"}}"
+      method="POST"
+      data-controller="form-submission csrf"
+      data-action="submit->form-submission#submit submit->csrf#addToken"
+    >
+      {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+      <div class="field has-addons">
+        <div class="control">
+          <input type="text" class="input" name="message" size="100" />
+        </div>
+        <div class="control">
+          <input
+            class="button"
+            type="submit"
+            name="send"
+            value="Send"
+            data-form-submission-target="submit"
+          />
+        </div>
+      </div>
+    </form>
+  {{end}}
+</turbo-frame>

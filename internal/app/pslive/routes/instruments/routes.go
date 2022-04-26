@@ -45,6 +45,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	haz := auth.RequireHTTPAuthz(ss)
 	hr.GET("/instruments", h.HandleInstrumentsGet())
 	hr.GET("/instruments/:name", h.HandleInstrumentGet())
+	// TODO: make and use a middleware which checks to ensure the instrument exists
 	tsr.SUB("/instruments/:name/users", handling.HandlePresenceSub(h.r, ss, h.oc, h.ps))
 	tsr.UNSUB("/instruments/:name/users", handling.HandlePresenceUnsub(h.r, ss, h.ps))
 	tsr.MSG("/instruments/:name/users", handling.HandleTSMsg(h.r, ss))
@@ -52,4 +53,11 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	tsr.PUB("/instruments/:name/controller/pump", h.HandlePumpPub())
 	tsr.MSG("/instruments/:name/controller/pump", handling.HandleTSMsg(h.r, ss))
 	hr.POST("/instruments/:name/controller/pump", h.HandlePumpPost(), haz)
+	// TODO: make and use a middleware which checks to ensure the instrument exists
+	tsr.SUB("/instruments/:name/chat/messages", turbostreams.EmptyHandler)
+	tsr.MSG("/instruments/:name/chat/messages", handling.HandleTSMsg(h.r, ss))
+	// TODO: make and use a middleware which checks to ensure the instrument exists
+	hr.POST("/instruments/:name/chat/messages", handling.HandleChatMessagesPost(
+		h.r, h.oc, h.tsh,
+	), haz)
 }
