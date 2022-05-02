@@ -20,7 +20,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-type InstrumentData struct {
+type InstrumentViewData struct {
 	Instrument       instruments.Instrument
 	Controller       planktoscope.Planktoscope
 	KnownViewers     []presence.User
@@ -29,11 +29,11 @@ type InstrumentData struct {
 	ChatMessages     []chat.Message
 }
 
-func getInstrumentData(
+func getInstrumentViewData(
 	ctx context.Context, name string,
 	oc *ory.Client, ic *instruments.Client, pcs map[string]*planktoscope.Client,
 	ps *presence.Store, cs *chat.Store,
-) (*InstrumentData, error) {
+) (*InstrumentViewData, error) {
 	instrument, err := ic.FindInstrument(name)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func getInstrumentData(
 	}
 	known, anonymous := ps.List("/instruments/" + name + "/users")
 	messages := cs.List("/instruments/" + name + "/chat/messages")
-	return &InstrumentData{
+	return &InstrumentViewData{
 		Instrument:       *instrument,
 		Controller:       pc.GetState(),
 		AdminIdentifier:  adminIdentifier,
@@ -73,7 +73,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		instrumentData, err := getInstrumentData(
+		instrumentViewData, err := getInstrumentViewData(
 			c.Request().Context(), name, h.oc, h.ic, h.pcs, h.ps, h.cs,
 		)
 		if err != nil {
@@ -81,7 +81,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *instrumentData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *instrumentViewData, a)
 	}
 }
 
