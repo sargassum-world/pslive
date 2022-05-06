@@ -33,10 +33,10 @@ func getUserViewData(
 	// Public chat
 	publicKnown, publicAnonymous := ps.List("/users/" + id + "/chat/users")
 	publicMessages, err := cs.GetMessagesByTopic(
-		ctx, "/users/" + id + "/chat/messages", chat.DefaultMessagesLimit,
+		ctx, "/users/"+id+"/chat/messages", chat.DefaultMessagesLimit,
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "couldn't get public chat messages for user %s",id)
+		return nil, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
 	}
 
 	// Private chat
@@ -51,7 +51,7 @@ func getUserViewData(
 		}
 		privateKnown, privateAnonymous = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
 		privateMessages, err = cs.GetMessagesByTopic(
-			ctx, "/private-chats/" + first + "/" + second + "/chat/messages", chat.DefaultMessagesLimit,
+			ctx, "/private-chats/"+first+"/"+second+"/chat/messages", chat.DefaultMessagesLimit,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(

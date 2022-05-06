@@ -1,9 +1,17 @@
 {{$message := (get . "Message")}}
+{{$autoscrollOnLoad := (get . "AutoscrollOnLoad")}}
 
-<div class="chat-message" data-controller="load-scroll">
-  <p class="has-text-weight-bold">
-    [{{$message.SendTime.Format "2006-01-02 15:04:05 MST"}}]
-    <a href="/users/{{$message.SenderID}}" data-turbo="false">{{$message.SenderIdentifier}}</a>
-  </p>
-  <p>{{$message.Body}}</p>
-</div>
+<turbo-frame id="{{$message.Topic}}/{{$message.MessageID}}">
+  <div
+    class="chat-message"
+    {{if $autoscrollOnLoad}}
+      data-controller="load-scroll"
+    {{end}}
+  >
+    <p class="has-text-weight-bold">
+      [{{$message.SendTime.Format "2006-01-02 15:04:05 MST"}}]
+      <a href="/users/{{$message.SenderID}}" data-turbo="false">{{$message.SenderIdentifier}}</a>
+    </p>
+    <p>{{$message.Body}}</p>
+  </div>
+</turbo-frame>

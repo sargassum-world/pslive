@@ -10,11 +10,7 @@ import (
 
 // Migrations
 
-const (
-	migrationUpFileExt = ".up.sql"
-	// TODO: implement support for down-migrations
-	migrationDownFileExt = ".down.sql"
-)
+const migrationUpFileExt = ".up.sql"
 
 func filterMigrationUp(path string) bool {
 	return strings.HasSuffix(path, migrationUpFileExt)

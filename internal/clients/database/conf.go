@@ -26,7 +26,7 @@ func GetConfig() (c Config, err error) {
 		return Config{}, errors.Wrap(err, "couldn't make SQLite in-memory config")
 	}
 	if memory {
-		c.Flags = c.Flags | sqlite.OpenMemory
+		c.Flags |= sqlite.OpenMemory
 	}
 
 	const defaultWritePoolSize = 1

@@ -40,10 +40,10 @@ func (s *Server) openDB(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't load database schema")
 	}
-	if err := s.Globals.DB.Open(); err != nil {
+	if err = s.Globals.DB.Open(); err != nil {
 		return errors.Wrap(err, "couldn't open connection pool for database")
 	}
-	// TODO: close the store when the context is cancelled, in order to allow flushing the WAL
+	// TODO: close the store when the context is canceled, in order to allow flushing the WAL
 	if err = s.Globals.DB.Migrate(ctx, schema); err != nil {
 		// TODO: close the store if the migration failed
 		return errors.Wrap(err, "couldn't perform database schema migrations")

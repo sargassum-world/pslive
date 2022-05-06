@@ -25,7 +25,8 @@ func appendChatMessageStream(message chat.Message) turbostreams.Message {
 		Target:   message.Topic,
 		Template: messagePartial,
 		Data: map[string]interface{}{
-			"Message": message,
+			"Message":          message,
+			"AutoscrollOnLoad": true,
 		},
 	}
 }
@@ -58,6 +59,7 @@ func HandleChatMessagesPost(
 		if err != nil {
 			return err
 		}
+		// TODO: add a separate MessageViewData type to attach extra data such as sender identifier
 		m := chat.Message{
 			Topic:            topic + "/messages",
 			SendTime:         time.Now(),
@@ -65,8 +67,10 @@ func HandleChatMessagesPost(
 			SenderIdentifier: user,
 			Body:             body,
 		}
+		if m.MessageID, err = cs.AddMessage(c.Request().Context(), m); err != nil {
+			return err
+		}
 		tsh.Broadcast(m.Topic, appendChatMessageStream(m))
-		cs.AddMessage(c.Request().Context(), m)
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {

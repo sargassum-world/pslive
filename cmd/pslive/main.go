@@ -35,4 +35,5 @@ func main() {
 	// Start server
 	go s.RunBackgroundWorkers(context.TODO())
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
+	// TODO: gracefully handle ctrl+c by closing database connections
 }
