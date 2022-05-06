@@ -20,4 +20,5 @@ require (
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
+	zombiezen.com/go/sqlite v0.9.2
 )

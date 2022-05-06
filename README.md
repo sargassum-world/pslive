@@ -16,7 +16,7 @@ To execute the full build pipeline, run `make`; to build the docker images, run 
 
 ### External Services
 
-You'll need to [set up](https://console.ory.sh/registration) an Ory Cloud project and provision a personal access token so that pslive can access the Ory Kratos administrative API for your Ory Cloud project. You should enable user registration and password authentication on this project. You should also use the identity schema listed in the `schemas/v1.1/person.schema.json` file in this repository for your Ory Cloud identity schema.
+You'll need to [set up](https://console.ory.sh/registration) an Ory Cloud project and provision a personal access token so that pslive can access the Ory Kratos administrative API for your Ory Cloud project. You should enable user registration and password authentication on this project. You should also use the identity schema listed in the `apischemas/v1.1/person.schema.json` file in this repository for your Ory Cloud identity schema.
 
 ### Environment Variables
 

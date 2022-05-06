@@ -59,6 +59,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	// TODO: make and use a middleware which checks to ensure the instrument exists
 	tsr.SUB("/instruments/:name/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/instruments/:name/chat/messages", handling.HandleTSMsg(h.r, ss))
+	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll
 	// TODO: make and use a middleware which checks to ensure the instrument exists
 	hr.POST("/instruments/:name/chat/messages", handling.HandleChatMessagesPost(
 		h.r, h.oc, h.tsh, h.cs,

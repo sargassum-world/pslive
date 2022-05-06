@@ -11,6 +11,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
+	"github.com/sargassum-world/pslive/internal/clients/database"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
@@ -20,6 +21,7 @@ import (
 type Globals struct {
 	Config conf.Config
 	Cache  clientcache.Cache
+	DB     *database.DB
 
 	Sessions    session.Store
 	CSRFChecker *session.CSRFTokenChecker
@@ -37,7 +39,7 @@ type Globals struct {
 	Logger godest.Logger
 }
 
-func NewGlobals(l godest.Logger) (g *Globals, err error) {
+func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals, err error) {
 	g = &Globals{}
 	g.Config, err = conf.GetConfig()
 	if err != nil {
@@ -46,6 +48,15 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
+	storeConfig, err := database.GetConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up persistent store config")
+	}
+	g.DB = database.NewDB(
+		storeConfig,
+		database.WithQueries(persistenceEmbeds.QueriesFS),
+		database.WithPrepareConnQueries(persistenceEmbeds.PrepareConnQueriesFS),
+	)
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
@@ -84,7 +95,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
 	}
 	g.Presence = presence.NewStore()
-	g.Chat = chat.NewStore()
+	g.Chat = chat.NewStore(g.DB)
 
 	g.Logger = l
 	return g, nil

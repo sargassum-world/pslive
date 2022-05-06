@@ -2,52 +2,83 @@
 package chat
 
 import (
-	"sync"
+	"context"
 	"time"
+
+	"github.com/pkg/errors"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
+
+	"github.com/sargassum-world/pslive/internal/clients/database"
 )
 
-type Message struct {
-	Time             time.Time
-	SenderID         string
-	SenderIdentifier string
-	Text             string
-}
-
-const maxHistory = 100 // max number of messages to store per topic
-
 type Store struct {
-	messages map[string][]Message
-	mmu      sync.RWMutex
+	db *database.DB
 }
 
-func NewStore() *Store {
+func NewStore(db *database.DB) *Store {
 	return &Store{
-		messages: make(map[string][]Message),
+		db: db,
 	}
 }
 
-func (s *Store) Add(topic string, m Message) {
-	// We could have less lock contention if we had more granular locks, but we don't care about such
-	// scalability yet.
-	s.mmu.Lock()
-	defer s.mmu.Unlock()
-
-	// It's extremely inefficient to use slices for a queue due to allocations/deallocations, but
-	// we aren't at a scale to care about this performance yet.
-	s.messages[topic] = append(s.messages[topic], m)
-	if len(s.messages[topic]) > maxHistory {
-		s.messages[topic] = s.messages[topic][len(s.messages[topic])-maxHistory:]
+func (s *Store) AddMessage(ctx context.Context, m Message) error {
+	conn, err := s.db.AcquireWriter(ctx)
+	if err != nil {
+		return errors.Wrap(err, "couldn't acquire writer to add chat message")
 	}
+	defer s.db.ReleaseWriter(conn)
+
+	return errors.Wrapf(
+		// TODO: the query should be embedded in this package!
+		s.db.Execute(conn, "chat/insert-message.sql", &sqlitex.ExecOptions{
+			Named: map[string]interface{}{
+				"$topic":             m.Topic,
+				"$send_time":         m.SendTime.UnixMilli(),
+				"$sender_id":         m.SenderID,
+				"$sender_identifier": m.SenderIdentifier,
+				"$body":              m.Body,
+			},
+		}),
+		"couldn't execute query to add chat message with topic %s", m.Topic,
+	)
+	// TODO: return the frontend-facing message ID (it should be a salted SHA-256 hash of message_id
+	// to mitigate the insecure direct object reference vulnerability)
 }
 
-func (s *Store) List(topic string) []Message {
-	s.mmu.RLock()
-	defer s.mmu.RUnlock()
+const DefaultMessagesLimit = 10
 
-	messages, ok := s.messages[topic]
-	if !ok {
-		return []Message{}
+func (s *Store) GetMessagesByTopic(
+	ctx context.Context, topic string, messagesLimit int64,
+) ([]Message, error) {
+	conn, err := s.db.AcquireReader(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't acquire reader to get chat messages by topic")
 	}
+	defer s.db.ReleaseReader(conn)
 
-	return messages
+	messages := make([]Message, 0)
+	// TODO: the query should be embedded in this package!
+	if err := s.db.Execute(conn, "chat/select-messages-by-topic.sql", &sqlitex.ExecOptions{
+		Named: map[string]interface{}{
+			"$topic":      topic,
+			"$rows_limit": messagesLimit,
+		},
+		ResultFunc: func(s *sqlite.Stmt) error {
+			message := Message{
+				Topic:            s.GetText("topic"),
+				SendTime:         time.UnixMilli(s.GetInt64("send_time")),
+				SenderID:         s.GetText("sender_id"),
+				SenderIdentifier: s.GetText("sender_identifier"),
+				Body:             s.GetText("body"),
+			}
+			messages = append(messages, message)
+			return nil
+		},
+	}); err != nil {
+		return nil, errors.Wrapf(
+			err, "couldn't execute query to get chat messages with topic %s", topic,
+		)
+	}
+	return messages, nil
 }

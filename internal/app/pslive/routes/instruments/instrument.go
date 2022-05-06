@@ -54,7 +54,12 @@ func getInstrumentViewData(
 		return nil, errors.Errorf("planktoscope client for instrument %s not found", name)
 	}
 	known, anonymous := ps.List("/instruments/" + name + "/users")
-	messages := cs.List("/instruments/" + name + "/chat/messages")
+	messages, err := cs.GetMessagesByTopic(
+		ctx, "/instruments/" + name + "/chat/messages", chat.DefaultMessagesLimit,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "couldn't get chat messages for instrument %s", name)
+	}
 	return &InstrumentViewData{
 		Instrument:       *instrument,
 		Controller:       pc.GetState(),

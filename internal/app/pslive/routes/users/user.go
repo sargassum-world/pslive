@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
@@ -31,7 +32,12 @@ func getUserViewData(
 
 	// Public chat
 	publicKnown, publicAnonymous := ps.List("/users/" + id + "/chat/users")
-	publicMessages := cs.List("/users/" + id + "/chat/messages")
+	publicMessages, err := cs.GetMessagesByTopic(
+		ctx, "/users/" + id + "/chat/messages", chat.DefaultMessagesLimit,
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "couldn't get public chat messages for user %s",id)
+	}
 
 	// Private chat
 	var privateKnown []presence.User
@@ -44,7 +50,14 @@ func getUserViewData(
 			first, second = second, first
 		}
 		privateKnown, privateAnonymous = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
-		privateMessages = cs.List("/private-chats/" + first + "/" + second + "/chat/messages")
+		privateMessages, err = cs.GetMessagesByTopic(
+			ctx, "/private-chats/" + first + "/" + second + "/chat/messages", chat.DefaultMessagesLimit,
+		)
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't get private chat messages for users %s & %s", first, second,
+			)
+		}
 	}
 
 	return &UserViewData{

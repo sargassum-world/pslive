@@ -19,10 +19,10 @@ const (
 	sendPartial    = "shared/chat/send.partial.tmpl"
 )
 
-func appendChatMessageStream(topic string, message chat.Message) turbostreams.Message {
+func appendChatMessageStream(message chat.Message) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionAppend,
-		Target:   topic + "/messages",
+		Target:   message.Topic,
 		Template: messagePartial,
 		Data: map[string]interface{}{
 			"Message": message,
@@ -50,7 +50,7 @@ func HandleChatMessagesPost(
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		name := c.Param("name")
-		message := c.FormValue("message")
+		body := c.FormValue("body")
 		topic := strings.TrimSuffix(c.Request().URL.Path, "/messages")
 
 		// Run queries
@@ -59,13 +59,14 @@ func HandleChatMessagesPost(
 			return err
 		}
 		m := chat.Message{
-			Time:             time.Now(),
+			Topic:            topic + "/messages",
+			SendTime:         time.Now(),
 			SenderID:         a.Identity.User,
 			SenderIdentifier: user,
-			Text:             message,
+			Body:             body,
 		}
-		tsh.Broadcast(topic+"/messages", appendChatMessageStream(topic, m))
-		cs.Add(topic+"/messages", m)
+		tsh.Broadcast(m.Topic, appendChatMessageStream(m))
+		cs.AddMessage(c.Request().Context(), m)
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {

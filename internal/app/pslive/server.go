@@ -16,15 +16,18 @@ import (
 	"github.com/unrolled/secure"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-world/pslive/db"
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
 	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
+	"github.com/sargassum-world/pslive/internal/clients/database"
 	"github.com/sargassum-world/pslive/web"
 )
 
 type Server struct {
+	DBEmbeds database.Embeds
 	Globals  *client.Globals
 	Embeds   godest.Embeds
 	Inlines  godest.Inlines
@@ -32,9 +35,26 @@ type Server struct {
 	Handlers *routes.Handlers
 }
 
+func (s *Server) openDB(ctx context.Context) error {
+	schema, err := s.DBEmbeds.NewSchema()
+	if err != nil {
+		return errors.Wrap(err, "couldn't load database schema")
+	}
+	if err := s.Globals.DB.Open(); err != nil {
+		return errors.Wrap(err, "couldn't open connection pool for database")
+	}
+	// TODO: close the store when the context is cancelled, in order to allow flushing the WAL
+	if err = s.Globals.DB.Migrate(ctx, schema); err != nil {
+		// TODO: close the store if the migration failed
+		return errors.Wrap(err, "couldn't perform database schema migrations")
+	}
+	return nil
+}
+
 func NewServer(e *echo.Echo) (s *Server, err error) {
 	s = &Server{}
-	s.Globals, err = client.NewGlobals(e.Logger)
+	s.DBEmbeds = db.NewEmbeds()
+	s.Globals, err = client.NewGlobals(s.DBEmbeds, e.Logger)
 	if err != nil {
 		s = nil
 		return nil, errors.Wrap(err, "couldn't make app globals")
@@ -54,7 +74,13 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals)
-	return s, nil
+
+	// TODO: opening the DB should happen when we start the server, not when we instantiate it!
+	// Ideally, we'd move e.Start(...) into a background worker (and rename it to RunWorkers), on
+	// the same level as TSBroker.Serve. Then we just call openDB when we run s.Start(...), which
+	// opens the database connections and launches all the workers.
+	err = errors.Wrap(s.openDB(context.TODO()), "couldn't open database")
+	return s, err
 }
 
 func (s *Server) Register(e *echo.Echo) {
