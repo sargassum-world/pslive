@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
@@ -16,10 +17,10 @@ type UserViewData struct {
 	Identity                ory.Identity
 	PublicKnownViewers      []presence.User
 	PublicAnonymousViewers  []string
-	PublicChatMessages      []chat.Message
+	PublicChatMessages      []handling.ChatMessageViewData
 	PrivateKnownViewers     []presence.User
 	PrivateAnonymousViewers []string
-	PrivateChatMessages     []chat.Message
+	PrivateChatMessages     []handling.ChatMessageViewData
 }
 
 func getUserViewData(
@@ -38,24 +39,37 @@ func getUserViewData(
 	if err != nil {
 		return nil, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
 	}
+	publicMessagesAdapted, err := handling.AdaptChatMessages(ctx, publicMessages, oc)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err, "couldn't adapt public chat messages for user %s into view data", id,
+		)
+	}
 
 	// Private chat
 	var privateKnown []presence.User
-	var privateAnonymous []string
+	var privateAnon []string
 	var privateMessages []chat.Message
+	var privateMessagesAdapted []handling.ChatMessageViewData
 	if a.Identity.Authenticated && a.Identity.User != id {
 		first := id
 		second := a.Identity.User
 		if second < first {
 			first, second = second, first
 		}
-		privateKnown, privateAnonymous = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
-		privateMessages, err = cs.GetMessagesByTopic(
+		privateKnown, privateAnon = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
+		if privateMessages, err = cs.GetMessagesByTopic(
 			ctx, "/private-chats/"+first+"/"+second+"/chat/messages", chat.DefaultMessagesLimit,
-		)
-		if err != nil {
+		); err != nil {
 			return nil, errors.Wrapf(
 				err, "couldn't get private chat messages for users %s & %s", first, second,
+			)
+		}
+		if privateMessagesAdapted, err = handling.AdaptChatMessages(
+			ctx, privateMessages, oc,
+		); err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't adapt private chat messages for user %s into view data", id,
 			)
 		}
 	}
@@ -64,10 +78,10 @@ func getUserViewData(
 		Identity:                identity,
 		PublicKnownViewers:      publicKnown,
 		PublicAnonymousViewers:  publicAnonymous,
-		PublicChatMessages:      publicMessages,
+		PublicChatMessages:      publicMessagesAdapted,
 		PrivateKnownViewers:     privateKnown,
-		PrivateAnonymousViewers: privateAnonymous,
-		PrivateChatMessages:     privateMessages,
+		PrivateAnonymousViewers: privateAnon,
+		PrivateChatMessages:     privateMessagesAdapted,
 	}, nil
 }
 

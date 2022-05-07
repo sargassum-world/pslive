@@ -1,7 +1,7 @@
 {{$message := (get . "Message")}}
 {{$autoscrollOnLoad := (get . "AutoscrollOnLoad")}}
 
-<turbo-frame id="{{$message.Topic}}/{{$message.MessageID}}">
+<turbo-frame id="{{$message.Topic}}/{{$message.ID}}">
   <div
     class="chat-message"
     {{if $autoscrollOnLoad}}

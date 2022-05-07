@@ -94,6 +94,8 @@ func (db *DB) prepare(conn *sqlite.Conn, pool *sqlitex.Pool) error {
 		return nil
 	}
 
+	// TODO: embed the pragma queries for foreign keys, synchronous, and auto-checkpoint so that we
+	// can parameterize them from environment variables
 	queries, err := readQueries(db.prepareConnQueries, filterQuery)
 	if err != nil {
 		return errors.Wrap(err, "couldn't read connection preparation queries")
@@ -155,8 +157,6 @@ func (db *DB) ReleaseWriter(conn *sqlite.Conn) {
 }
 
 func (db *DB) Migrate(ctx context.Context, schema sqlitemigration.Schema) error {
-	// TODO: also implement per-module migrations so that the migration scripts and query scripts
-	// specific to each module (e.g. chat) can be embedded inside that module's package
 	// TODO: also implement down-migrations
 	conn, err := db.AcquireWriter(ctx)
 	if err != nil {

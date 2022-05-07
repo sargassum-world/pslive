@@ -54,7 +54,6 @@ func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals,
 	}
 	g.DB = database.NewDB(
 		storeConfig,
-		database.WithQueries(persistenceEmbeds.QueriesFS),
 		database.WithPrepareConnQueries(persistenceEmbeds.PrepareConnQueriesFS),
 	)
 

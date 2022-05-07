@@ -1,11 +1,13 @@
 package handling
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
@@ -14,18 +16,52 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 )
 
+type ChatMessageViewData struct {
+	ID               int64
+	Topic            string
+	SendTime         time.Time
+	SenderID         string
+	SenderIdentifier string
+	Body             string
+}
+
+func NewChatMessageViewData(m chat.Message) ChatMessageViewData {
+	return ChatMessageViewData{
+		ID:       m.ID,
+		Topic:    m.Topic,
+		SendTime: m.SendTime,
+		SenderID: m.SenderID,
+		Body:     m.Body,
+	}
+}
+
+func AdaptChatMessages(
+	ctx context.Context, messages []chat.Message, oc *ory.Client,
+) (viewData []ChatMessageViewData, err error) {
+	viewData = make([]ChatMessageViewData, len(messages))
+	for i, message := range messages {
+		viewData[i] = NewChatMessageViewData(message)
+		if viewData[i].SenderIdentifier, err = oc.GetIdentifier(ctx, message.SenderID); err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't look up identifier of message sender %s", message.SenderID,
+			)
+		}
+	}
+	return viewData, nil
+}
+
 const (
 	messagePartial = "shared/chat/message.partial.tmpl"
 	sendPartial    = "shared/chat/send.partial.tmpl"
 )
 
-func appendChatMessageStream(message chat.Message) turbostreams.Message {
+func appendChatMessageStream(m ChatMessageViewData) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionAppend,
-		Target:   message.Topic,
+		Target:   m.Topic,
 		Template: messagePartial,
 		Data: map[string]interface{}{
-			"Message":          message,
+			"Message":          m,
 			"AutoscrollOnLoad": true,
 		},
 	}
@@ -48,7 +84,7 @@ func HandleChatMessagesPost(
 ) auth.HTTPHandlerFunc {
 	sendT := sendPartial
 	r.MustHave(sendT)
-	return func(c echo.Context, a auth.Auth) error {
+	return func(c echo.Context, a auth.Auth) (err error) {
 		// Parse params
 		name := c.Param("name")
 		body := c.FormValue("body")
@@ -59,18 +95,18 @@ func HandleChatMessagesPost(
 		if err != nil {
 			return err
 		}
-		// TODO: add a separate MessageViewData type to attach extra data such as sender identifier
 		m := chat.Message{
-			Topic:            topic + "/messages",
-			SendTime:         time.Now(),
-			SenderID:         a.Identity.User,
-			SenderIdentifier: user,
-			Body:             body,
+			Topic:    topic + "/messages",
+			SendTime: time.Now(),
+			SenderID: a.Identity.User,
+			Body:     body,
 		}
-		if m.MessageID, err = cs.AddMessage(c.Request().Context(), m); err != nil {
+		if m.ID, err = cs.AddMessage(c.Request().Context(), m); err != nil {
 			return err
 		}
-		tsh.Broadcast(m.Topic, appendChatMessageStream(m))
+		mvd := NewChatMessageViewData(m)
+		mvd.SenderIdentifier = user
+		tsh.Broadcast(m.Topic, appendChatMessageStream(mvd))
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {

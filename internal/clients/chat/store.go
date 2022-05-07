@@ -5,7 +5,6 @@ import (
 	"context"
 	_ "embed"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"zombiezen.com/go/sqlite"
@@ -36,22 +35,16 @@ func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err
 	defer s.db.ReleaseWriter(conn)
 
 	if err = sqlitex.ExecuteScript(conn, insertMessageQuery, &sqlitex.ExecOptions{
-		Named: map[string]interface{}{
-			"$topic":             m.Topic,
-			"$send_time":         m.SendTime.UnixMilli(),
-			"$sender_id":         m.SenderID,
-			"$sender_identifier": m.SenderIdentifier,
-			"$body":              m.Body,
-		},
+		Named: m.NewInsertion(),
 		ResultFunc: func(s *sqlite.Stmt) error {
-			messageID = s.GetInt64("message_id")
+			messageID = s.GetInt64("id")
 			return nil
 		},
 	}); err != nil {
 		return 0, errors.Wrapf(err, "couldn't execute query to add chat message with topic %s", m.Topic)
 	}
-	// TODO: return the frontend-facing message ID as a salted SHA-256 hash of message_id
-	// to mitigate the insecure direct object reference vulnerability)
+	// TODO: instead of returning the raw messageID, return the frontend-facing message ID as a salted
+	// SHA-256 hash of message_id to mitigate the insecure direct object reference vulnerability?
 	return messageID, err
 }
 
@@ -77,14 +70,7 @@ func (s *Store) GetMessagesByTopic(
 			"$rows_limit": messagesLimit,
 		},
 		ResultFunc: func(s *sqlite.Stmt) error {
-			message := Message{
-				Topic:            s.GetText("topic"),
-				SendTime:         time.UnixMilli(s.GetInt64("send_time")),
-				SenderID:         s.GetText("sender_id"),
-				SenderIdentifier: s.GetText("sender_identifier"),
-				Body:             s.GetText("body"),
-			}
-			messages = append(messages, message)
+			messages = append(messages, NewMessage(s))
 			return nil
 		},
 	}); err != nil {

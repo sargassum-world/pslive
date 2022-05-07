@@ -5,6 +5,7 @@ import (
 	"embed"
 	"io/fs"
 
+	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/database"
 )
 
@@ -12,16 +13,15 @@ import (
 // from other applications.
 const appID = 370761302
 
-// Schemas
+// Migrations
 
-var (
-	//go:embed schemas/migrations/*
-	migrationsEFS   embed.FS
-	migrationsFS, _ = fs.Sub(migrationsEFS, "schemas/migrations")
-)
+var DomainEmbeds map[string]database.DomainEmbeds = map[string]database.DomainEmbeds{
+	"chat": chat.NewDomainEmbeds(),
+}
 
-//go:embed schemas/repeatable-migration.sql
-var repeatableMigration string
+var MigrationFiles []database.MigrationFile = []database.MigrationFile{
+	{Domain: "chat", File: chat.MigrationFiles[0]},
+}
 
 // Queries
 
@@ -37,9 +37,8 @@ var (
 func NewEmbeds() database.Embeds {
 	return database.Embeds{
 		AppID:                appID,
-		MigrationsFS:         migrationsFS,
-		RepeatableMigration:  repeatableMigration,
-		QueriesFS:            queriesFS,
+		DomainEmbeds:         DomainEmbeds,
+		MigrationFiles:       MigrationFiles,
 		PrepareConnQueriesFS: prepareConnQueriesFS,
 	}
 }

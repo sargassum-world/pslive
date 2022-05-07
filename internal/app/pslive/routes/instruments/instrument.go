@@ -13,6 +13,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
@@ -26,7 +27,7 @@ type InstrumentViewData struct {
 	KnownViewers     []presence.User
 	AnonymousViewers []string
 	AdminIdentifier  string
-	ChatMessages     []chat.Message
+	ChatMessages     []handling.ChatMessageViewData
 }
 
 func getInstrumentViewData(
@@ -60,13 +61,19 @@ func getInstrumentViewData(
 	if err != nil {
 		return nil, errors.Wrapf(err, "couldn't get chat messages for instrument %s", name)
 	}
+	messagesAdapted, err := handling.AdaptChatMessages(ctx, messages, oc)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err, "couldn't adapt chat messages for instrument %s into view data", name,
+		)
+	}
 	return &InstrumentViewData{
 		Instrument:       *instrument,
 		Controller:       pc.GetState(),
 		AdminIdentifier:  adminIdentifier,
 		KnownViewers:     known,
 		AnonymousViewers: anonymous,
-		ChatMessages:     messages,
+		ChatMessages:     messagesAdapted,
 	}, nil
 }
 
