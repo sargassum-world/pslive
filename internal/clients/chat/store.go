@@ -52,7 +52,7 @@ func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err
 var rawSelectMessagesByTopicQuery string
 var selectMessagesByTopicQuery string = strings.TrimSpace(rawSelectMessagesByTopicQuery)
 
-const DefaultMessagesLimit = 10
+const DefaultMessagesLimit = 50
 
 func (s *Store) GetMessagesByTopic(
 	ctx context.Context, topic string, messagesLimit int64,
