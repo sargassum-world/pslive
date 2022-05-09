@@ -25,64 +25,53 @@ type UserViewData struct {
 
 func getUserViewData(
 	ctx context.Context, id string, a auth.Auth, oc *ory.Client, ps *presence.Store, cs *chat.Store,
-) (*UserViewData, error) {
-	identity, err := oc.GetIdentity(ctx, id)
-	if err != nil {
-		return nil, err
+) (vd UserViewData, err error) {
+	if vd.Identity, err = oc.GetIdentity(ctx, id); err != nil {
+		return UserViewData{}, err
 	}
 
 	// Public chat
-	publicKnown, publicAnonymous := ps.List("/users/" + id + "/chat/users")
+	vd.PublicKnownViewers, vd.PublicAnonymousViewers = ps.List("/users/" + id + "/chat/users")
 	publicMessages, err := cs.GetMessagesByTopic(
 		ctx, "/users/"+id+"/chat/messages", chat.DefaultMessagesLimit,
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
+		return UserViewData{}, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
 	}
-	publicMessagesAdapted, err := handling.AdaptChatMessages(ctx, publicMessages, oc)
-	if err != nil {
-		return nil, errors.Wrapf(
+	if vd.PublicChatMessages, err = handling.AdaptChatMessages(ctx, publicMessages, oc); err != nil {
+		return UserViewData{}, errors.Wrapf(
 			err, "couldn't adapt public chat messages for user %s into view data", id,
 		)
 	}
 
 	// Private chat
-	var privateKnown []presence.User
-	var privateAnon []string
-	var privateMessages []chat.Message
-	var privateMessagesAdapted []handling.ChatMessageViewData
 	if a.Identity.Authenticated && a.Identity.User != id {
 		first := id
 		second := a.Identity.User
 		if second < first {
 			first, second = second, first
 		}
-		privateKnown, privateAnon = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
-		if privateMessages, err = cs.GetMessagesByTopic(
+		vd.PrivateKnownViewers, vd.PrivateAnonymousViewers = ps.List(
+			"/private-chats/" + first + "/" + second + "/chat/users",
+		)
+		privateMessages, err := cs.GetMessagesByTopic(
 			ctx, "/private-chats/"+first+"/"+second+"/chat/messages", chat.DefaultMessagesLimit,
-		); err != nil {
-			return nil, errors.Wrapf(
+		)
+		if err != nil {
+			return UserViewData{}, errors.Wrapf(
 				err, "couldn't get private chat messages for users %s & %s", first, second,
 			)
 		}
-		if privateMessagesAdapted, err = handling.AdaptChatMessages(
+		if vd.PrivateChatMessages, err = handling.AdaptChatMessages(
 			ctx, privateMessages, oc,
 		); err != nil {
-			return nil, errors.Wrapf(
+			return UserViewData{}, errors.Wrapf(
 				err, "couldn't adapt private chat messages for user %s into view data", id,
 			)
 		}
 	}
 
-	return &UserViewData{
-		Identity:                identity,
-		PublicKnownViewers:      publicKnown,
-		PublicAnonymousViewers:  publicAnonymous,
-		PublicChatMessages:      publicMessagesAdapted,
-		PrivateKnownViewers:     privateKnown,
-		PrivateAnonymousViewers: privateAnon,
-		PrivateChatMessages:     privateMessagesAdapted,
-	}, nil
+	return vd, nil
 }
 
 func (h *Handlers) HandleUserGet() auth.HTTPHandlerFunc {
@@ -99,6 +88,6 @@ func (h *Handlers) HandleUserGet() auth.HTTPHandlerFunc {
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *userViewData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, userViewData, a)
 	}
 }

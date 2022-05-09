@@ -24,9 +24,9 @@ import (
 type InstrumentViewData struct {
 	Instrument       instruments.Instrument
 	Controller       planktoscope.Planktoscope
+	AdminIdentifier  string
 	KnownViewers     []presence.User
 	AnonymousViewers []string
-	AdminIdentifier  string
 	ChatMessages     []handling.ChatMessageViewData
 }
 
@@ -34,47 +34,50 @@ func getInstrumentViewData(
 	ctx context.Context, name string,
 	oc *ory.Client, ic *instruments.Client, pcs map[string]*planktoscope.Client,
 	ps *presence.Store, cs *chat.Store,
-) (*InstrumentViewData, error) {
+) (vd InstrumentViewData, err error) {
 	instrument, err := ic.FindInstrument(name)
 	if err != nil {
-		return nil, err
+		return InstrumentViewData{}, err
 	}
 	if instrument == nil {
-		return nil, echo.NewHTTPError(
+		return InstrumentViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("instrument %s not found", name),
 		)
 	}
-
-	adminIdentifier, err := oc.GetIdentifier(ctx, instrument.Administrator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "couldn't look up admin identifier for instrument %s", name)
-	}
+	vd.Instrument = *instrument
 
 	pc, ok := pcs[instrument.Controller]
 	if !ok {
-		return nil, errors.Errorf("planktoscope client for instrument %s not found", name)
+		return InstrumentViewData{}, errors.Errorf(
+			"planktoscope client for instrument %s not found", name,
+		)
 	}
-	known, anonymous := ps.List("/instruments/" + name + "/users")
+	vd.Controller = pc.GetState()
+
+	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, instrument.Administrator); err != nil {
+		return InstrumentViewData{}, errors.Wrapf(
+			err, "couldn't look up admin identifier for instrument %s", name,
+		)
+	}
+
+	// Chat
+	vd.KnownViewers, vd.AnonymousViewers = ps.List("/instruments/" + name + "/users")
 	messages, err := cs.GetMessagesByTopic(
 		ctx, "/instruments/"+name+"/chat/messages", chat.DefaultMessagesLimit,
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "couldn't get chat messages for instrument %s", name)
+		return InstrumentViewData{}, errors.Wrapf(
+			err, "couldn't get chat messages for instrument %s", name,
+		)
 	}
-	messagesAdapted, err := handling.AdaptChatMessages(ctx, messages, oc)
+	vd.ChatMessages, err = handling.AdaptChatMessages(ctx, messages, oc)
 	if err != nil {
-		return nil, errors.Wrapf(
+		return InstrumentViewData{}, errors.Wrapf(
 			err, "couldn't adapt chat messages for instrument %s into view data", name,
 		)
 	}
-	return &InstrumentViewData{
-		Instrument:       *instrument,
-		Controller:       pc.GetState(),
-		AdminIdentifier:  adminIdentifier,
-		KnownViewers:     known,
-		AnonymousViewers: anonymous,
-		ChatMessages:     messagesAdapted,
-	}, nil
+
+	return vd, nil
 }
 
 func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
@@ -93,7 +96,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *instrumentViewData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, instrumentViewData, a)
 	}
 }
 
