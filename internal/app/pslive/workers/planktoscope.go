@@ -20,6 +20,7 @@ func EstablishPlanktoscopeControllerConnection(c *planktoscope.Client) error {
 func EstablishPlanktoscopeControllerConnections(
 	ctx context.Context, pcs map[string]*planktoscope.Client,
 ) error {
+	// TODO: persistently retry failed connections
 	eg, _ := errgroup.WithContext(ctx)
 	for _, pc := range pcs {
 		eg.Go(func(c *planktoscope.Client) func() error {

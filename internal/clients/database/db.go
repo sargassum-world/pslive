@@ -126,7 +126,7 @@ func (db *DB) acquire(ctx context.Context, writable bool) (*sqlite.Conn, error) 
 		if err := ctx.Err(); err != nil {
 			return nil, errors.Wrap(err, "couldn't get connection from pool")
 		}
-		return nil, errors.New("couldn't get connection from pool")
+		return nil, errors.New("couldn't get connection from a closed pool")
 	}
 	if err := db.prepare(conn, pool); err != nil {
 		pool.Put(conn)
