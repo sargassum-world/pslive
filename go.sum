@@ -226,8 +226,8 @@ github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b/go.mod h1:wTPjTep
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
-github.com/sargassum-world/fluitans v0.5.1 h1:nq/CLOCnj8B5uTtNsSII04avX/zOeYBcHGwDvk0rTrU=
-github.com/sargassum-world/fluitans v0.5.1/go.mod h1:XCWRep+mUH9Bco1mnk9B/gGEAjNVkq1UquFthL36vnY=
+github.com/sargassum-world/fluitans v0.5.2 h1:Ppy29EZboIhPWgRm2MKDOw0AnILx3WJOb40ggQiocUw=
+github.com/sargassum-world/fluitans v0.5.2/go.mod h1:XCWRep+mUH9Bco1mnk9B/gGEAjNVkq1UquFthL36vnY=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
