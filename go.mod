@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/labstack/gommon v0.3.1
-	github.com/ory/client-go v0.0.1-alpha.167
+	github.com/ory/client-go v0.0.1-alpha.175
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/fluitans v0.5.1
 	github.com/unrolled/secure v1.10.0
