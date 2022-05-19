@@ -1,0 +1,53 @@
+{{$instrument := (get . "Instrument")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}/config/basics">
+  <div class="card section-card is-block">
+    <div class="card-content">
+      <h3>Name</h3>
+      <form
+        action="/instruments/{{$instrument.ID}}/name"
+        method="POST"
+        data-turbo-frame="_top"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+        <div class="field has-addons">
+          <div class="control is-expanded">
+            <input type="text" class="input" name="name" value="{{$instrument.Name}}" required>
+          </div>
+          <div class="control" data-form-submission-target="submitter">
+            <input
+              type="submit"
+              class="button"
+              value="Update"
+              data-form-submission-target="submit"
+            >
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- TODO: make a controller with a confirmation dialog -->
+  <div class="card-width is-block">
+    <form
+      action="/instruments/{{$instrument.ID}}"
+      method="POST"
+      data-turbo-frame="_top"
+      data-controller="form-submission csrf"
+      data-action="submit->form-submission#submit submit->csrf#addToken"
+    >
+      {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
+      <input type="hidden" name="state" value="deleted">
+      <div class="control" data-form-submission-target="submitter">
+        <input
+          class="button is-danger"
+          type="submit"
+          value="Delete instrument"
+          data-form-submission-target="submit"
+        >
+      </div>
+    </form>
+  </div>
+</turbo-frame>

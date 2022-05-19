@@ -7,6 +7,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/database"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 )
 
 // Randomly-generated 32-bit integer for the pslive app, to prevent migration of database files
@@ -16,11 +17,13 @@ const appID = 370761302
 // Migrations
 
 var DomainEmbeds map[string]database.DomainEmbeds = map[string]database.DomainEmbeds{
-	"chat": chat.NewDomainEmbeds(),
+	"chat":        chat.NewDomainEmbeds(),
+	"instruments": instruments.NewDomainEmbeds(),
 }
 
 var MigrationFiles []database.MigrationFile = []database.MigrationFile{
 	{Domain: "chat", File: chat.MigrationFiles[0]},
+	{Domain: "instruments", File: instruments.MigrationFiles[0]},
 }
 
 // Queries

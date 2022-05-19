@@ -14,14 +14,13 @@
 
     <section class="section content">
       <h1>Instruments</h1>
-      <ul>
-      {{range $instrument := .Data}}
-        <li>
-          <a href="/instruments/{{$instrument.Name}}">{{$instrument.Name}}</a>:
-          {{$instrument.Description}}
-        </li>
-      {{end}}
-      </ul>
+      <!-- TODO: group instruments by administrator, to disambiguate identical instrument names -->
+      {{
+        template "shared/instruments/instruments-list.partial.tmpl" dict
+        "Instruments" .Data
+        "Auth" .Auth
+        "ShowCreateButton" true
+      }}
     </section>
   </main>
 {{end}}

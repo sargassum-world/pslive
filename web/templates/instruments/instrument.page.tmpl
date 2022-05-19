@@ -8,8 +8,9 @@
     <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
       <ul>
         <li><a href="/instruments">Instruments</a></li>
+        <li><a href="/users/{{.Data.Instrument.AdminID}}">{{.Data.AdminIdentifier}}</a></li>
         <li class="is-active">
-          <a href="/instruments/{{.Data.Instrument.Name}}" aria-current="page">
+          <a href="/instruments/{{.Data.Instrument.ID}}" aria-current="page">
             {{.Data.Instrument.Name}}
           </a>
         </li>
@@ -17,52 +18,43 @@
     </nav>
 
     <section class="section content">
-      <h1>Instrument {{.Data.Instrument.Name}}</h1>
-      <turbo-frame id="/instruments/{{.Data.Instrument.Name}}/info">
-        <p>{{.Data.Instrument.Description}}</p>
-        <p>
-          Administrator:
-          {{if eq .Data.AdminIdentifier ""}}
-            <tag class="tag is-danger">None</tag>
-          {{else}}
-            <a href="/users/{{.Data.Instrument.Administrator}}" data-turbo="false">
-              {{.Data.AdminIdentifier}}
-            </a>
-          {{end}}
-        </p>
-      <div class="section-card wide-card">
-        <img src="{{.Data.Instrument.MJPEGStream}}" crossorigin>
-      </div>
-      <div class="card section-card wide-card">
-        <div class="card-content">
-          <h3>Chat</h3>
-          {{
-            template "shared/chat/box.partial.tmpl" dict
-            "Topic" (print "/instruments/" .Data.Instrument.Name "/chat")
-            "Messages" .Data.ChatMessages
-            "Auth" .Auth
-            "IsPublic" true
-          }}
-        </div>
-      </div>
-      <div class="card section-card wide-card">
-        <div class="card-content">
-          <h3>Users</h3>
-          {{
-            template "shared/presence/users.partial.tmpl" dict
-            "Topic" (print "/instruments/" .Data.Instrument.Name "/users")
-            "Known" .Data.KnownViewers
-            "Anonymous" .Data.AnonymousViewers
-            "WithTurboStreamSource" true
-          }}
-        </div>
-      </div>
       {{
-        template "instruments/planktoscope/controller.partial.tmpl" dict
+        template "instruments/instrument-basics.partial.tmpl" dict
         "Instrument" .Data.Instrument
-        "Controller" .Data.Controller
+        "AdminIdentifier" .Data.AdminIdentifier
         "Auth" .Auth
       }}
+      <h2>Live</h2>
+      {{
+        template "instruments/instrument-live.partial.tmpl" dict
+        "Instrument" .Data.Instrument
+        "ControllerIDs" .Data.ControllerIDs
+        "Controllers" .Data.Controllers
+        "KnownViewers" .Data.KnownViewers
+        "AnonymousViewers" .Data.AnonymousViewers
+        "ChatMessages" .Data.ChatMessages
+        "Auth" .Auth
+      }}
+      {{if eq .Data.Instrument.AdminID .Auth.Identity.User}}
+        <h2>Basic Settings</h2>
+        {{
+          template "instruments/config/basics.partial.tmpl" dict
+          "Instrument" .Data.Instrument
+          "Auth" .Auth
+        }}
+        <h2>Cameras</h2>
+        {{
+          template "instruments/config/cameras.partial.tmpl" dict
+          "Instrument" .Data.Instrument
+          "Auth" .Auth
+        }}
+        <h2>Controllers</h2>
+        {{
+          template "instruments/config/controllers.partial.tmpl" dict
+          "Instrument" .Data.Instrument
+          "Auth" .Auth
+        }}
+      {{end}}
     </section>
   </main>
 {{end}}

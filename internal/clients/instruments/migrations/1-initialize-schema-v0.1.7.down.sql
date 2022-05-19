@@ -1,0 +1,12 @@
+drop table instruments_instrument;
+drop index instruments_instrument_idx_id;
+drop index instruments_instrument_idx_admin_user_id;
+
+drop table instruments_camera;
+drop constraint instruments_camera_fk_instrument_id;
+drop index instruments_camera_idx_instrument_id;
+
+drop table instruments_controller;
+drop constraint instruments_controller_fk_instrument_id;
+drop index instruments_controller_idx_instrument_id;
+drop index instruments_controller_idx_protocol;

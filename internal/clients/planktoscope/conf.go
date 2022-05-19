@@ -12,6 +12,7 @@ import (
 const envPrefix = "PLANKTOSCOPE_"
 
 type Config struct {
+	URL  string
 	MQTT mqtt.ClientOptions
 }
 
@@ -25,6 +26,7 @@ func (c Config) Broker() *url.URL {
 }
 
 func GetConfig(brokerURL string) (c Config, err error) {
+	c.URL = brokerURL
 	c.MQTT, err = GetMQTTConfig(brokerURL)
 	if err != nil {
 		return Config{}, errors.Wrap(err, "couldn't make MQTT config")

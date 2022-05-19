@@ -1,0 +1,64 @@
+{{$instrument := (get . "Instrument")}}
+{{$controllerIDs := (get . "ControllerIDs")}}
+{{$controllers := (get . "Controllers")}}
+{{$knownViewers := (get . "KnownViewers")}}
+{{$anonymousViewers := (get . "AnonymousViewers")}}
+{{$chatMessages := (get . "ChatMessages")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}/live">
+  {{range $camera := $instrument.Cameras}}
+    <div class="section-card wide-card">
+      {{if eq $camera.Protocol "mjpeg"}}
+        <img
+          id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}"
+          class="instrument-camera-stream"
+          src="{{$camera.URL}}"
+          crossorigin
+        >
+      {{else}}
+        <article class="message is-danger">
+          <div class="message-header">
+            <p>Camera with unrecognized protocol {{$camera.Protocol}}</p>
+          </div>
+          <div class="message-body">
+            TODO: show a form to reconfigure the camera
+          </div>
+        </article>
+      {{end}}
+    </div>
+  {{end}}
+  <div class="card section-card wide-card">
+    <div class="card-content">
+      <h3>Chat</h3>
+      {{
+        template "shared/chat/box.partial.tmpl" dict
+        "Topic" (print "/instruments/" $instrument.ID "/chat")
+        "Messages" $chatMessages
+        "Auth" $auth
+        "IsPublic" true
+      }}
+    </div>
+  </div>
+  <div class="card section-card wide-card">
+    <div class="card-content">
+      <h3>Users</h3>
+      {{
+        template "shared/presence/users.partial.tmpl" dict
+        "Topic" (print "/instruments/" $instrument.ID "/users")
+        "Known" $knownViewers
+        "Anonymous" $anonymousViewers
+        "WithTurboStreamSource" true
+      }}
+    </div>
+  </div>
+  {{range $controllerID := $controllerIDs}}
+    {{
+      template "instruments/planktoscope/controller.partial.tmpl" dict
+      "Instrument" $instrument
+      "ControllerID" $controllerID
+      "Controller" (index $controllers $controllerID)
+      "Auth" $auth
+    }}
+  {{end}}
+</turbo-frame>

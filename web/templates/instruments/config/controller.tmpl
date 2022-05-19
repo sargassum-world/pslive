@@ -1,0 +1,115 @@
+{{$instrument := (get . "Instrument")}}
+{{$controller := (get . "Controller")}}
+{{$auth := (get . "Auth")}}
+{{$frameID := (print "/instruments/" $instrument.ID "/config/controllers")}}
+{{if $controller}}
+  {{$frameID = (print $frameID "/" $controller.ID)}}
+{{end}}
+{{$formRoute := (print "/instruments/" $instrument.ID "/controllers")}}
+{{if $controller}}
+  {{$formRoute = (print $formRoute "/" $controller.ID)}}
+{{end}}
+
+<turbo-frame id={{$frameID}}>
+  <div class="card section-card">
+    <div class="card-content">
+      {{if $controller}}
+        <h3>
+          Controller
+          <form
+            action={{$formRoute}}
+            method="POST"
+            class="is-inline-block"
+            data-turbo-frame="_top"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
+          >
+            {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+            <input type="hidden" name="state" value="deleted">
+            <span data-form-submission-target="submitter">
+              <input
+                class="button is-danger is-small"
+                type="submit"
+                value="Delete"
+                data-form-submission-target="submit"
+              >
+            </span>
+          </form>
+        </h3>
+      {{else}}
+        <h3>New Controller</h3>
+      {{end}}
+      <form
+        action={{$formRoute}}
+        method="POST"
+        data-turbo-frame="_top"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+        {{if $controller}}
+          <input type="hidden" name="state" value="updated">
+        {{end}}
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="protocol">Protocol</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <div class="select">
+                  <select name="protocol" required>
+                    <option value="planktoscope-v2.3" selected>Planktoscope v2.3</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="url">URL</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input
+                  type="url"
+                  class="input"
+                  name="url"
+                  pattern="(http|mqtt)(s)?://.*"
+                  placeholder="mqtt://example.fluitans.org:1883"
+                  {{if $controller}}
+                    value={{$controller.URL}}
+                  {{end}}
+                  required
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field is-horizontal">
+          <div class="field-label is-normal"><!--Left empty for spacing--></div>
+          <div class="field-body" >
+            <div class="field" data-form-submission-target="submitter">
+              <div class="field">
+                <div class="control" data-form-submission-target="submitter">
+                  <input
+                    type="submit"
+                    class="button"
+                    {{if $controller}}
+                      value="Update"
+                    {{else}}
+                      value="Add"
+                    {{end}}
+                    data-form-submission-target="submit"
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</turbo-frame>

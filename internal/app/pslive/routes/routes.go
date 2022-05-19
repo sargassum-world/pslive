@@ -33,6 +33,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	tsh := h.globals.TSBroker.Hub()
 	acc := h.globals.ACCancellers
 	l := h.globals.Logger
+	is := h.globals.Instruments
 	ps := h.globals.Presence
 	cs := h.globals.Chat
 
@@ -43,11 +44,9 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	).Register(er)
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
-	instruments.New(
-		h.r, oc, tsh, h.globals.Instruments, h.globals.Planktoscopes, ps, cs,
-	).Register(er, tsr, ss)
+	instruments.New(h.r, oc, tsh, is, h.globals.Planktoscopes, ps, cs).Register(er, tsr, ss)
 	privatechat.New(h.r, oc, tsh, ps, cs).Register(er, tsr, ss)
-	users.New(h.r, oc, tsh, ps, cs).Register(er, tsr, ss)
+	users.New(h.r, oc, tsh, is, ps, cs).Register(er, tsr, ss)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)
 	tsr.UNSUB("/*", turbostreams.EmptyHandler)

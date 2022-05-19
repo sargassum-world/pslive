@@ -9,6 +9,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
@@ -20,18 +21,20 @@ type Handlers struct {
 
 	tsh *turbostreams.MessagesHub
 
+	is *instruments.Store
 	ps *presence.Store
 	cs *chat.Store
 }
 
 func New(
 	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub,
-	ps *presence.Store, cs *chat.Store,
+	is *instruments.Store, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		oc:  oc,
 		tsh: tsh,
+		is:  is,
 		ps:  ps,
 		cs:  cs,
 	}

@@ -1,4 +1,5 @@
 {{$instrument := (get . "Instrument")}}
+{{$controllerID := (get . "ControllerID")}}
 {{$pumpSettings := (get . "PumpSettings")}}
 {{$pump := (get . "Pump")}}
 {{$auth := (get . "Auth")}}
@@ -7,10 +8,10 @@
 {{if $withTurboStreamSource}}
   {{
     template "shared/turbo-cable-stream-source.partial.tmpl"
-    (print "/instruments/" $instrument.Name "/controller/pump")
+    (print "/instruments/" $instrument.ID "/controllers/" $controllerID "/pump")
   }}
 {{end}}
-<turbo-frame id="/instruments/{{$instrument.Name}}/controller/pump">
+<turbo-frame id="/instruments/{{$instrument.ID}}/controllers/{{$controllerID}}/pump">
   <div class="card section-card wide-card">
     <div class="card-content">
       <h3>
@@ -22,7 +23,7 @@
         {{end}}
       </h3>
       <form
-        action="/instruments/{{$instrument.Name}}/controller/pump"
+        action="/instruments/{{$instrument.ID}}/controllers/{{$controllerID}}/pump"
         method="POST"
         data-controller="form-submission csrf"
         data-action="submit->form-submission#submit submit->csrf#addToken"

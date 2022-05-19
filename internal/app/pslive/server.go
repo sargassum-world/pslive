@@ -155,8 +155,8 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		if err := workers.EstablishPlanktoscopeControllerConnections(
-			ctx, s.Globals.Planktoscopes,
-		); err != nil {
+			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
+		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(
 				err, "couldn't establish planktoscope controller connections",
 			))
@@ -181,6 +181,7 @@ func (s *Server) Run(e *echo.Echo) error {
 	if err := s.openDB(context.Background()); err != nil {
 		return errors.Wrap(err, "couldn't open database")
 	}
+
 	// The echo http server can't be canceled by context cancelation, so the API shouldn't promise to
 	// stop blocking execution on context cancelation - so we use the background context here. The
 	// http server should instead be stopped gracefully by calling the Shutdown method, or forcefully
@@ -215,6 +216,12 @@ func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
 		s.Globals.Logger.Error(errors.Wrap(errDB, "couldn't close database"))
 		if err == nil {
 			err = errDB
+		}
+	}
+	if errPO := s.Globals.Planktoscopes.Close(ctx); errPO != nil {
+		s.Globals.Logger.Error(errors.Wrap(errPO, "couldn't close planktoscope clients"))
+		if err == nil {
+			err = errPO
 		}
 	}
 	return err

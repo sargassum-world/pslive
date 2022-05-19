@@ -31,8 +31,8 @@ type Globals struct {
 	TSSigner     turbostreams.Signer
 	TSBroker     *turbostreams.Broker
 
-	Instruments   *instruments.Client
-	Planktoscopes map[string]*planktoscope.Client
+	Instruments   *instruments.Store
+	Planktoscopes *planktoscope.Orchestrator
 	Presence      *presence.Store
 	Chat          *chat.Store
 
@@ -77,22 +77,8 @@ func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals,
 	g.TSSigner = turbostreams.NewSigner(tssConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
-	instrumentsConfig, err := instruments.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up instruments config")
-	}
-	g.Instruments = instruments.NewClient(instrumentsConfig, l)
-	planktoscopeConfig, err := planktoscope.GetConfig(instrumentsConfig.Instrument.Controller)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up planktoscope config")
-	}
-	g.Planktoscopes = make(map[string]*planktoscope.Client)
-	g.Planktoscopes[instrumentsConfig.Instrument.Controller], err = planktoscope.NewClient(
-		planktoscopeConfig, l,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
-	}
+	g.Instruments = instruments.NewStore(g.DB)
+	g.Planktoscopes = planktoscope.NewOrchestrator(l)
 	g.Presence = presence.NewStore()
 	g.Chat = chat.NewStore(g.DB)
 

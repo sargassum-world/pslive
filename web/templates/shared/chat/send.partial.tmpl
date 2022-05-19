@@ -1,5 +1,6 @@
 {{$topic := (get . "Topic")}}
 {{$auth := (get . "Auth")}}
+{{$focusOnLoad := (get . "FocusOnLoad")}}
 
 <turbo-frame id="{{print $topic "/send"}}">
   {{if $auth.Identity.Authenticated}}
@@ -17,7 +18,9 @@
             class="input"
             name="body"
             size="100"
-            data-controller="load-focus"
+            {{if $focusOnLoad}}
+              data-controller="load-focus"
+            {{end}}
           />
         </div>
         <div class="control">

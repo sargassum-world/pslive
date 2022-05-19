@@ -17,12 +17,6 @@ import (
 
 type DBOption func(*DB)
 
-func WithQueries(queries fs.FS) DBOption {
-	return func(db *DB) {
-		db.queries = queries
-	}
-}
-
 func WithPrepareConnQueries(queries fs.FS) DBOption {
 	return func(db *DB) {
 		db.prepareConnQueries = queries
@@ -33,7 +27,6 @@ func WithPrepareConnQueries(queries fs.FS) DBOption {
 
 type DB struct {
 	Config             Config
-	queries            fs.FS
 	prepareConnQueries fs.FS
 
 	// Connection management
@@ -170,10 +163,51 @@ func (db *DB) Migrate(ctx context.Context, schema sqlitemigration.Schema) error 
 
 // Statement Execution
 
-func (db *DB) Execute(conn *sqlite.Conn, queryFile string, opts *sqlitex.ExecOptions) error {
-	return sqlitex.ExecuteFS(conn, db.queries, queryFile, opts)
+func (db *DB) ExecuteInsertion(
+	ctx context.Context, query string, namedParams map[string]interface{},
+) (rowID int64, err error) {
+	conn, err := db.AcquireWriter(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "couldn't acquire writer to perform insertion")
+	}
+	defer db.ReleaseWriter(conn)
+
+	return ExecuteInsertion(conn, query, namedParams)
 }
 
-func (db *DB) ExecuteScript(conn *sqlite.Conn, queryFile string, opts *sqlitex.ExecOptions) error {
-	return sqlitex.ExecuteScriptFS(conn, db.queries, queryFile, opts)
+func (db *DB) ExecuteUpdate(
+	ctx context.Context, query string, namedParams map[string]interface{},
+) error {
+	conn, err := db.AcquireWriter(ctx)
+	if err != nil {
+		return errors.Wrap(err, "couldn't acquire writer to perform update")
+	}
+	defer db.ReleaseWriter(conn)
+
+	return ExecuteUpdate(conn, query, namedParams)
+}
+
+func (db *DB) ExecuteDelete(
+	ctx context.Context, query string, namedParams map[string]interface{},
+) error {
+	conn, err := db.AcquireWriter(ctx)
+	if err != nil {
+		return errors.Wrap(err, "couldn't acquire writer to perform delete")
+	}
+	defer db.ReleaseWriter(conn)
+
+	return ExecuteDelete(conn, query, namedParams)
+}
+
+func (db *DB) ExecuteSelection(
+	ctx context.Context, query string, namedParams map[string]interface{},
+	resultFunc func(s *sqlite.Stmt) error,
+) error {
+	conn, err := db.AcquireReader(ctx)
+	if err != nil {
+		return errors.Wrap(err, "couldn't acquire reader to perform selection")
+	}
+	defer db.ReleaseReader(conn)
+
+	return ExecuteSelection(conn, query, namedParams, resultFunc)
 }

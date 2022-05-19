@@ -73,8 +73,9 @@ func replaceChatSendStream(topic string, a auth.Auth) turbostreams.Message {
 		Target:   topic + "/send",
 		Template: sendPartial,
 		Data: map[string]interface{}{
-			"Topic": topic,
-			"Auth":  a,
+			"Topic":       topic,
+			"Auth":        a,
+			"FocusOnLoad": true,
 		},
 	}
 }

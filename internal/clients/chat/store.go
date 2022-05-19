@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"zombiezen.com/go/sqlite"
-	"zombiezen.com/go/sqlite/sqlitex"
 
 	"github.com/sargassum-world/pslive/internal/clients/database"
 )
@@ -28,24 +26,14 @@ var rawInsertMessageQuery string
 var insertMessageQuery string = strings.TrimSpace(rawInsertMessageQuery)
 
 func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err error) {
-	conn, err := s.db.AcquireWriter(ctx)
+	rowID, err := s.db.ExecuteInsertion(ctx, insertMessageQuery, m.newInsertion())
 	if err != nil {
-		return 0, errors.Wrap(err, "couldn't acquire writer to add chat message")
+		return 0, errors.Wrapf(err, "couldn't add chat message with topic %s", m.Topic)
 	}
-	defer s.db.ReleaseWriter(conn)
-
-	if err = sqlitex.ExecuteScript(conn, insertMessageQuery, &sqlitex.ExecOptions{
-		Named: m.NewInsertion(),
-		ResultFunc: func(s *sqlite.Stmt) error {
-			messageID = s.GetInt64("id")
-			return nil
-		},
-	}); err != nil {
-		return 0, errors.Wrapf(err, "couldn't execute query to add chat message with topic %s", m.Topic)
-	}
-	// TODO: instead of returning the raw messageID, return the frontend-facing message ID as a salted
-	// SHA-256 hash of message_id to mitigate the insecure direct object reference vulnerability?
-	return messageID, err
+	// TODO: instead of returning the raw ID, return the frontend-facing ID as a salted SHA-256 hash
+	// of the ID to mitigate the insecure direct object reference vulnerability and avoid leaking
+	// info about instrument creation?
+	return rowID, err
 }
 
 //go:embed select-messages-by-topic.sql
@@ -57,26 +45,16 @@ const DefaultMessagesLimit = 50
 func (s *Store) GetMessagesByTopic(
 	ctx context.Context, topic string, messagesLimit int64,
 ) (messages []Message, err error) {
-	conn, err := s.db.AcquireReader(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't acquire reader to get chat messages by topic")
-	}
-	defer s.db.ReleaseReader(conn)
-
-	messages = make([]Message, 0)
-	if err = sqlitex.Execute(conn, selectMessagesByTopicQuery, &sqlitex.ExecOptions{
-		Named: map[string]interface{}{
+	sel := newMessagesSelector()
+	if err = s.db.ExecuteSelection(
+		ctx, selectMessagesByTopicQuery,
+		map[string]interface{}{
 			"$topic":      topic,
 			"$rows_limit": messagesLimit,
 		},
-		ResultFunc: func(s *sqlite.Stmt) error {
-			messages = append(messages, NewMessage(s))
-			return nil
-		},
-	}); err != nil {
-		return nil, errors.Wrapf(
-			err, "couldn't execute query to get chat messages with topic %s", topic,
-		)
+		sel.Step,
+	); err != nil {
+		return nil, errors.Wrapf(err, "couldn't get chat messages with topic %s", topic)
 	}
-	return messages, nil
+	return sel.Messages(), nil
 }

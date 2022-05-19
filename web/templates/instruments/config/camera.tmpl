@@ -1,0 +1,115 @@
+{{$instrument := (get . "Instrument")}}
+{{$camera := (get . "Camera")}}
+{{$auth := (get . "Auth")}}
+{{$frameID := (print "/instruments/" $instrument.ID "/config/cameras")}}
+{{if $camera}}
+  {{$frameID = (print $frameID "/" $camera.ID)}}
+{{end}}
+{{$formRoute := (print "/instruments/" $instrument.ID "/cameras")}}
+{{if $camera}}
+  {{$formRoute = (print $formRoute "/" $camera.ID)}}
+{{end}}
+
+<turbo-frame id={{$frameID}}>
+  <div class="card section-card">
+    <div class="card-content">
+      {{if $camera}}
+        <h3>
+          Camera
+          <form
+            action={{$formRoute}}
+            method="POST"
+            class="is-inline-block"
+            data-turbo-frame="_top"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
+          >
+            {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+            <input type="hidden" name="state" value="deleted">
+            <span data-form-submission-target="submitter">
+              <input
+                class="button is-danger is-small"
+                type="submit"
+                value="Delete"
+                data-form-submission-target="submit"
+              >
+            </span>
+          </form>
+        </h3>
+      {{else}}
+        <h3>New Camera</h3>
+      {{end}}
+      <form
+        action={{$formRoute}}
+        method="POST"
+        data-turbo-frame="_top"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+        {{if $camera}}
+          <input type="hidden" name="state" value="updated">
+        {{end}}
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="protocol">Protocol</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <div class="select">
+                  <select name="protocol" required>
+                    <option value="mjpeg" selected>MJPEG</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="url">URL</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input
+                  type="url"
+                  class="input"
+                  name="url"
+                  pattern="http(s)?://.*"
+                  placeholder="https://example-proxy.cloud.syngnathus.sargassum.world/"
+                  {{if $camera}}
+                    value={{$camera.URL}}
+                  {{end}}
+                  required
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field is-horizontal">
+          <div class="field-label is-normal"><!--Left empty for spacing--></div>
+          <div class="field-body" >
+            <div class="field" data-form-submission-target="submitter">
+              <div class="field">
+                <div class="control" data-form-submission-target="submitter">
+                  <input
+                    type="submit"
+                    class="button"
+                    {{if $camera}}
+                      value="Update"
+                    {{else}}
+                      value="Add"
+                    {{end}}
+                    data-form-submission-target="submit"
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</turbo-frame>
