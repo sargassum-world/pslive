@@ -135,10 +135,6 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 
 		// Run queries
 		// FIXME: ensure that the controller belongs to the instrument and that the user is authorized!
-		instrument, err := h.is.GetInstrument(c.Request().Context(), id)
-		if err != nil {
-			return err
-		}
 		pc, ok := h.pco.Get(id)
 		if !ok {
 			return errors.Errorf(
@@ -152,10 +148,13 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 			return err
 		}
 
-		// Render Turbo Stream if accepted
+		// We rely on Turbo Streams over websockets, so we return an empty response here to avoid a race
+		// condition of two Turbo Stream replace messages (where the one from this POST response could
+		// be stale and overwrite a fresher message over websockets by arriving later).
+		// FIXME: is there a cleaner way to avoid the race condition which would work even if the
+		// WebSocket connection is misbehaving?
 		if turbostreams.Accepted(c.Request().Header) {
-			message := replacePumpStream(id, controllerID, instrument, a, pc)
-			return h.r.TurboStream(c.Response(), message)
+			return h.r.TurboStream(c.Response())
 		}
 
 		// Redirect user

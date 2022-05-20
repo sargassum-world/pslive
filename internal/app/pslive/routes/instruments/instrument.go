@@ -63,8 +63,12 @@ func getInstrumentViewData(
 				"planktoscope client for instrument %d not found", id,
 			)
 		}
-		vd.ControllerIDs = append(vd.ControllerIDs, controller.ID)
-		vd.Controllers[controller.ID] = pc.GetState()
+		if pc.HasConnection() {
+			// TODO: display some indication to the user when a controller is unreachable, and push
+			// updates over Turbo Streams when a controller's reachability changes
+			vd.ControllerIDs = append(vd.ControllerIDs, controller.ID)
+			vd.Controllers[controller.ID] = pc.GetState()
+		}
 	}
 
 	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, instrument.AdminID); err != nil {

@@ -4,7 +4,6 @@ package planktoscope
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -137,6 +136,10 @@ func (c *Client) ConnectedAtLeastOnce() <-chan struct{} {
 	return c.firstConnSuccess
 }
 
+func (c *Client) HasConnection() bool {
+	return c.MQTT.IsConnectionOpen()
+}
+
 func (c *Client) Shutdown(ctx context.Context) error {
 	if !c.MQTT.IsConnected() {
 		return nil
@@ -172,10 +175,8 @@ func (c *Client) Close() {
 	if !c.MQTT.IsConnected() {
 		return
 	}
-	fmt.Println(c.Config.URL, "acquiring close lock on mqtt connection...")
 	c.mqttConnMu.Lock()
 	defer c.mqttConnMu.Unlock()
-	fmt.Println(c.Config.URL, "acquired close lock on mqtt connection!")
 
 	c.MQTT.Disconnect(0)
 }

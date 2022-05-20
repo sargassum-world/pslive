@@ -82,9 +82,14 @@ func (c *Client) getIdentifierFromCache(id string) (string, bool) {
 }
 
 func (c *Client) getIdentifierFromOry(ctx context.Context, id string) (string, error) {
-	identity, _, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
+	identity, res, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
 	if err != nil {
 		return "", errors.Wrapf(err, "couldn't look up identity of %s", id)
+	}
+	if err = res.Body.Close(); err != nil {
+		return "", errors.Wrap(
+			err, "couldn't close Ory Kratos identifier lookup response body",
+		)
 	}
 	identifier, err := getIdentifier(*identity)
 	if err != nil {
@@ -104,9 +109,14 @@ func (c *Client) GetIdentifier(ctx context.Context, id string) (string, error) {
 }
 
 func (c *Client) GetIdentity(ctx context.Context, id string) (Identity, error) {
-	identity, _, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
+	identity, res, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, id).Execute()
 	if err != nil {
 		return Identity{}, errors.Wrapf(err, "couldn't get identity of %s", id)
+	}
+	if err = res.Body.Close(); err != nil {
+		return Identity{}, errors.Wrap(
+			err, "couldn't close Ory Kratos identifier lookup response body",
+		)
 	}
 	parsed, err := parseIdentity(*identity)
 	if err != nil {
@@ -126,7 +136,15 @@ func (c *Client) GetIdentity(ctx context.Context, id string) (Identity, error) {
 // Identities
 
 func (c *Client) GetIdentities(ctx context.Context) ([]Identity, error) {
-	oryIdentities, _, err := c.Ory.V0alpha2Api.AdminListIdentities(ctx).Execute()
+	oryIdentities, res, err := c.Ory.V0alpha2Api.AdminListIdentities(ctx).Execute()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't get identities")
+	}
+	if err = res.Body.Close(); err != nil {
+		return nil, errors.Wrap(
+			err, "couldn't close Ory Kratos identifier listing response body",
+		)
+	}
 	identities := make([]Identity, len(oryIdentities))
 	for i, identity := range oryIdentities {
 		identities[i], err = parseIdentity(identity)
