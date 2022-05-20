@@ -9,14 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Pump struct {
-	StateKnown bool
-	Pumping    bool
-	Start      time.Time
-	Duration   time.Duration
-	Deadline   time.Time
-}
-
 func (c *Client) PumpStateBroadcasted() <-chan struct{} {
 	return c.pumpB.Broadcasted()
 }
@@ -63,12 +55,6 @@ func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 	c.updatePumpState(newState)
 	c.Logger.Debugf("%s: %+v", c.Config.Broker().String(), newState)
 	return nil
-}
-
-type PumpSettings struct {
-	Forward  bool
-	Volume   float64
-	Flowrate float64
 }
 
 func (c *Client) updatePumpSettings(newSettings PumpSettings) {

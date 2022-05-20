@@ -69,6 +69,13 @@
           </div>
         </div>
       {{end}}
+      <h2>Instruments</h2>
+      {{
+        template "shared/instruments/instruments-list.partial.tmpl" dict
+        "Instruments" .Data.Instruments
+        "Auth" .Auth
+        "ShowCreateButton" (eq .Auth.Identity.User .Data.Identity.ID)
+      }}
     </section>
   </main>
 {{end}}

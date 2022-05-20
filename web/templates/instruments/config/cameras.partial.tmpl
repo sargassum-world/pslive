@@ -1,0 +1,18 @@
+{{$instrument := (get . "Instrument")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}/config/cameras">
+  {{range $camera := $instrument.Cameras}}
+    {{
+      template "instruments/config/camera.tmpl" dict
+      "Instrument" $instrument
+      "Camera" $camera
+      "Auth" $auth
+    }}
+  {{end}}
+  {{
+    template "instruments/config/camera.tmpl" dict
+    "Instrument" $instrument
+    "Auth" $auth
+  }}
+</turbo-frame>

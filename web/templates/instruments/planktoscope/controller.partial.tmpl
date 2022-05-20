@@ -1,11 +1,13 @@
 {{$instrument := (get . "Instrument")}}
+{{$controllerID := (get . "ControllerID")}}
 {{$controller := (get . "Controller")}}
 {{$auth := (get . "Auth")}}
 
-<turbo-frame id="/instruments/{{$instrument.Name}}/controller">
+<turbo-frame id="/instruments/{{$instrument.Name}}/controllers/{{$controllerID}}">
   {{
     template "instruments/planktoscope/pump.partial.tmpl" dict
     "Instrument" $instrument
+    "ControllerID" $controllerID
     "Pump" $controller.Pump
     "PumpSettings" $controller.PumpSettings
     "Auth" $auth

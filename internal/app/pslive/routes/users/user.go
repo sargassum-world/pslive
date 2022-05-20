@@ -4,58 +4,86 @@ import (
 	"context"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-type UserData struct {
-	Identity                ory.Identity
+type UserViewData struct {
+	Identity ory.Identity
+
 	PublicKnownViewers      []presence.User
 	PublicAnonymousViewers  []string
-	PublicChatMessages      []chat.Message
+	PublicChatMessages      []handling.ChatMessageViewData
 	PrivateKnownViewers     []presence.User
 	PrivateAnonymousViewers []string
-	PrivateChatMessages     []chat.Message
+	PrivateChatMessages     []handling.ChatMessageViewData
+
+	Instruments []instruments.Instrument
 }
 
-func getUserData(
-	ctx context.Context, id string, a auth.Auth, oc *ory.Client, ps *presence.Store, cs *chat.Store,
-) (*UserData, error) {
-	identity, err := oc.GetIdentity(ctx, id)
-	if err != nil {
-		return nil, err
+func getUserViewData(
+	ctx context.Context, id string, a auth.Auth, oc *ory.Client,
+	is *instruments.Store, ps *presence.Store, cs *chat.Store,
+) (vd UserViewData, err error) {
+	if vd.Identity, err = oc.GetIdentity(ctx, id); err != nil {
+		return UserViewData{}, err
 	}
 
 	// Public chat
-	publicKnown, publicAnonymous := ps.List("/users/" + id + "/chat/users")
-	publicMessages := cs.List("/users/" + id + "/chat/messages")
+	vd.PublicKnownViewers, vd.PublicAnonymousViewers = ps.List("/users/" + id + "/chat/users")
+	publicMessages, err := cs.GetMessagesByTopic(
+		ctx, "/users/"+id+"/chat/messages", chat.DefaultMessagesLimit,
+	)
+	if err != nil {
+		return UserViewData{}, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
+	}
+	if vd.PublicChatMessages, err = handling.AdaptChatMessages(ctx, publicMessages, oc); err != nil {
+		return UserViewData{}, errors.Wrapf(
+			err, "couldn't adapt public chat messages for user %s into view data", id,
+		)
+	}
 
 	// Private chat
-	var privateKnown []presence.User
-	var privateAnonymous []string
-	var privateMessages []chat.Message
 	if a.Identity.Authenticated && a.Identity.User != id {
 		first := id
 		second := a.Identity.User
 		if second < first {
 			first, second = second, first
 		}
-		privateKnown, privateAnonymous = ps.List("/private-chats/" + first + "/" + second + "/chat/users")
-		privateMessages = cs.List("/private-chats/" + first + "/" + second + "/chat/messages")
+		vd.PrivateKnownViewers, vd.PrivateAnonymousViewers = ps.List(
+			"/private-chats/" + first + "/" + second + "/chat/users",
+		)
+		var privateMessages []chat.Message
+		privateMessages, err = cs.GetMessagesByTopic(
+			ctx, "/private-chats/"+first+"/"+second+"/chat/messages", chat.DefaultMessagesLimit,
+		)
+		if err != nil {
+			return UserViewData{}, errors.Wrapf(
+				err, "couldn't get private chat messages for users %s & %s", first, second,
+			)
+		}
+		if vd.PrivateChatMessages, err = handling.AdaptChatMessages(
+			ctx, privateMessages, oc,
+		); err != nil {
+			return UserViewData{}, errors.Wrapf(
+				err, "couldn't adapt private chat messages for user %s into view data", id,
+			)
+		}
 	}
 
-	return &UserData{
-		Identity:                identity,
-		PublicKnownViewers:      publicKnown,
-		PublicAnonymousViewers:  publicAnonymous,
-		PublicChatMessages:      publicMessages,
-		PrivateKnownViewers:     privateKnown,
-		PrivateAnonymousViewers: privateAnonymous,
-		PrivateChatMessages:     privateMessages,
-	}, nil
+	// Instruments
+	if vd.Instruments, err = is.GetInstrumentsByAdminID(ctx, id); err != nil {
+		return UserViewData{}, err
+	}
+	// TODO: we should adapt it into a []InstrumentViewData or something
+
+	return vd, nil
 }
 
 func (h *Handlers) HandleUserGet() auth.HTTPHandlerFunc {
@@ -66,12 +94,12 @@ func (h *Handlers) HandleUserGet() auth.HTTPHandlerFunc {
 		id := c.Param("id")
 
 		// Run queries
-		userData, err := getUserData(c.Request().Context(), id, a, h.oc, h.ps, h.cs)
+		userViewData, err := getUserViewData(c.Request().Context(), id, a, h.oc, h.is, h.ps, h.cs)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *userData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, userViewData, a)
 	}
 }

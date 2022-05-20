@@ -46,11 +46,12 @@ func HandlePresenceSub(
 				}
 				ps.Remember(sess.ID, a.Identity.User, user)
 			}
-			ps.Add(c.Topic(), sess.ID)
-			go func() {
-				time.Sleep(subPubDelay * time.Millisecond)
-				c.Publish(replacePresenceStream(c.Topic(), t, ps))
-			}()
+			if ps.Add(c.Topic(), sess.ID) {
+				go func() {
+					time.Sleep(subPubDelay * time.Millisecond)
+					c.Publish(replacePresenceStream(c.Topic(), t, ps))
+				}()
+			}
 			return nil
 		},
 		ss,
@@ -64,8 +65,9 @@ func HandlePresenceUnsub(
 	r.MustHave(t)
 	return auth.HandleTSWithSession(
 		func(c turbostreams.Context, a auth.Auth, sess *sessions.Session) error {
-			ps.Remove(c.Topic(), sess.ID)
-			c.Publish(replacePresenceStream(c.Topic(), t, ps))
+			if ps.Remove(c.Topic(), sess.ID) {
+				c.Publish(replacePresenceStream(c.Topic(), t, ps))
+			}
 			return nil
 		},
 		ss,

@@ -19,7 +19,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-type CSRFData struct {
+type CSRFViewData struct {
 	HeaderName string `json:"headerName,omitempty"`
 	FieldName  string `json:"fieldName,omitempty"`
 	Token      string `json:"token,omitempty"`
@@ -29,7 +29,7 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Produce output
 		godest.WithUncacheable()(c.Response().Header())
-		return c.JSON(http.StatusOK, CSRFData{
+		return c.JSON(http.StatusOK, CSRFViewData{
 			HeaderName: h.ss.CSRFOptions().HeaderName,
 			FieldName:  h.ss.CSRFOptions().FieldName,
 			Token:      csrf.Token(c.Request()),
@@ -37,7 +37,7 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	}
 }
 
-type LoginData struct {
+type LoginViewData struct {
 	NoAuth         bool
 	ReturnURL      string
 	ErrorMessages  []string
@@ -70,7 +70,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		c.SetCookie(cookie)
 
 		// Make login page
-		loginData := LoginData{
+		loginViewData := LoginViewData{
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
 			OryFlow:       flow.Id,
@@ -79,23 +79,23 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 			inputAttrs := node.Attributes.UiNodeInputAttributes
 			if inputAttrs != nil && inputAttrs.Name == "csrf_token" {
 				if csrfToken, ok := inputAttrs.Value.(string); ok {
-					loginData.OryCSRF = csrfToken
+					loginViewData.OryCSRF = csrfToken
 				}
 			}
 		}
-		if loginData.OryRegisterURL, err = h.oc.GetPath(
+		if loginViewData.OryRegisterURL, err = h.oc.GetPath(
 			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRegistrationFlow",
 			"/ui/registration",
 		); err != nil {
 			return err
 		}
-		if loginData.OryRecoverURL, err = h.oc.GetPath(
+		if loginViewData.OryRecoverURL, err = h.oc.GetPath(
 			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRecoveryFlow", "/ui/recovery",
 		); err != nil {
 			return err
 		}
 		if a.Identity.Authenticated {
-			if loginData.UserIdentifier, err = h.oc.GetIdentifier(
+			if loginViewData.UserIdentifier, err = h.oc.GetIdentifier(
 				c.Request().Context(), a.Identity.User,
 			); err != nil {
 				return err
@@ -106,7 +106,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		a.CSRF.SetInlining(c.Request(), true)
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, loginData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, loginViewData, a)
 	}
 }
 

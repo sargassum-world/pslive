@@ -50,6 +50,8 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	tsr.MSG("/private-chats/:first/:second/chat/users", handling.HandleTSMsg(h.r, ss))
 	tsr.SUB("/private-chats/:first/:second/chat/messages", turbostreams.EmptyHandler, tsaz)
 	tsr.MSG("/private-chats/:first/:second/chat/messages", handling.HandleTSMsg(h.r, ss))
+	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll
+	// TODO: make the GET handler check for user authorization to view the chat history
 	hr.POST("/private-chats/:first/:second/chat/messages", handling.HandleChatMessagesPost(
 		h.r, h.oc, h.tsh, h.cs,
 	), haz) // FIXME: currently any authenticated user can send a message!

@@ -1,0 +1,61 @@
+{{$instrument := (get . "Instrument")}}
+{{$adminIdentifier := (get . "AdminIdentifier")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}/basics">
+  <h1>
+    {{if eq 0 (len $instrument.Name)}}
+      Unnamed Instrument
+    {{else}}
+      Instrument {{$instrument.Name}}
+    {{end}}
+  </h1>
+
+  <p>
+    Administrator:
+    {{if eq $adminIdentifier ""}}
+      <tag class="tag is-danger">None</tag>
+    {{else}}
+      <a href="/users/{{$instrument.AdminID}}" data-turbo="false">
+        {{$adminIdentifier}}
+      </a>
+    {{end}}
+  </p>
+
+  {{if eq $auth.Identity.User $instrument.AdminID}}
+    <form
+      action="/instruments/{{$instrument.ID}}/description"
+      method="POST"
+      data-controller="form-submission csrf"
+      data-action="submit->form-submission#submit submit->csrf#addToken"
+    >
+      {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+      <label class="label" for="description">Description</label>
+      <div class="field">
+        <div class="control">
+          <textarea
+            class="textarea"
+            name="description"
+            placeholder="Describe the instrument, its surrounding context, the current sample, etc."
+            required
+          >
+            {{- $instrument.Description -}}
+          </textarea>
+        </div>
+      </div>
+      <div class="field">
+        <div class="control" data-form-submission-target="submitter">
+          <input
+            type="submit"
+            class="button"
+            value="Update"
+            data-form-submission-target="submit"
+          >
+        </div>
+      </div>
+    </form>
+  {{else}}
+    <p>{{$instrument.Description}}</p>
+  {{end}}
+
+</turbo-frame>

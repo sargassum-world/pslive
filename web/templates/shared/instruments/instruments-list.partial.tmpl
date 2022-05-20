@@ -1,0 +1,28 @@
+{{$instruments := get . "Instruments"}}
+{{$auth := get . "Auth"}}
+{{$showCreateButton := get . "ShowCreateButton"}}
+
+<turbo-frame id="/instruments/list">
+  {{if and $auth.Identity.Authenticated $showCreateButton}}
+    {{
+      template "shared/instruments/create-instrument.partial.tmpl" dict
+      "Auth" $auth
+    }}
+  {{end}}
+  <ul>
+    {{range $instrument := $instruments}}
+      <li>
+        <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
+          {{if eq 0 (len $instrument.Name)}}
+            Unnamed Instrument
+          {{- else -}}
+            {{$instrument.Name -}}
+          {{- end -}}
+        </a>: {{$instrument.Description}}
+        <!-- TODO: show these as network entity cards instead -->
+      </li>
+    {{else}}
+      <li>No instruments are registered yet!</li>
+    {{end}}
+  </ul>
+</turbo-frame>

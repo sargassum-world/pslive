@@ -2,52 +2,59 @@
 package chat
 
 import (
-	"sync"
-	"time"
+	"context"
+	_ "embed"
+	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/sargassum-world/pslive/internal/clients/database"
 )
 
-type Message struct {
-	Time             time.Time
-	SenderID         string
-	SenderIdentifier string
-	Text             string
-}
-
-const maxHistory = 100 // max number of messages to store per topic
-
 type Store struct {
-	messages map[string][]Message
-	mmu      sync.RWMutex
+	db *database.DB
 }
 
-func NewStore() *Store {
+func NewStore(db *database.DB) *Store {
 	return &Store{
-		messages: make(map[string][]Message),
+		db: db,
 	}
 }
 
-func (s *Store) Add(topic string, m Message) {
-	// We could have less lock contention if we had more granular locks, but we don't care about such
-	// scalability yet.
-	s.mmu.Lock()
-	defer s.mmu.Unlock()
+//go:embed insert-message.sql
+var rawInsertMessageQuery string
+var insertMessageQuery string = strings.TrimSpace(rawInsertMessageQuery)
 
-	// It's extremely inefficient to use slices for a queue due to allocations/deallocations, but
-	// we aren't at a scale to care about this performance yet.
-	s.messages[topic] = append(s.messages[topic], m)
-	if len(s.messages[topic]) > maxHistory {
-		s.messages[topic] = s.messages[topic][len(s.messages[topic])-maxHistory:]
+func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err error) {
+	rowID, err := s.db.ExecuteInsertion(ctx, insertMessageQuery, m.newInsertion())
+	if err != nil {
+		return 0, errors.Wrapf(err, "couldn't add chat message with topic %s", m.Topic)
 	}
+	// TODO: instead of returning the raw ID, return the frontend-facing ID as a salted SHA-256 hash
+	// of the ID to mitigate the insecure direct object reference vulnerability and avoid leaking
+	// info about instrument creation?
+	return rowID, err
 }
 
-func (s *Store) List(topic string) []Message {
-	s.mmu.RLock()
-	defer s.mmu.RUnlock()
+//go:embed select-messages-by-topic.sql
+var rawSelectMessagesByTopicQuery string
+var selectMessagesByTopicQuery string = strings.TrimSpace(rawSelectMessagesByTopicQuery)
 
-	messages, ok := s.messages[topic]
-	if !ok {
-		return []Message{}
+const DefaultMessagesLimit = 50
+
+func (s *Store) GetMessagesByTopic(
+	ctx context.Context, topic string, messagesLimit int64,
+) (messages []Message, err error) {
+	sel := newMessagesSelector()
+	if err = s.db.ExecuteSelection(
+		ctx, selectMessagesByTopicQuery,
+		map[string]interface{}{
+			"$topic":      topic,
+			"$rows_limit": messagesLimit,
+		},
+		sel.Step,
+	); err != nil {
+		return nil, errors.Wrapf(err, "couldn't get chat messages with topic %s", topic)
 	}
-
-	return messages
+	return sel.Messages(), nil
 }

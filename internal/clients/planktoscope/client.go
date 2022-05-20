@@ -2,7 +2,9 @@
 package planktoscope
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -11,19 +13,18 @@ import (
 )
 
 const (
+	Protocol        = "planktoscope-v2.3"
 	mqttAtLeastOnce = 1
 	mqttExactlyOnce = 2
 )
 
-type Planktoscope struct {
-	Pump         Pump
-	PumpSettings PumpSettings
-}
-
 type Client struct {
-	Config Config
-	Logger godest.Logger
-	MQTT   mqtt.Client
+	Config               Config
+	Logger               godest.Logger
+	MQTT                 mqtt.Client
+	mqttConnMu           *sync.Mutex
+	firstConnSuccess     chan struct{}
+	firstConnSuccessOnce *sync.Once
 
 	stateL       *sync.RWMutex
 	pump         Pump
@@ -35,6 +36,9 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client = &Client{}
 	client.Config = c
 	client.Logger = l
+	client.mqttConnMu = &sync.Mutex{}
+	client.firstConnSuccess = make(chan struct{})
+	client.firstConnSuccessOnce = &sync.Once{}
 	client.stateL = &sync.RWMutex{}
 	client.pumpB = NewBroadcaster()
 	const defaultVolume = 1
@@ -64,15 +68,10 @@ func (c *Client) GetState() Planktoscope {
 
 // MQTT
 
-func (c *Client) EstablishConnection() error {
-	token := c.MQTT.Connect()
-	if token.Wait() && token.Error() != nil {
-		return token.Error()
-	}
-	return nil
-}
-
 func (c *Client) handleConnected(cm mqtt.Client) {
+	c.firstConnSuccessOnce.Do(func() {
+		close(c.firstConnSuccess)
+	})
 	c.Logger.Infof("connected to MQTT broker %s", c.Config.Broker().String())
 	// FIXME: we might not want to use Once 1 everywhere (depends on which messages are idempotent)
 	token := cm.Subscribe("#", mqttAtLeastOnce, c.handleMessage)
@@ -123,4 +122,60 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 			).Error())
 		}
 	}
+}
+
+func (c *Client) Connect() error {
+	c.mqttConnMu.Lock()
+	defer c.mqttConnMu.Unlock()
+
+	token := c.MQTT.Connect()
+	_ = token.Wait()
+	return errors.Wrapf(token.Error(), "couldn't connect to %s", c.Config.URL)
+}
+
+func (c *Client) ConnectedAtLeastOnce() <-chan struct{} {
+	return c.firstConnSuccess
+}
+
+func (c *Client) Shutdown(ctx context.Context) error {
+	if !c.MQTT.IsConnected() {
+		return nil
+	}
+
+	// If the connection never opens, the Connect() method will never release mqttConnMu, but there
+	// also (as far as I can tell) won't be any data race between MQTT.Connect() and MQTT.Disconnect()
+	// which would otherwise require mqttConnMu. The paho.mqtt.golang package should really try to
+	// avoid data races between its Connect and Disconnect methods...
+	select {
+	default:
+		break
+	case <-c.firstConnSuccess:
+		c.mqttConnMu.Lock()
+		defer c.mqttConnMu.Unlock()
+	}
+
+	closedNormally := make(chan struct{})
+	go func() {
+		const closeTimeout = 5000 // ms
+		c.MQTT.Disconnect(closeTimeout)
+		close(closedNormally)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-closedNormally:
+		return nil
+	}
+}
+
+func (c *Client) Close() {
+	if !c.MQTT.IsConnected() {
+		return
+	}
+	fmt.Println(c.Config.URL, "acquiring close lock on mqtt connection...")
+	c.mqttConnMu.Lock()
+	defer c.mqttConnMu.Unlock()
+	fmt.Println(c.Config.URL, "acquired close lock on mqtt connection!")
+
+	c.MQTT.Disconnect(0)
 }

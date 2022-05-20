@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
+	github.com/atrox/haikunatorgo v2.0.0+incompatible
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/eclipse/paho.mqtt.golang v1.3.5
@@ -20,4 +21,5 @@ require (
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
+	zombiezen.com/go/sqlite v0.9.2
 )

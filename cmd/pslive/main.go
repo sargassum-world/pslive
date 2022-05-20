@@ -2,37 +2,49 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive"
 )
 
-const port = 3000
+const shutdownTimeout = 5 // sec
 
 func main() {
-	e := echo.New()
-
-	// Middleware
-	e.Use(middleware.Recover())
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => " +
-			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
-	}))
-	e.Logger.SetLevel(log.DEBUG)
-
 	// Prepare server
-	s, err := pslive.NewServer(e)
+	e := echo.New()
+	server, err := pslive.NewServer(e.Logger)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
-		panic(err)
+		e.Logger.Fatal(err)
 	}
-	s.Register(e)
+	server.Register(e)
 
-	// Start server
-	go s.RunBackgroundWorkers(context.TODO())
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
+	// Run server
+	ctxRun, cancelRun := signal.NotifyContext(
+		context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT,
+	)
+	go func() {
+		if err = server.Run(e); err != nil {
+			e.Logger.Error(err)
+		}
+		cancelRun()
+	}()
+	<-ctxRun.Done()
+	cancelRun()
+
+	// Shut down server
+	ctxShutdown, cancelShutdown := context.WithTimeout(
+		context.Background(), shutdownTimeout*time.Second,
+	)
+	defer cancelShutdown()
+	e.Logger.Infof("attempting to shut down gracefully within %d sec", shutdownTimeout)
+	if err := server.Shutdown(ctxShutdown, e); err != nil {
+		e.Logger.Warn("forcibly closing http server due to failure of graceful shutdown")
+		e.Logger.Error(server.Close(e))
+	}
+	e.Logger.Info("finished shutdown")
 }

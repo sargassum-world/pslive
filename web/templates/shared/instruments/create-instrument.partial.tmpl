@@ -1,0 +1,21 @@
+{{$auth := get . "Auth"}}
+
+<form
+  action="/instruments"
+  method="POST"
+  data-turbo-frame="_top"
+  data-controller="form-submission csrf"
+  data-action="submit->form-submission#submit submit->csrf#addToken"
+>
+  {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+  <div class="field">
+    <div class="control" data-form-submission-target="submitter">
+      <input
+        type="submit"
+        class="button is-primary"
+        value="Add an instrument"
+        data-form-submission-target="submit"
+      >
+    </div>
+  </div>
+</form>

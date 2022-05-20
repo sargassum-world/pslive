@@ -11,6 +11,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
+	"github.com/sargassum-world/pslive/internal/clients/database"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
@@ -20,6 +21,7 @@ import (
 type Globals struct {
 	Config conf.Config
 	Cache  clientcache.Cache
+	DB     *database.DB
 
 	Sessions    session.Store
 	CSRFChecker *session.CSRFTokenChecker
@@ -29,15 +31,15 @@ type Globals struct {
 	TSSigner     turbostreams.Signer
 	TSBroker     *turbostreams.Broker
 
-	Instruments   *instruments.Client
-	Planktoscopes map[string]*planktoscope.Client
+	Instruments   *instruments.Store
+	Planktoscopes *planktoscope.Orchestrator
 	Presence      *presence.Store
 	Chat          *chat.Store
 
 	Logger godest.Logger
 }
 
-func NewGlobals(l godest.Logger) (g *Globals, err error) {
+func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals, err error) {
 	g = &Globals{}
 	g.Config, err = conf.GetConfig()
 	if err != nil {
@@ -46,6 +48,14 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
+	storeConfig, err := database.GetConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up persistent store config")
+	}
+	g.DB = database.NewDB(
+		storeConfig,
+		database.WithPrepareConnQueries(persistenceEmbeds.PrepareConnQueriesFS),
+	)
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
@@ -67,24 +77,10 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	g.TSSigner = turbostreams.NewSigner(tssConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
-	instrumentsConfig, err := instruments.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up instruments config")
-	}
-	g.Instruments = instruments.NewClient(instrumentsConfig, l)
-	planktoscopeConfig, err := planktoscope.GetConfig(instrumentsConfig.Instrument.Controller)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up planktoscope config")
-	}
-	g.Planktoscopes = make(map[string]*planktoscope.Client)
-	g.Planktoscopes[instrumentsConfig.Instrument.Controller], err = planktoscope.NewClient(
-		planktoscopeConfig, l,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up planktoscope client")
-	}
+	g.Instruments = instruments.NewStore(g.DB)
+	g.Planktoscopes = planktoscope.NewOrchestrator(l)
 	g.Presence = presence.NewStore()
-	g.Chat = chat.NewStore()
+	g.Chat = chat.NewStore(g.DB)
 
 	g.Logger = l
 	return g, nil
