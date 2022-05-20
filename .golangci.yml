@@ -68,3 +68,6 @@ linters:
 issues:
   # enable issues excluded by default 
   exclude-use-default: false
+
+run:
+  timeout: 2m
