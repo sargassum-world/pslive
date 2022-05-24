@@ -31,4 +31,8 @@ Stimulus.register('navigation-menu', NavigationMenuController);
 Stimulus.register('theme', ThemeController);
 Stimulus.register('turbo-cache', TurboCacheController);
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
 export {};

@@ -26,6 +26,7 @@ func NewTemplated(r godest.TemplateRenderer) *TemplatedHandlers {
 
 func (h *TemplatedHandlers) Register(er godest.EchoRouter) {
 	er.GET(AppURLPrefix+"app.webmanifest", h.getWebmanifest())
+	er.GET(AppURLPrefix+"offline", h.getOffline())
 }
 
 func RegisterStatic(er godest.EchoRouter, em godest.Embeds) {
@@ -35,6 +36,8 @@ func RegisterStatic(er godest.EchoRouter, em godest.Embeds) {
 		year = 365 * day
 	)
 
+	// TODO: serve sw.js with an ETag!
+	er.GET("/sw.js", echo.WrapHandler(godest.HandleFS("/", em.AppFS, week)))
 	er.GET("/favicon.ico", echo.WrapHandler(godest.HandleFS("/", em.StaticFS, week)))
 	er.GET(FontsURLPrefix+"*", echo.WrapHandler(godest.HandleFS(FontsURLPrefix, em.FontsFS, year)))
 	er.GET(
