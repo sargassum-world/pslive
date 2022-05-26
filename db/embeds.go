@@ -24,6 +24,8 @@ var DomainEmbeds map[string]database.DomainEmbeds = map[string]database.DomainEm
 var MigrationFiles []database.MigrationFile = []database.MigrationFile{
 	{Domain: "chat", File: chat.MigrationFiles[0]},
 	{Domain: "instruments", File: instruments.MigrationFiles[0]},
+	{Domain: "chat", File: chat.MigrationFiles[1]},
+	{Domain: "instruments", File: instruments.MigrationFiles[1]},
 }
 
 // Queries

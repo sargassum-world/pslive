@@ -253,7 +253,7 @@ func handleInstrumentComponentPost(
 			protocol := c.FormValue("protocol")
 			url := c.FormValue("url")
 			// FIXME: needs authorization check!
-			if err = componentUpdater(ctx, id, url, protocol); err != nil {
+			if err = componentUpdater(ctx, componentID, url, protocol); err != nil {
 				return err
 			}
 			// TODO: deal with turbo streams
