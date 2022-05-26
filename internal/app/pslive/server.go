@@ -90,6 +90,9 @@ func (s *Server) configureHeaders(e *echo.Echo) {
 			), " "),
 		),
 		"object-src 'none'",
+		// Needed for the service worker to be able to fetch camera streams, csrf, etc. from localhost
+		// or proper domains
+		"connect-src *",
 		"child-src 'self'",
 		"img-src *",
 		"base-uri 'none'",

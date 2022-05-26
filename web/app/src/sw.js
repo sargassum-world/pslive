@@ -21,7 +21,7 @@ const faviconCacheFirst = new CacheFirst({
   cacheName: 'favicon-cache',
   plugins: [
     new ExpirationPlugin({
-      maxAgeSeconds: 7 * 24 * 60 * 60,
+      maxAgeSeconds: 1 * 24 * 60 * 60,
     }),
   ],
 })
@@ -37,7 +37,7 @@ const fontCacheFirst = new CacheFirst({
   cacheName: 'font-cache',
   plugins: [
     new ExpirationPlugin({
-      maxAgeSeconds: 365 * 24 * 60 * 60,
+      maxAgeSeconds: 90 * 24 * 60 * 60,
     }),
   ],
 })
