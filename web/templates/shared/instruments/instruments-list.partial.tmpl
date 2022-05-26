@@ -18,7 +18,7 @@
           {{- else -}}
             {{$instrument.Name -}}
           {{- end -}}
-        </a>: {{$instrument.Description}}
+        </a>: {{index (splitList "\n" $instrument.Description) 0}}
         <!-- TODO: show these as network entity cards instead -->
       </li>
     {{else}}

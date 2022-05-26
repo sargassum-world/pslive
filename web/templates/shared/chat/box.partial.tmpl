@@ -16,7 +16,10 @@
           "Message" $message
         }}
       {{end}}
-      <article class="message is-info chat-message" data-controller="load-scroll">
+      <article
+        class="message is-info chat-message"
+        data-controller="load-scroll hideable"
+      >
         <div class="message-body">
           <p>
             Welcome!
@@ -26,6 +29,15 @@
               Please remember that anyone can view this chat, even people who are not logged in.
             {{end}}
           </p>
+          <div class="buttons is-padded">
+            <button
+              class="button is-primary is-hidden"
+              data-hideable-target="hider"
+              data-action="click->hideable#hide"
+            >
+              Ok
+            </button>
+          </div>
         </div>
       </article>
       <noscript>

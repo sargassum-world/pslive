@@ -24,6 +24,8 @@ type Client struct {
 	mqttConnMu           *sync.Mutex
 	firstConnSuccess     chan struct{}
 	firstConnSuccessOnce *sync.Once
+	logReconnectOnce     *sync.Once
+	logReconnectOnceMu   *sync.Mutex
 
 	stateL       *sync.RWMutex
 	pump         Pump
@@ -38,6 +40,8 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client.mqttConnMu = &sync.Mutex{}
 	client.firstConnSuccess = make(chan struct{})
 	client.firstConnSuccessOnce = &sync.Once{}
+	client.logReconnectOnce = &sync.Once{}
+	client.logReconnectOnceMu = &sync.Mutex{}
 	client.stateL = &sync.RWMutex{}
 	client.pumpB = NewBroadcaster()
 	const defaultVolume = 1
@@ -79,6 +83,10 @@ func (c *Client) handleConnected(cm mqtt.Client) {
 			c.Logger.Error(errors.Wrap(t.Error(), "couldn't subscribe to #"))
 		}
 	}(token)
+
+	c.logReconnectOnceMu.Lock()
+	c.logReconnectOnce = &sync.Once{}
+	c.logReconnectOnceMu.Unlock()
 }
 
 func (c *Client) handleConnectionLost(_ mqtt.Client, err error) {
@@ -86,12 +94,17 @@ func (c *Client) handleConnectionLost(_ mqtt.Client, err error) {
 	defer c.stateL.Unlock()
 
 	c.pump.StateKnown = false
-	c.Logger.Warn(err)
+	c.Logger.Warn(errors.Wrap(err, "connection lost"))
 	// TODO: notify clients that control has been lost
 }
 
 func (c *Client) handleReconnecting(_ mqtt.Client, _ *mqtt.ClientOptions) {
-	c.Logger.Warn("reconnecting to MQTT broker...")
+	c.logReconnectOnceMu.Lock()
+	defer c.logReconnectOnceMu.Unlock()
+
+	c.logReconnectOnce.Do(func() {
+		c.Logger.Warn("reconnecting to MQTT broker...")
+	})
 }
 
 func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {

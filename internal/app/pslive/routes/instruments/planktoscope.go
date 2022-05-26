@@ -94,10 +94,10 @@ func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		pc, ok := h.pco.Get(id)
+		pc, ok := h.pco.Get(controllerID)
 		if !ok {
 			return errors.Errorf(
-				"planktoscope client for controller %d on instrument %d not found", id, controllerID,
+				"planktoscope client for controller %d on instrument %d not found", controllerID, id,
 			)
 		}
 

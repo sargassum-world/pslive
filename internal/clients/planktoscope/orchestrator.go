@@ -39,9 +39,9 @@ func (o *Orchestrator) Add(id int64, url string) error {
 	}
 
 	o.planktoscopesMu.Lock()
-	defer o.planktoscopesMu.Unlock()
-
 	o.planktoscopes[id] = client
+	o.planktoscopesMu.Unlock()
+
 	go func() {
 		// FIXME: does this goroutine get leaked when a connection cannot be established? Or does
 		// Disconnect cancel the Connect method's infinite loop?

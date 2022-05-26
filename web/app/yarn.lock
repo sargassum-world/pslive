@@ -143,10 +143,10 @@
     estree-walker "^1.0.1"
     picomatch "^2.2.2"
 
-"@sargassum-world/stimulated@^0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.4.1.tgz#772782b31cf002110f726c8ec0b6e61187d4f77f"
-  integrity sha512-dPkYC03XDEu/skKczK2S4mf/QObS7R0LBVeRI1D0dEt70yf0XtqWGB4UsBKO0pgfjvSfmGVSiRvU3wZvN6pw+w==
+"@sargassum-world/stimulated@^0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.4.2.tgz#316ec66e93b58cabb1b6ae5996f79f27f5c4ced5"
+  integrity sha512-FLqzNnz2hjo1dfvIppQGkin4Jke0+RIax1tB4+RCkAzzF0b6Wp6PeIKanztheg2jlIerjFM5k4HCaAaqV+ZAjA==
   dependencies:
     "@hotwired/turbo" "^7.0.1"
     "@rails/actioncable" "^6.1.5"
