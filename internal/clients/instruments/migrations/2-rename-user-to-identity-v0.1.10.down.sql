@@ -1,0 +1,7 @@
+alter table instruments_instrument
+rename column admin_identity_id to admin_user_id;
+
+drop index instruments_instrument_idx_admin_identity_id;
+
+create index instruments_instrument_idx_admin_user_id
+on instruments_instrument (admin_user_id);
