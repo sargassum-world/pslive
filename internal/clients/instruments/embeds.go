@@ -17,7 +17,7 @@ var (
 
 var MigrationFiles []string = []string{
 	"1-initialize-schema-v0.1.7",
-	"2-rename-user-to-identity-v0.1.10",
+	"2-rename-user-to-identity-v0.1.11",
 }
 
 // Embeds
