@@ -55,7 +55,9 @@
       </div>
     </form>
   {{else}}
-    <p>{{$instrument.Description}}</p>
+    <p class="instrument-description">
+      {{- $instrument.Description -}}
+    </p>
   {{end}}
 
 </turbo-frame>
