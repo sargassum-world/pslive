@@ -2,6 +2,7 @@ package planktoscope
 
 import (
 	"context"
+	"strconv"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -26,16 +27,22 @@ func NewOrchestrator(logger godest.Logger) *Orchestrator {
 
 func (o *Orchestrator) Add(id int64, url string) error {
 	if _, ok := o.Get(id); ok {
+		o.logger.Warnf(
+			"skipped adding planktoscope client %d (%s) because it's already running", id, url,
+		)
 		return nil
 	}
 
-	config, err := GetConfig(url)
+	const idBase = 10
+	config, err := GetConfig(url, strconv.FormatInt(id, idBase))
 	if err != nil {
 		return errors.Wrap(err, "couldn't set up planktoscope config")
 	}
 	client, err := NewClient(config, o.logger)
 	if err != nil {
-		return errors.Wrapf(err, "couldn't set up planktoscope client %d (%s)", id, url)
+		return errors.Wrapf(
+			err, "couldn't set up planktoscope client %d (%s @ %s)", id, client.Config.ClientID, url,
+		)
 	}
 
 	o.planktoscopesMu.Lock()
@@ -45,9 +52,11 @@ func (o *Orchestrator) Add(id int64, url string) error {
 	go func() {
 		// FIXME: does this goroutine get leaked when a connection cannot be established? Or does
 		// Disconnect cancel the Connect method's infinite loop?
-		o.logger.Infof("adding planktoscope client %d (%s)", id, url)
+		o.logger.Infof("adding planktoscope client %d (%s @ %s)", id, client.Config.ClientID, url)
 		if err := client.Connect(); err != nil {
-			o.logger.Error(errors.Wrapf(err, "couldn't add planktoscope client %d (%s)", id, url))
+			o.logger.Error(errors.Wrapf(
+				err, "couldn't add planktoscope client %d (%s @ %s)", id, client.Config.ClientID, url,
+			))
 		}
 	}()
 	return nil
@@ -69,7 +78,9 @@ func (o *Orchestrator) Remove(ctx context.Context, id int64) error {
 	if !ok {
 		return nil
 	}
-	o.logger.Infof("removing planktoscope client %d (%s)", id, client.Config.URL)
+	o.logger.Infof(
+		"removing planktoscope client %d (%s @ %s)", id, client.Config.ClientID, client.Config.URL,
+	)
 	err := client.Shutdown(ctx)
 	if err != nil {
 		client.Close()
