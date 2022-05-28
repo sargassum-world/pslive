@@ -1,7 +1,7 @@
 {{template "shared/base.layout.tmpl" .}}
 
 {{define "title"}}Instrument {{.Data.Instrument.Name}}{{end}}
-{{define "description"}}Instrument {{.Data.Instrument.Name}}.{{end}}
+{{define "description"}}{{index (splitList "\n" .Data.Instrument.Description) 0}}{{end}}
 
 {{define "content"}}
   <main class="main-container" tabindex="-1" data-controller="default-scrollable">
