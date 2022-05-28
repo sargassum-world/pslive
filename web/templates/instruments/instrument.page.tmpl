@@ -1,12 +1,13 @@
 {{template "shared/base.layout.tmpl" .}}
 
 {{define "title"}}Instrument {{.Data.Instrument.Name}}{{end}}
-{{define "description"}}Instrument {{.Data.Instrument.Name}}.{{end}}
+{{define "description"}}{{index (splitList "\n" .Data.Instrument.Description) 0}}{{end}}
 
 {{define "content"}}
   <main class="main-container" tabindex="-1" data-controller="default-scrollable">
     <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
       <ul>
+        <li><a href="/">Live</a></li>
         <li><a href="/instruments">Instruments</a></li>
         <li><a href="/users/{{.Data.Instrument.AdminID}}">{{.Data.AdminIdentifier}}</a></li>
         <li class="is-active">

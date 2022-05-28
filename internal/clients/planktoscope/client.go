@@ -75,7 +75,7 @@ func (c *Client) handleConnected(cm mqtt.Client) {
 	c.firstConnSuccessOnce.Do(func() {
 		close(c.firstConnSuccess)
 	})
-	c.Logger.Infof("connected to MQTT broker %s", c.Config.Broker().String())
+	c.Logger.Infof("connected as %s to MQTT broker %s", c.Config.ClientID, c.Config.URL)
 	// FIXME: we might not want to use Once 1 everywhere (depends on which messages are idempotent)
 	token := cm.Subscribe("#", mqttAtLeastOnce, c.handleMessage)
 	go func(t mqtt.Token) {
@@ -108,7 +108,7 @@ func (c *Client) handleReconnecting(_ mqtt.Client, _ *mqtt.ClientOptions) {
 }
 
 func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
-	broker := c.Config.Broker().String()
+	broker := c.Config.URL
 	rawPayload := string(m.Payload())
 
 	switch topic := m.Topic(); topic {
@@ -120,7 +120,7 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 			)
 			return
 		}
-		c.Logger.Infof("%s/%s: %v", c.Config.Broker().String(), m.Topic(), payload)
+		c.Logger.Infof("%s/%s: %v", broker, m.Topic(), payload)
 	case "status/pump":
 		if err := c.handlePumpStatusUpdate(topic, m.Payload()); err != nil {
 			c.Logger.Errorf(errors.Wrapf(

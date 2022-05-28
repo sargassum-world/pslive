@@ -45,18 +45,16 @@ func getInstrumentViewData(
 	oc *ory.Client, is *instruments.Store, pco *planktoscope.Orchestrator,
 	ps *presence.Store, cs *chat.Store,
 ) (vd InstrumentViewData, err error) {
-	instrument, err := is.GetInstrument(ctx, id)
-	if err != nil {
+	if vd.Instrument, err = is.GetInstrument(ctx, id); err != nil {
 		// TODO: is this the best way to handle errors from is.GetInstrumentByID?
 		return InstrumentViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("instrument %d not found", id),
 		)
 	}
-	vd.Instrument = instrument
 
-	vd.ControllerIDs = make([]int64, 0, len(instrument.Controllers))
+	vd.ControllerIDs = make([]int64, 0, len(vd.Instrument.Controllers))
 	vd.Controllers = make(map[int64]planktoscope.Planktoscope)
-	for _, controller := range instrument.Controllers {
+	for _, controller := range vd.Instrument.Controllers {
 		pc, ok := pco.Get(controller.ID)
 		if !ok {
 			return InstrumentViewData{}, errors.Errorf(
@@ -71,7 +69,7 @@ func getInstrumentViewData(
 		}
 	}
 
-	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, instrument.AdminID); err != nil {
+	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, vd.Instrument.AdminID); err != nil {
 		return InstrumentViewData{}, errors.Wrapf(
 			err, "couldn't look up admin identifier for instrument %d", id,
 		)
@@ -227,8 +225,8 @@ func handleInstrumentComponentsPost(
 
 func handleInstrumentComponentPost(
 	typeName string,
-	componentUpdater func(ctx context.Context, id int64, url, protocol string) error,
-	componentDeleter func(ctx context.Context, id int64) error,
+	componentUpdater func(ctx context.Context, componentID int64, url, protocol string) error,
+	componentDeleter func(ctx context.Context, componentID int64) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
@@ -288,9 +286,9 @@ func (h *Handlers) HandleInstrumentCamerasPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"camera",
-		func(ctx context.Context, id int64, url, protocol string) error {
+		func(ctx context.Context, componentID int64, url, protocol string) error {
 			return h.is.UpdateCamera(ctx, instruments.Camera{
-				ID:       id,
+				ID:       componentID,
 				URL:      url,
 				Protocol: protocol,
 			})
@@ -304,14 +302,15 @@ func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(ctx context.Context, id int64, url, protocol string) error {
-			if _, err := h.is.AddController(ctx, instruments.Controller{
+			controllerID, err := h.is.AddController(ctx, instruments.Controller{
 				InstrumentID: id,
 				URL:          url,
 				Protocol:     protocol,
-			}); err != nil {
+			})
+			if err != nil {
 				return err
 			}
-			if err := h.pco.Add(id, url); err != nil {
+			if err := h.pco.Add(controllerID, url); err != nil {
 				return err
 			}
 			return nil
@@ -322,24 +321,24 @@ func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"controller",
-		func(ctx context.Context, id int64, url, protocol string) error {
+		func(ctx context.Context, componentID int64, url, protocol string) error {
 			if err := h.is.UpdateController(ctx, instruments.Controller{
-				ID:       id,
+				ID:       componentID,
 				URL:      url,
 				Protocol: protocol,
 			}); err != nil {
 				return err
 			}
-			if err := h.pco.Update(ctx, id, url); err != nil {
+			if err := h.pco.Update(ctx, componentID, url); err != nil {
 				return err
 			}
 			return nil
 		},
-		func(ctx context.Context, id int64) error {
-			if err := h.is.DeleteController(ctx, id); err != nil {
+		func(ctx context.Context, componentID int64) error {
+			if err := h.is.DeleteController(ctx, componentID); err != nil {
 				return err
 			}
-			if err := h.pco.Remove(ctx, id); err != nil {
+			if err := h.pco.Remove(ctx, componentID); err != nil {
 				return err
 			}
 			return nil

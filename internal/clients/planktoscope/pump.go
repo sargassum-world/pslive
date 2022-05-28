@@ -53,7 +53,7 @@ func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 
 	// Commit changes
 	c.updatePumpState(newState)
-	c.Logger.Debugf("%s: %+v", c.Config.Broker().String(), newState)
+	c.Logger.Debugf("%s: %+v", c.Config.URL, newState)
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (c *Client) handlePumpActuatorUpdate(_ string, rawPayload []byte) error {
 
 		// Commit changes
 		c.updatePumpSettings(newSettings)
-		c.Logger.Debugf("%s: %+v", c.Config.Broker().String(), newSettings)
+		c.Logger.Debugf("%s: %+v", c.Config.URL, newSettings)
 	}
 	return nil
 }
