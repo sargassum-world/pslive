@@ -45,18 +45,16 @@ func getInstrumentViewData(
 	oc *ory.Client, is *instruments.Store, pco *planktoscope.Orchestrator,
 	ps *presence.Store, cs *chat.Store,
 ) (vd InstrumentViewData, err error) {
-	instrument, err := is.GetInstrument(ctx, id)
-	if err != nil {
+	if vd.Instrument, err = is.GetInstrument(ctx, id); err != nil {
 		// TODO: is this the best way to handle errors from is.GetInstrumentByID?
 		return InstrumentViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("instrument %d not found", id),
 		)
 	}
-	vd.Instrument = instrument
 
-	vd.ControllerIDs = make([]int64, 0, len(instrument.Controllers))
+	vd.ControllerIDs = make([]int64, 0, len(vd.Instrument.Controllers))
 	vd.Controllers = make(map[int64]planktoscope.Planktoscope)
-	for _, controller := range instrument.Controllers {
+	for _, controller := range vd.Instrument.Controllers {
 		pc, ok := pco.Get(controller.ID)
 		if !ok {
 			return InstrumentViewData{}, errors.Errorf(
@@ -71,7 +69,7 @@ func getInstrumentViewData(
 		}
 	}
 
-	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, instrument.AdminID); err != nil {
+	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, vd.Instrument.AdminID); err != nil {
 		return InstrumentViewData{}, errors.Wrapf(
 			err, "couldn't look up admin identifier for instrument %d", id,
 		)

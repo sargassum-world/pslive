@@ -1,6 +1,7 @@
 package instruments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -9,21 +10,46 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 )
+
+type InstrumentsViewData struct {
+	Instruments      []instruments.Instrument
+	AdminIdentifiers map[string]string
+}
+
+func getInstrumentsViewData(
+	ctx context.Context, oc *ory.Client, is *instruments.Store,
+) (vd InstrumentsViewData, err error) {
+	if vd.Instruments, err = is.GetInstruments(ctx); err != nil {
+		return InstrumentsViewData{}, err
+	}
+
+	vd.AdminIdentifiers = make(map[string]string)
+	for _, instrument := range vd.Instruments {
+		if vd.AdminIdentifiers[instrument.AdminID], err = oc.GetIdentifier(
+			ctx, instrument.AdminID,
+		); err != nil {
+			// TODO: log the error
+			continue
+		}
+	}
+
+	return vd, err
+}
 
 func (h *Handlers) HandleInstrumentsGet() auth.HTTPHandlerFunc {
 	t := "instruments/instruments.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		instruments, err := h.is.GetInstruments(c.Request().Context())
+		instrumentsViewData, err := getInstrumentsViewData(c.Request().Context(), h.oc, h.is)
 		if err != nil {
 			return err
 		}
-		// TODO: we should adapt it into a []InstrumentViewData or something
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, instruments, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, instrumentsViewData, a)
 	}
 }
 

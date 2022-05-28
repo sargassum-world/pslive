@@ -1,4 +1,5 @@
 {{$instruments := get . "Instruments"}}
+{{$adminIdentifiers := get . "AdminIdentifiers"}}
 {{$auth := get . "Auth"}}
 {{$showCreateButton := get . "ShowCreateButton"}}
 
@@ -12,13 +13,27 @@
   <ul>
     {{range $instrument := $instruments}}
       <li>
-        <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
-          {{if eq 0 (len $instrument.Name)}}
-            Unnamed Instrument
-          {{- else -}}
-            {{$instrument.Name -}}
-          {{- end -}}
-        </a>: {{index (splitList "\n" $instrument.Description) 0}}
+        {{if $adminIdentifiers}}
+          {{$identifier := index $adminIdentifiers $instrument.AdminID}}
+          {{if $identifier}}
+            <a href="/users/{{$instrument.AdminID}}">{{$identifier}}</a>
+          {{else}}
+            <span class="tag is-warning">Unknown</span>
+          {{end}}
+          /
+        {{end}}
+        {{if eq 0 (len $instrument.Name)}}
+          <span class="tag is-warning">
+            <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
+              Unnamed Instrument
+            </a>
+          </span>
+        {{else}}
+          <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
+            {{$instrument.Name}}
+          </a>:
+        {{end}}
+        {{index (splitList "\n" $instrument.Description) 0}}
         <!-- TODO: show these as network entity cards instead -->
       </li>
     {{else}}

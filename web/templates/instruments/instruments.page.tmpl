@@ -7,7 +7,7 @@
   <main class="main-container" tabindex="-1" data-controller="default-scrollable">
     <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
       <ul>
-        <li><a href="/">Instruments</a></li>
+        <li><a href="/">Live</a></li>
         <li class="is-active"><a href="/instruments" aria-current="page">Instruments</a></li>
       </ul>
     </nav>
@@ -17,7 +17,8 @@
       <!-- TODO: group instruments by administrator, to disambiguate identical instrument names -->
       {{
         template "shared/instruments/instruments-list.partial.tmpl" dict
-        "Instruments" .Data
+        "Instruments" .Data.Instruments
+        "AdminIdentifiers" .Data.AdminIdentifiers
         "Auth" .Auth
         "ShowCreateButton" true
       }}
