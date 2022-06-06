@@ -7,7 +7,7 @@ require (
 	github.com/atrox/haikunatorgo v2.0.0+incompatible
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/dgraph-io/ristretto v0.1.0
-	github.com/eclipse/paho.mqtt.golang v1.3.5
+	github.com/eclipse/paho.mqtt.golang v1.4.1
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
