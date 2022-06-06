@@ -24,5 +24,5 @@ require (
 	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	zombiezen.com/go/sqlite v0.9.2
+	zombiezen.com/go/sqlite v0.9.3
 )
