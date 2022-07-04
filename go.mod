@@ -15,14 +15,10 @@ require (
 	github.com/labstack/gommon v0.3.1
 	github.com/ory/client-go v0.0.1-alpha.180
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/fluitans v0.5.2
+	github.com/sargassum-world/fluitans v0.5.4
 	github.com/unrolled/secure v1.10.0
-	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29 // indirect
-	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220406163625-3f8b81556e12 // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
 	zombiezen.com/go/sqlite v0.9.2
 )
