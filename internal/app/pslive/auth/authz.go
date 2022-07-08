@@ -52,9 +52,7 @@ func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFun
 				)
 			}
 			if err = a.RequireHTTPAuthz(c, checker); err != nil {
-				return errors.Wrapf(
-					err, "couldn't authorize %s on %s", c.Request().Method, c.Request().URL.RequestURI(),
-				)
+				return err // Return the raw error, which is an echo HTTPError, without wrapping it
 			}
 			return next(c)
 		}
