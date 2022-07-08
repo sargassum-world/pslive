@@ -145,6 +145,8 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Authorization Middleware
 	e.Use(auth.RequireHTTPAuthz(s.Globals.Sessions, s.Globals.Opa.CheckRoute))
+	s.Globals.TSBroker.Use(auth.RequireTSAuthz(s.Globals.Sessions, s.Globals.Opa.CheckRoute))
+
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
