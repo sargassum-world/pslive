@@ -52,7 +52,9 @@ func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFun
 				)
 			}
 			if err = a.RequireHTTPAuthz(c, checker); err != nil {
-				return errors.Wrapf(err, "couldn't authorize on %s", c.Request().URL.RequestURI())
+				return errors.Wrapf(
+					err, "couldn't authorize %s on %s", c.Request().Method, c.Request().URL.RequestURI(),
+				)
 			}
 			return next(c)
 		}
@@ -62,6 +64,14 @@ func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFun
 // Turbo Streams
 
 func (a Auth) RequireTSAuthz(c turbostreams.Context, checker RouteChecker) error {
+	if c.Method() == turbostreams.MethodUnsub || c.Method() == turbostreams.MethodPub {
+		// We can't prevent unsubscription; and closing a tab triggers an unsubscription while also
+		// canceling context, which will interrupt policy evaluation (and cause an evalErr).
+		// So unsubscription is always authorized.
+		// The server is always authorized to handle pub.
+		return nil
+	}
+
 	allow, authzErr, evalErr := checker(
 		c.Context(), c.Method(), c.Topic(), a.Identity.Authenticated, a.Identity.User,
 	)
@@ -86,7 +96,7 @@ func RequireTSAuthz(ss session.Store, checker RouteChecker) turbostreams.Middlew
 				)
 			}
 			if err = a.RequireTSAuthz(c, checker); err != nil {
-				return errors.Wrapf(err, "couldn't authorize on %s", c.Topic())
+				return errors.Wrapf(err, "couldn't authorize %s on %s", c.Method(), c.Topic())
 			}
 			return next(c)
 		}
