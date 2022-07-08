@@ -4,6 +4,6 @@ import future.keywords
 
 scope := {"/"}
 
-allow := true
+allow if input.operation.method == "GET"
 
-errors := set()
+errors contains "unallowed method" if not allow

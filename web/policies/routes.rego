@@ -18,9 +18,8 @@ active_policy := active if {
 
 default allow := false
 
-errors contains message if {
+errors contains "no matching policies" if {
 	count(matches) == 0
-	message := "no matching policies"
 }
 
 errors contains message if {

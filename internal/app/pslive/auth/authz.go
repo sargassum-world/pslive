@@ -8,13 +8,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+
+	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 // Authorization
-
-type RouteChecker func(
-	ctx context.Context, method, route string, authenticated bool, identity string,
-) (allow bool, authzErr error, evalErr error)
 
 func (a Auth) Authorized() bool {
 	// Right now there's only one user who can be authenticated, namely the admin, so this is
@@ -22,26 +20,44 @@ func (a Auth) Authorized() bool {
 	return a.Identity.Authenticated
 }
 
-// HTTP
-
-func (a Auth) RequireHTTPAuthz(c echo.Context, checker RouteChecker) error {
-	allow, authzErr, evalErr := checker(
-		c.Request().Context(), c.Request().Method, c.Request().URL.RequestURI(),
-		a.Identity.Authenticated, a.Identity.User,
-	)
+func (a Auth) RequireAuthz(
+	ctx context.Context, input map[string]interface{}, opc *opa.Client,
+) error {
+	allow, remainingQueries, evalErr := opc.EvalAllow(ctx, input)
 	if evalErr != nil {
-		return errors.Wrap(evalErr, "couldn't check http route authorization")
+		return errors.Wrap(evalErr, "couldn't check authorization")
 	}
 	if allow {
 		return nil
 	}
+	if remainingQueries != nil {
+		// TODO: evaluate the remaining queries
+		return errors.New("authorization depends on remaining queries, which are not yet implemented")
+	}
 
-	// We return StatusNotFound instead of StatusUnauthorized or StatusForbidden to avoid leaking
-	// information about the existence of secret resources.
-	return echo.NewHTTPError(http.StatusNotFound, authzErr)
+	authzErr, evalErr := opc.EvalErrors(ctx, input)
+	if evalErr != nil {
+		return errors.Wrap(evalErr, "couldn't check authorization errors")
+	}
+	if authzErr == nil {
+		return errors.New("unauthorized but missing error message")
+	}
+	return authzErr
 }
 
-func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFunc {
+// HTTP
+
+func (a Auth) RequireHTTPAuthz(c echo.Context, opc *opa.Client) error {
+	return a.RequireAuthz(
+		c.Request().Context(),
+		opa.NewRouteInput(
+			c.Request().Method, c.Request().URL.RequestURI(), a.Identity.User, a.Identity.Authenticated,
+		),
+		opc,
+	)
+}
+
+func RequireHTTPAuthz(ss session.Store, opc *opa.Client) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			a, _, err := GetFromRequest(c.Request(), ss, c.Logger())
@@ -51,8 +67,12 @@ func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFun
 					c.Request().Method, c.Request().URL.RequestURI(),
 				)
 			}
-			if err = a.RequireHTTPAuthz(c, checker); err != nil {
-				return err // Return the raw error, which is an echo HTTPError, without wrapping it
+			if err = a.RequireHTTPAuthz(c, opc); err != nil {
+				// We return StatusNotFound instead of StatusUnauthorized or StatusForbidden to avoid
+				// leaking information about the existence of secret resources.
+				return echo.NewHTTPError(http.StatusNotFound, errors.Wrap(
+					err, "couldn't authorize on http route",
+				))
 			}
 			return next(c)
 		}
@@ -61,7 +81,7 @@ func RequireHTTPAuthz(ss session.Store, checker RouteChecker) echo.MiddlewareFun
 
 // Turbo Streams
 
-func (a Auth) RequireTSAuthz(c turbostreams.Context, checker RouteChecker) error {
+func (a Auth) RequireTSAuthz(c turbostreams.Context, opc *opa.Client) error {
 	if c.Method() == turbostreams.MethodUnsub || c.Method() == turbostreams.MethodPub {
 		// We can't prevent unsubscription; and closing a tab triggers an unsubscription while also
 		// canceling context, which will interrupt policy evaluation (and cause an evalErr).
@@ -70,20 +90,16 @@ func (a Auth) RequireTSAuthz(c turbostreams.Context, checker RouteChecker) error
 		return nil
 	}
 
-	allow, authzErr, evalErr := checker(
-		c.Context(), c.Method(), c.Topic(), a.Identity.Authenticated, a.Identity.User,
+	return a.RequireAuthz(
+		c.Context(),
+		opa.NewRouteInput(
+			c.Method(), c.Topic(), a.Identity.User, a.Identity.Authenticated,
+		),
+		opc,
 	)
-	if evalErr != nil {
-		return errors.Wrap(evalErr, "couldn't check turbo streams route authorization")
-	}
-	if allow {
-		return nil
-	}
-
-	return authzErr
 }
 
-func RequireTSAuthz(ss session.Store, checker RouteChecker) turbostreams.MiddlewareFunc {
+func RequireTSAuthz(ss session.Store, opc *opa.Client) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
 		return func(c turbostreams.Context) error {
 			a, _, err := LookupStored(c.SessionID(), ss)
@@ -93,7 +109,7 @@ func RequireTSAuthz(ss session.Store, checker RouteChecker) turbostreams.Middlew
 					c.Method(), c.Topic(),
 				)
 			}
-			if err = a.RequireTSAuthz(c, checker); err != nil {
+			if err = a.RequireTSAuthz(c, opc); err != nil {
 				return errors.Wrapf(err, "couldn't authorize %s on %s", c.Method(), c.Topic())
 			}
 			return next(c)

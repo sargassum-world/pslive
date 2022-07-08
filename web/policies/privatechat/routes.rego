@@ -9,9 +9,8 @@ scope := {"/private-chats/**"}
 default allow := false
 
 # TODO: also add error message for each nonexistent user, and if subject isn't one of the two users
-errors contains message if {
+errors contains "unauthenticated user" if {
 	not auth.is_authenticated(input.subject)
-	message := "unauthenticated user"
 }
 
 # TODO: SUB should ensure both users exist

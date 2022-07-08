@@ -9,6 +9,11 @@ scope := {
 	"/sessions",
 }
 
-allow := true
+allow if input.operation.method == "GET"
 
-errors := set()
+allow if {
+	input.operation.method in {"GET", "POST"}
+	input.resource.path == "/sessions"
+}
+
+errors contains "unallowed method" if not allow

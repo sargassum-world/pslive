@@ -19,10 +19,9 @@ allow if input.operation.method == "SUB"
 # TODO: MSG on presence and chat and pump should ensure the instrument and controller exist
 allow if input.operation.method == "MSG"
 
-errors contains message if {
+errors contains "unauthenticated user" if {
 	input.operation.method == "POST"
 	not auth.is_authenticated(input.subject)
-	message := "unauthenticated user"
 }
 
 # TODO: reduce repetition in these rules

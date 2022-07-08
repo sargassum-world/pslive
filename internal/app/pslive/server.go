@@ -144,8 +144,8 @@ func (s *Server) Register(e *echo.Echo) {
 	// TODO: enable Prometheus and rate-limiting
 
 	// Authorization Middleware
-	e.Use(auth.RequireHTTPAuthz(s.Globals.Sessions, s.Globals.Opa.CheckRoute))
-	s.Globals.TSBroker.Use(auth.RequireTSAuthz(s.Globals.Sessions, s.Globals.Opa.CheckRoute))
+	e.Use(auth.RequireHTTPAuthz(s.Globals.Sessions, s.Globals.Opa))
+	s.Globals.TSBroker.Use(auth.RequireTSAuthz(s.Globals.Sessions, s.Globals.Opa))
 
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
