@@ -16,17 +16,8 @@ allow if input.operation.method == "GET"
 # TODO: SUB to chat should ensure the user exists
 allow if input.operation.method == "SUB"
 
-# TODO: UNSUB from chat should ensure the user exists
-allow if input.operation.method == "UNSUB"
-
 # TODO: MSG on chat should ensure the user exists
 allow if input.operation.method == "MSG"
-
-# TODO: POST to chat should ensure the user exists
-allow if {
-	input.operation.method == "POST"
-	auth.is_authenticated(input.subject)
-}
 
 errors contains message if {
 	input.operation.method == "POST"
@@ -34,6 +25,10 @@ errors contains message if {
 	message := "unauthenticated user"
 }
 
-errors contains "not implemented" if {
-	not allow
+# TODO: POST to chat should ensure the user exists
+allow if {
+	input.operation.method == "POST"
+	auth.is_authenticated(input.subject)
 }
+
+errors contains "not implemented" if not allow

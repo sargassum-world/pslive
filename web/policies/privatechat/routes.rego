@@ -2,21 +2,22 @@ package sargassum.pslive.web.policies.privatechat
 
 import future.keywords
 
+import data.sargassum.pslive.internal.app.pslive.auth
+
 scope := {"/private-chats/**"}
 
 default allow := false
 
-# TODO: implement checks on these routes
-routes := {
-	# TODO: add checks to ensure the users exist and that the subject is one of the two users
-	{"method": "SUB", "path": "/private-chats/*/*/chat/users"},
-	{"method": "UNSUB", "path": "/private-chats/*/*/chat/users"},
-	{"method": "MSG", "path": "/private-chats/*/*/chat/users"},
-	{"method": "SUB", "path": "/private-chats/*/*/chat/messages"},
-	{"method": "MSG", "path": "/private-chats/*/*/chat/messages"},
-	{"method": "POST", "path": "/private-chats/*/*/chat/messages"},
+# TODO: also add error message for each nonexistent user, and if subject isn't one of the two users
+errors contains message if {
+	not auth.is_authenticated(input.subject)
+	message := "unauthenticated user"
 }
 
-errors contains "not implemented" if {
-	not allow
+# TODO: SUB should ensure both users exist
+allow if {
+	input.operation.method in {"SUB", "MSG", "POST"}
+	glob.match("/private-chats/*/*/chat/{users,messages}", ["/"], input.resource.path)
+	auth.is_authenticated(input.subject)
+	# TODO: check whether the subject is one of the two users
 }
