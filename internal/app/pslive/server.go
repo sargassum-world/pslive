@@ -19,12 +19,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/pslive/db"
+	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
 	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
-	"github.com/sargassum-world/pslive/internal/clients/database"
+	"github.com/sargassum-world/pslive/pkg/godest/database"
+	"github.com/sargassum-world/pslive/pkg/godest/opa"
 	"github.com/sargassum-world/pslive/web"
 )
 
@@ -37,10 +39,20 @@ type Server struct {
 	Handlers *routes.Handlers
 }
 
+func NewRegoModules() [][]opa.Module {
+	return [][]opa.Module{
+		opa.RegoModules(),
+		auth.RegoModules(),
+		web.RegoModules(),
+	}
+}
+
 func NewServer(logger godest.Logger) (s *Server, err error) {
 	s = &Server{}
 	s.DBEmbeds = db.NewEmbeds()
-	if s.Globals, err = client.NewGlobals(s.DBEmbeds, logger); err != nil {
+	if s.Globals, err = client.NewGlobals(
+		s.DBEmbeds, "data.sargassum.pslive.web", NewRegoModules(), logger,
+	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
@@ -131,6 +143,8 @@ func (s *Server) Register(e *echo.Echo) {
 	e.Use(gmw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 
+	// Authorization Middleware
+	e.Use(auth.RequireHTTPAuthz(s.Globals.Sessions, s.Globals.Opa.CheckRoute))
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)

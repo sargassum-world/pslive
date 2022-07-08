@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-world/pslive/internal/clients/database"
+	"github.com/sargassum-world/pslive/pkg/godest/database"
 )
 
 type Store struct {
