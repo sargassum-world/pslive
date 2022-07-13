@@ -8,4 +8,6 @@ package sargassum.pslive.internal.app.pslive.auth
 is_authenticated(subject) {
 	subject.authenticated
 	subject.identity != ""
+} else = false {
+	true
 }

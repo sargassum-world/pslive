@@ -4,31 +4,17 @@ package opa
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
+	"github.com/open-policy-agent/opa/topdown"
 	"github.com/pkg/errors"
 )
 
-func NewRouteInput(method, path, identity string, authenticated bool) map[string]interface{} {
-	return map[string]interface{}{
-		"operation": map[string]interface{}{
-			"method": method,
-		},
-		"resource": map[string]interface{}{
-			"path": path,
-		},
-		"subject": map[string]interface{}{
-			"authenticated": authenticated,
-			"identity":      identity,
-		},
-	}
-}
-
 type Client struct {
-	allowQuery  rego.PreparedPartialQuery
-	errorsQuery rego.PartialResult
+	allowQuery           rego.PartialResult
+	allowContextualQuery rego.PreparedPartialQuery
+	errorQuery           rego.PartialResult
 }
 
 func makeOptions(query string, options []func(r *rego.Rego)) []func(r *rego.Rego) {
@@ -44,6 +30,9 @@ func NewOptimizedQuery(
 	ctx context.Context, query string, options ...func(r *rego.Rego),
 ) (rego.PartialResult, error) {
 	optimized, err := rego.New(makeOptions(query, options)...).PartialResult(ctx)
+	if topdown.IsCancel(err) {
+		return rego.PartialResult{}, context.Canceled
+	}
 	return optimized, errors.Wrap(
 		err, "couldn't perform pre-input policy optimization",
 	)
@@ -52,66 +41,56 @@ func NewOptimizedQuery(
 func NewPartialEvalQuery(
 	ctx context.Context, query string, unknowns []string, options ...func(r *rego.Rego),
 ) (rego.PreparedPartialQuery, error) {
-	optimized, err := NewOptimizedQuery(ctx, query, options...)
-	if err != nil {
-		return rego.PreparedPartialQuery{}, err
+	prepared, err := rego.New(makeOptions(
+		query,
+		append(options, rego.Unknowns(unknowns)),
+	)...).PrepareForPartial(ctx)
+	if topdown.IsCancel(err) {
+		return rego.PreparedPartialQuery{}, context.Canceled
 	}
-
-	prepared, err := optimized.Rego(rego.Unknowns(unknowns)).PrepareForPartial(ctx)
-	return prepared, errors.Wrap(err, "couldn't prepare for post-input partial evaluation")
+	return prepared, errors.Wrap(err, "couldn't prepare for partial evaluation")
 }
 
 func NewClient(entryPackage string, options ...func(r *rego.Rego)) (*Client, error) {
 	ctx := context.TODO()
-	allowQuery, err := NewPartialEvalQuery(
+
+	allowQuery, err := NewOptimizedQuery(
+		ctx, entryPackage+".allow", options...,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't prepare fast policy query for allow")
+	}
+
+	allowContextualQuery, err := NewPartialEvalQuery(
 		ctx, entryPackage+".allow", []string{"input.context"}, options...,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't prepare policy query for allow")
+		return nil, errors.Wrap(err, "couldn't prepare contextual policy query for allow")
 	}
-	errorsQuery, err := NewOptimizedQuery(
-		ctx, entryPackage+".errors", options...,
+	errorQuery, err := NewOptimizedQuery(
+		ctx, entryPackage+".error", options...,
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't prepare policy query for errors")
 	}
 	return &Client{
-		allowQuery:  allowQuery,
-		errorsQuery: errorsQuery,
+		allowQuery:           allowQuery,
+		allowContextualQuery: allowContextualQuery,
+		errorQuery:           errorQuery,
 	}, nil
 }
 
 func (c *Client) EvalAllow(
 	ctx context.Context, input map[string]interface{},
-) (allow bool, remainingQueries []ast.Body, err error) {
-	pq, evalErr := c.allowQuery.Partial(ctx, rego.EvalInput(input))
+) (allow bool, err error) {
+	results, evalErr := c.allowQuery.Rego(rego.Input(input)).Eval(ctx)
+	if topdown.IsCancel(evalErr) {
+		return false, context.Canceled
+	}
 	if evalErr != nil {
-		return false, nil, errors.Wrap(
-			evalErr, "couldn't partially evaluate policy with initial inputs for allow",
-		)
+		return false, errors.Wrap(evalErr, "couldn't evaluate policy for allow")
 	}
-	if len(pq.Queries) == 0 {
-		return false, nil, nil
-	}
-	remainingQueries = make([]ast.Body, 0, len(pq.Queries))
-	for _, query := range pq.Queries {
-		if len(query) == 0 {
-			return true, nil, nil
-		}
-		remainingQueries = append(remainingQueries, query)
-		// TODO: translate the non-empty rego query into an SQL query
-	}
-	return false, remainingQueries, nil
-}
-
-func (c *Client) EvalErrors(
-	ctx context.Context, input map[string]interface{},
-) (authzErr error, evalErr error) {
-	results, evalErr := c.errorsQuery.Rego(rego.Input(input)).Eval(ctx)
-	if evalErr != nil {
-		return nil, errors.Wrap(evalErr, "couldn't evaluate policy for errors")
-	}
-	return parseErrorsResults(results)
+	return parseAllowResults(results)
 }
 
 func parseSingleExpression(results rego.ResultSet) (expression rego.ExpressionValue, err error) {
@@ -131,18 +110,76 @@ func parseSingleExpression(results rego.ResultSet) (expression rego.ExpressionVa
 	return expression, nil
 }
 
-func parseErrorsResults(results rego.ResultSet) (authzErr error, parseErr error) {
-	errorsExpression, parseErr := parseSingleExpression(results)
+func parseAllowResults(results rego.ResultSet) (allow bool, parseErr error) {
+	if len(results) == 0 {
+		return false, nil
+	}
+	errorExpression, parseErr := parseSingleExpression(results)
 	if parseErr != nil {
-		return nil, errors.Errorf("result set doesn't have exactly one expression")
+		return false, errors.Wrap(parseErr, "allow result set has more than one expression")
 	}
-	errs, ok := errorsExpression.Value.([]interface{})
+	resultAllow, ok := errorExpression.Value.(bool)
 	if !ok {
-		return nil, errors.Errorf("errors result has unexpected type %T", errorsExpression)
+		return false, errors.Errorf("error result has unexpected type %T", errorExpression.Value)
 	}
-	authzErrs := make([]string, len(errs))
-	for i, err := range errs {
-		authzErrs[i] = fmt.Sprintf("%s", err)
+	return resultAllow, parseErr
+}
+
+func (c *Client) EvalAllowContextual(
+	ctx context.Context, input map[string]interface{},
+) (allow bool, remainingQueries []ast.Body, err error) {
+	// Note: this function call is very slow (by factor of ~10) when Go's data race detector is active
+	pq, evalErr := c.allowContextualQuery.Partial(ctx, rego.EvalInput(input))
+	if topdown.IsCancel(evalErr) {
+		return false, nil, context.Canceled
 	}
-	return errors.New(strings.Join(authzErrs, "; ")), parseErr
+	if evalErr != nil {
+		return false, nil, errors.Wrap(
+			evalErr, "couldn't partially evaluate policy with initial inputs for allow",
+		)
+	}
+	if len(pq.Queries) == 0 {
+		return false, nil, nil
+	}
+	remainingQueries = make([]ast.Body, 0, len(pq.Queries))
+	for _, query := range pq.Queries {
+		if len(query) == 0 {
+			return true, nil, nil
+		}
+		remainingQueries = append(remainingQueries, query)
+		// TODO: translate the non-empty rego query into an SQL query
+	}
+	return false, remainingQueries, nil
+}
+
+func (c *Client) EvalError(
+	ctx context.Context, input map[string]interface{},
+) (authzErr error, evalErr error) {
+	results, evalErr := c.errorQuery.Rego(rego.Input(input)).Eval(ctx)
+	if topdown.IsCancel(evalErr) {
+		return nil, context.Canceled
+	}
+	if evalErr != nil {
+		return nil, errors.Wrap(evalErr, "couldn't evaluate policy for errors")
+	}
+	return parseErrorResults(results)
+}
+
+func parseErrorResults(results rego.ResultSet) (authzErr error, parseErr error) {
+	if len(results) == 0 {
+		return nil, nil // no policy-reported errors to retrieve
+	}
+	errorExpression, parseErr := parseSingleExpression(results)
+	if parseErr != nil {
+		return nil, errors.Wrap(parseErr, "error result set has more than one expression")
+	}
+	resultError, ok := errorExpression.Value.(map[string]interface{})
+	if !ok {
+		return nil, errors.Errorf("error result has unexpected type %T", errorExpression.Value)
+	}
+	message, ok := resultError["message"]
+	if !ok {
+		return nil, errors.Errorf("error result has no message")
+	}
+	return errors.New(fmt.Sprintf("%s", message)), parseErr
 }

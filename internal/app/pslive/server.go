@@ -51,7 +51,7 @@ func NewServer(logger godest.Logger) (s *Server, err error) {
 	s = &Server{}
 	s.DBEmbeds = db.NewEmbeds()
 	if s.Globals, err = client.NewGlobals(
-		s.DBEmbeds, "data.sargassum.pslive.web", NewRegoModules(), logger,
+		s.DBEmbeds, "data.sargassum.pslive.web.policies", NewRegoModules(), logger,
 	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}

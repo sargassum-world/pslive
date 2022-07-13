@@ -16,7 +16,7 @@
         {{if $adminIdentifiers}}
           {{$identifier := index $adminIdentifiers $instrument.AdminID}}
           {{if $identifier}}
-            <a href="/users/{{$instrument.AdminID}}">{{$identifier}}</a>
+            <a href="/users/{{$instrument.AdminID}}" data-turbo-frame="_top">{{$identifier}}</a>
           {{else}}
             <span class="tag is-warning">Unknown</span>
           {{end}}
