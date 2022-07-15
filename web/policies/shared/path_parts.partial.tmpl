@@ -1,0 +1,10 @@
+{{- range $index, $part := strings.Split "/" . -}}
+	{{- if gt $index 1}}, {{end -}}
+	{{- if gt $index 0 -}}
+		{{- if strings.HasPrefix ":" $part -}}
+			{{ strings.TrimPrefix ":" $part }}
+		{{- else -}}
+			"{{ $part }}"
+		{{- end -}}
+	{{- end -}}
+{{- end -}}

@@ -1,0 +1,34 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies.auth
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+# Policy Scope
+
+in_scope if {
+	"/csrf" == input.resource.path
+}
+
+in_scope if {
+	"/login" == input.resource.path
+}
+
+in_scope if {
+	"/sessions" == input.resource.path
+}
+
+# Policy Result & Error
+
+{{
+	template "policies/shared/routes.partial.tmpl" coll.Slice
+	(coll.Slice "GET" "/csrf")
+	(coll.Slice "GET" "/login")
+	(coll.Slice "POST" "/sessions")
+}}
+
+errors contains error_matching if {
+	in_scope
+	error_matching := routing.error_matching_routes(matching_routes)
+}

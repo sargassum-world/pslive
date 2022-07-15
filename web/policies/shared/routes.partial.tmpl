@@ -1,0 +1,10 @@
+{{- $routes := . -}}
+{{- range $index, $route := $routes -}}
+{{- if eq $index 0 -}}
+{{template "policies/shared/route.partial.tmpl" $route}}
+{{else if lt $index (sub (len $routes) 1)}}
+{{template "policies/shared/route.partial.tmpl" $route}}
+{{else}}
+{{template "policies/shared/route.partial.tmpl" $route -}}
+{{- end -}}
+{{- end -}}

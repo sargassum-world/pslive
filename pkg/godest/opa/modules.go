@@ -1,7 +1,7 @@
 package opa
 
 import (
-	"embed"
+	_ "embed"
 	"io/fs"
 	"strings"
 
@@ -72,18 +72,16 @@ func FSModules(fsys fs.FS, filePrefix string) ([]Module, error) {
 	return qualifiedModules, nil
 }
 
-var (
-	//go:embed routing/*
-	routingFS         embed.FS
-	routingModules, _ = FSModules(routingFS, "github.com/sargassum-world/pslive/pkg/godest/opa/")
-	//go:embed errors/*
-	errorsFS         embed.FS
-	errorsModules, _ = FSModules(errorsFS, "github.com/sargassum-world/pslive/pkg/godest/opa/")
-)
+//go:embed routing.rego
+var routingModule string
+
+//go:embed errors.rego
+var errorsModule string
 
 func RegoModules() []Module {
-	return append(
-		routingModules,
-		errorsModules...,
-	)
+	const packagePath = "github.com/sargassum-world/pslive/pkg/godest/opa"
+	return []Module{
+		{Filename: packagePath + "/routing.rego", Contents: routingModule},
+		{Filename: packagePath + "/errors.rego", Contents: errorsModule},
+	}
 }

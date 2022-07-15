@@ -58,6 +58,7 @@ func NewEmbeds() godest.Embeds {
 	}
 }
 
+//go:generate gomplate --config policies_gen.yml
 var (
 	//go:embed policies/*
 	policiesFS embed.FS

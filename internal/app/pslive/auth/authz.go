@@ -35,7 +35,7 @@ func (a Auth) RequireAuthz(
 		return nil, errors.Wrap(evalErr, "couldn't evaluate policy for error messages")
 	}
 	if reportedErr != nil {
-		return nil, reportedErr
+		return nil, errors.Wrap(reportedErr, "policy reported error")
 	}
 
 	// This is a performance optimization for allowed routes which don't depend on a SQL lookup

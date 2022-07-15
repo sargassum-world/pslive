@@ -40,6 +40,7 @@ vet: ## go vet
 fmt: ## go fmt
 	$(call print-target)
 	go fmt ./...
+	opa fmt -w .
 
 .PHONY: lint
 lint: ## golangci-lint and opa
