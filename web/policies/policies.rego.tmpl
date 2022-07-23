@@ -1,0 +1,33 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+import data.sargassum.pslive.web.policies.assets
+import data.sargassum.pslive.web.policies.auth
+import data.sargassum.pslive.web.policies.cable
+import data.sargassum.pslive.web.policies.home
+import data.sargassum.pslive.web.policies.instruments
+import data.sargassum.pslive.web.policies.privatechat
+import data.sargassum.pslive.web.policies.users
+
+{{
+	template "policies/shared/policies.partial.tmpl" coll.Slice
+	"assets"
+	"auth"
+	"cable"
+	"home"
+	"instruments"
+	"privatechat"
+	"users"
+}}
+
+errors contains error_matching if {
+	error_matching := routing.error_matching_policies(matching_policies)
+}
+
+error := merged if {
+	merged := routing.merge_policy_errors(errors, policy_errors)
+}

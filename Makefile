@@ -40,11 +40,14 @@ vet: ## go vet
 fmt: ## go fmt
 	$(call print-target)
 	go fmt ./...
+	opa fmt -w .
 
 .PHONY: lint
-lint: ## golangci-lint
+lint: ## golangci-lint and opa
 	$(call print-target)
 	golangci-lint run
+	opa fmt --fail -l .
+	opa check --strict `find . -type f -name "*.rego"`
 
 .PHONY: test
 test: ## go test with race detector and code covarage

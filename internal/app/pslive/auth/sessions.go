@@ -9,7 +9,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
-func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error) {
+func get(s sessions.Session, ss session.Store) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
 		return Auth{}, err
@@ -25,25 +25,18 @@ func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error)
 	return a, nil
 }
 
+func LookupStored(id string, ss session.Store) (a Auth, s *sessions.Session, err error) {
+	s, err = ss.Lookup(id)
+	if err != nil || s == nil {
+		return Auth{}, s, err
+	}
+	a, err = get(*s, ss)
+	return a, s, err
+}
+
 // HTTP
 
-func Get(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
-	return GetFromRequest(r, s, ss)
-}
-
-func GetFromRequest(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
-	a, err = GetWithoutRequest(s, ss)
-	if err != nil {
-		return Auth{}, err
-	}
-
-	if a.CSRF.Behavior.InlineToken {
-		a.CSRF.Token = csrf.Token(r)
-	}
-	return a, nil
-}
-
-func GetWithSession(
+func GetFromRequest(
 	r *http.Request, ss session.Store, l godest.Logger,
 ) (a Auth, s *sessions.Session, err error) {
 	s, err = ss.Get(r)
@@ -55,9 +48,13 @@ func GetWithSession(
 		}
 		// We let the caller save the new session
 	}
-	a, err = Get(r, *s, ss)
+	a, err = get(*s, ss)
 	if err != nil {
 		return Auth{}, s, err
+	}
+
+	if a.CSRF.Behavior.InlineToken {
+		a.CSRF.Token = csrf.Token(r)
 	}
 	return a, s, nil
 }

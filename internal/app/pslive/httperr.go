@@ -26,7 +26,7 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, ss session.Store) echo.HTTP
 		c.Logger().Error(err)
 
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(c.Request(), ss, c.Logger())
+		a, sess, serr := auth.GetFromRequest(c.Request(), ss, c.Logger())
 		if serr != nil {
 			c.Logger().Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
@@ -70,7 +70,7 @@ func NewCSRFErrorHandler(
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(r, ss, l)
+		a, sess, serr := auth.GetFromRequest(r, ss, l)
 		if serr != nil {
 			l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}

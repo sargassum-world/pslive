@@ -1,0 +1,19 @@
+{{- $method := index . 0 -}}
+{{- $path := index . 1 -}}
+{{- $criterion := false -}}
+{{- if gt (len .) 2 -}}
+	{{- $criterion = index . 2 -}}
+{{- end -}}
+
+matching_routes contains route if {
+	{{template "policies/shared/match.partial.tmpl" coll.Slice $method $path}}
+	route := "{{$method}} {{$path}}"
+}
+
+allow if {
+	{{template "policies/shared/match.partial.tmpl" coll.Slice $method $path}}
+	{{- if $criterion}}
+	{{$criterion}}
+	{{- end}}
+}
+{{- /* This comment is just here to delete whitespace */ -}}

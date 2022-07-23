@@ -9,6 +9,8 @@ import (
 
 	"github.com/benbjohnson/hashfs"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+
+	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 // Embeds are embedded filesystems
@@ -54,6 +56,17 @@ func NewEmbeds() godest.Embeds {
 		AppHFS:      appHFS,
 		FontsFS:     fontsFS,
 	}
+}
+
+//go:generate gomplate --config policies_gen.yml
+var (
+	//go:embed policies/*
+	policiesFS embed.FS
+	modules, _ = opa.FSModules(policiesFS, "github.com/sargassum-world/pslive/web/")
+)
+
+func RegoModules() []opa.Module {
+	return modules
 }
 
 // Inlines are strings to include in-line in templates

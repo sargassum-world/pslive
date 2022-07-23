@@ -42,16 +42,13 @@ func New(
 
 func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
 	hr := auth.NewHTTPRouter(er, ss)
-	haz := auth.RequireHTTPAuthz(ss)
 	hr.GET("/users", h.HandleUsersGet())
 	hr.GET("/users/:id", h.HandleUserGet())
-	// TODO: make and use a middleware which checks to ensure the user exists
 	tsr.SUB("/users/:id/chat/users", handling.HandlePresenceSub(h.r, ss, h.oc, h.ps))
 	tsr.UNSUB("/users/:id/chat/users", handling.HandlePresenceUnsub(h.r, ss, h.ps))
 	tsr.MSG("/users/:id/chat/users", handling.HandleTSMsg(h.r, ss))
 	tsr.SUB("/users/:id/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/users/:id/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll
-	// TODO: make and use a middleware which checks to ensure the user exists
-	hr.POST("/users/:id/chat/messages", handling.HandleChatMessagesPost(h.r, h.oc, h.tsh, h.cs), haz)
+	hr.POST("/users/:id/chat/messages", handling.HandleChatMessagesPost(h.r, h.oc, h.tsh, h.cs))
 }

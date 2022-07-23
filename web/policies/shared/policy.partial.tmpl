@@ -1,0 +1,15 @@
+{{- $policy := . -}}
+
+matching_policies contains "{{$policy}}" if {
+	{{$policy}}.in_scope
+}
+
+allow if {
+	{{$policy}}.in_scope
+	{{$policy}}.allow
+}
+
+policy_errors["{{$policy}}"] := error if {
+	some error in {{$policy}}.errors
+}
+{{- /* This comment is just here to delete whitespace */ -}}

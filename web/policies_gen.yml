@@ -1,0 +1,9 @@
+inputDir: policies/
+excludes:
+  - '*'
+  - '!*.rego.tmpl'
+
+templates:
+  - policies/shared/
+
+outputMap: policies/{{.in | strings.ReplaceAll ".rego.tmpl" ".gen.rego"}}

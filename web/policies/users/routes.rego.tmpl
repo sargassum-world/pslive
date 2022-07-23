@@ -1,0 +1,35 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies.users
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+# Policy Scope
+
+in_scope if {
+	"/users" == input.resource.path
+}
+
+in_scope if {
+	glob.match("/users/*", [], input.resource.path)
+}
+
+# Policy Result & Error
+
+{{
+	template "policies/shared/routes.partial.tmpl" coll.Slice
+	(coll.Slice "GET" "/users")
+	(coll.Slice "GET" "/users/:id" "allow_user_get(id)")
+	(coll.Slice "SUB" "/users/:id/chat/users" "allow_user_get(id)")
+	(coll.Slice "UNSUB" "/users/:id/chat/users")
+	(coll.Slice "MSG" "/users/:id/chat/users")
+	(coll.Slice "SUB" "/users/:id/chat/messages" "allow_user_get(id)")
+	(coll.Slice "MSG" "/users/:id/chat/messages")
+	(coll.Slice "POST" "/users/:id/chat/messages" "allow_user_chat_post(input.subject, id)")
+}}
+
+errors contains error_matching if {
+	in_scope
+	error_matching := routing.error_matching_routes(matching_routes)
+}
