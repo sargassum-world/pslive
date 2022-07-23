@@ -124,10 +124,11 @@ func (d ExistsConjunctionDisjunction) NamedParams() map[string]interface{} {
 type ExistsDNFStatement struct {
 	// A select statement in disjunctive normal form
 	Disjunction ExistsConjunctionDisjunction
+	ResultName  string
 }
 
 func (s ExistsDNFStatement) String() string {
-	return fmt.Sprintf("select %s as result", s.Disjunction)
+	return fmt.Sprintf("select %s as %s", s.Disjunction, s.ResultName)
 }
 
 func (s ExistsDNFStatement) NamedParams() map[string]interface{} {
@@ -182,13 +183,14 @@ func parseSelectionTerm(termString, dbName string) (term selectionTerm, err erro
 	}
 	trimmed := strings.TrimPrefix(termString, dbName+".")
 	parts := strings.Split(trimmed, "].")
-	if len(parts) != 2 {
+	const numParts = 2
+	if len(parts) != numParts {
 		return selectionTerm{}, errors.Errorf("can't parse term: %s", trimmed)
 	}
 
 	// Table Name & Selection ID
 	tableParts := strings.Split(parts[0], "[")
-	if len(tableParts) != 2 {
+	if len(tableParts) != numParts {
 		return selectionTerm{}, errors.Errorf("can't parse table reference: %s", parts[0])
 	}
 	term.Table = tableParts[0]
@@ -202,7 +204,8 @@ func parseSelectionTerm(termString, dbName string) (term selectionTerm, err erro
 func ParseExpression(
 	expr *ast.Expr, dbName string,
 ) (selection selectionExpression, err error) {
-	if len(expr.Operands()) != 2 {
+	const numOperands = 2
+	if len(expr.Operands()) != numOperands {
 		return selectionExpression{}, errors.Errorf(
 			"can't handle expression with %d operands: %s", len(expr.Operands()), expr,
 		)
@@ -298,6 +301,7 @@ func NewSQLiteTranspiler(dbName string) SQLiteTranspiler {
 }
 
 func (t SQLiteTranspiler) Parse(queries []ast.Body) (statement ExistsDNFStatement, err error) {
+	statement.ResultName = "result"
 	statement.Disjunction, err = ParseQueries(queries, t.DBName)
 	if err != nil {
 		return ExistsDNFStatement{}, errors.Wrap(err, "can't parse rego queries")

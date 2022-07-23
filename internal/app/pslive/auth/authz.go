@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/labstack/echo/v4"
+	"github.com/open-policy-agent/opa/ast"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
@@ -17,9 +18,27 @@ import (
 
 // Authorization
 
+func EvalRemainingQueries(
+	ctx context.Context, remaining []ast.Body, db *database.DB,
+) (result bool, err error) {
+	statement, err := opa.NewSQLiteTranspiler("input.context.db").Parse(remaining)
+	if err != nil {
+		return false, errors.Wrap(err, "couldn't translate remaining queries into SQL")
+	}
+	if err := db.ExecuteSelection(
+		ctx, statement.String(), statement.NamedParams(),
+		func(s *sqlite.Stmt) error {
+			result = s.GetBool(statement.ResultName)
+			return nil
+		},
+	); err != nil {
+		return false, errors.Wrap(err, "Couldn't execute SQL selection")
+	}
+	return result, nil
+}
+
 func (a Auth) Authorized() bool {
-	// Right now there's only one user who can be authenticated, namely the admin, so this is
-	// good enough for now.
+	// TODO: make this use OPA
 	return a.Identity.Authenticated
 }
 
@@ -65,8 +84,14 @@ func (a Auth) RequireAuthz(
 		return nil, nil // authorized!
 	}
 	if remainingQueries != nil {
-		// TODO: evaluate the remaining queries
-		return errors.New("authz depends on remaining queries, which are not yet implemented"), nil
+		result, err := EvalRemainingQueries(ctx, remainingQueries, db)
+		if err != nil {
+			return nil, errors.Wrap(evalErr, "couldn't evaluate remaining rego queries")
+		}
+		if result {
+			return nil, nil
+		}
+		return errors.New("unauthorized according to policy with contextual data"), nil
 	}
 
 	return errors.New("unauthorized according to policy"), nil
