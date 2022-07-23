@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"zombiezen.com/go/sqlite"
 
+	"github.com/sargassum-world/pslive/pkg/godest/database"
 	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
@@ -22,8 +24,8 @@ func (a Auth) Authorized() bool {
 }
 
 func (a Auth) RequireAuthz(
-	ctx context.Context, input map[string]interface{}, opc *opa.Client,
-) (authzErr error, checkErr error) {
+	ctx context.Context, input map[string]interface{}, opc *opa.Client, db *database.DB,
+) (authzErr error, evalErr error) {
 	// Policy-reported errors are only for policy/route matching errors and other SQL-independent
 	// errors; they are not for reporting authz denial reasons, because error generation doesn't
 	// work well with partial evaluation
@@ -72,7 +74,9 @@ func (a Auth) RequireAuthz(
 
 // HTTP
 
-func (a Auth) RequireHTTPAuthz(c echo.Context, opc *opa.Client) (authzErr error, checkErr error) {
+func (a Auth) RequireHTTPAuthz(
+	c echo.Context, opc *opa.Client, db *database.DB,
+) (authzErr error, evalErr error) {
 	formParams, err := c.FormParams()
 	if err != nil {
 		return nil, errors.New("couldn't parse form params for input to authz check")
@@ -85,10 +89,11 @@ func (a Auth) RequireHTTPAuthz(c echo.Context, opc *opa.Client) (authzErr error,
 			Subject:   a.Identity.NewSubject(),
 		}.Map(),
 		opc,
+		db,
 	)
 }
 
-func RequireHTTPAuthz(ss session.Store, opc *opa.Client) echo.MiddlewareFunc {
+func RequireHTTPAuthz(ss session.Store, opc *opa.Client, db *database.DB) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			method := c.Request().Method
@@ -106,7 +111,7 @@ func RequireHTTPAuthz(ss session.Store, opc *opa.Client) echo.MiddlewareFunc {
 					"couldn't parse form params for input to authz check on %s %s", method, uri,
 				))
 			}
-			authzErr, evalErr := a.RequireHTTPAuthz(c, opc)
+			authzErr, evalErr := a.RequireHTTPAuthz(c, opc, db)
 			if errors.Is(evalErr, context.Canceled) {
 				return evalErr
 			}
@@ -128,8 +133,8 @@ func RequireHTTPAuthz(ss session.Store, opc *opa.Client) echo.MiddlewareFunc {
 // Turbo Streams
 
 func (a Auth) RequireTSAuthz(
-	c turbostreams.Context, opc *opa.Client,
-) (authzErr error, checkErr error) {
+	c turbostreams.Context, opc *opa.Client, db *database.DB,
+) (authzErr error, evalErr error) {
 	if c.Method() == turbostreams.MethodUnsub || c.Method() == turbostreams.MethodPub {
 		// We can't prevent unsubscription; and closing a tab triggers an unsubscription while also
 		// canceling context, which will interrupt policy evaluation (and cause an evalErr).
@@ -146,10 +151,13 @@ func (a Auth) RequireTSAuthz(
 			Subject:   a.Identity.NewSubject(),
 		}.Map(),
 		opc,
+		db,
 	)
 }
 
-func RequireTSAuthz(ss session.Store, opc *opa.Client) turbostreams.MiddlewareFunc {
+func RequireTSAuthz(
+	ss session.Store, opc *opa.Client, db *database.DB,
+) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
 		return func(c turbostreams.Context) error {
 			method := c.Method()
@@ -161,7 +169,7 @@ func RequireTSAuthz(ss session.Store, opc *opa.Client) turbostreams.MiddlewareFu
 					err, "couldn't lookup auth info for session to check authz on %s %s", method, topic,
 				)
 			}
-			authzErr, evalErr := a.RequireTSAuthz(c, opc)
+			authzErr, evalErr := a.RequireTSAuthz(c, opc, db)
 			if errors.Is(evalErr, context.Canceled) {
 				return evalErr
 			}

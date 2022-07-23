@@ -17,23 +17,24 @@ allow_instrument_post(subject, instrument_id) if {
 
 allow_camera_post(subject, instrument_id, camera_id) if {
 	is_valid_instrument(instrument_id)
-	is_valid_camera(camera_id)
+	is_valid_camera(instrument_id, camera_id)
 	is_instrument_admin(subject, instrument_id)
 }
 
 allow_controller_get(subject, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
-	is_valid_controller(controller_id)
+	is_valid_controller(instrument_id, controller_id)
 }
 
 allow_controller_post(subject, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
-	is_valid_controller(controller_id)
+	is_valid_controller(instrument_id, controller_id)
 	is_instrument_admin(subject, instrument_id)
 }
 
 allow_controller_pump_post(subject, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
+	is_valid_controller(instrument_id, controller_id)
 	is_instrument_operator(subject, instrument_id)
 }
 
@@ -45,26 +46,28 @@ allow_instrument_chat_post(subject, instrument_id) if {
 # Internal Attribute Checks
 
 is_valid_instrument(instrument_id) if {
-	to_number(instrument_id) == 1
-} else {
-	to_number(instrument_id) in input.context.instruments # TODO: implement
+	instrument := input.context.db.instruments_instrument[_]
+
+	to_number(instrument_id) == instrument.id # TODO: implement
 }
 
-is_valid_camera(camera_id) if {
-	to_number(camera_id) == 1
-} else {
-	to_number(camera_id) in input.context.cameras # TODO: implement
+is_valid_camera(instrument_id, camera_id) if {
+	camera := input.context.db.instruments_camera[_]
+	to_number(camera_id) == camera.id
+	to_number(instrument_id) == camera.instrument_id
 }
 
-is_valid_controller(controller_id) if {
-	to_number(controller_id) == 1
-} else {
-	to_number(controller_id) in input.context.controllers # TODO: implement
+is_valid_controller(instrument_id, controller_id) if {
+	controller := input.context.db.instruments_controller[_]
+	to_number(controller_id) == controller.id
+	to_number(instrument_id) == controller.instrument_id
 }
 
 is_instrument_admin(subject, instrument_id) if {
 	auth.is_authenticated(subject)
-	# subject.identity == input.context.instrument.admin_identity_id # TODO: implement
+	instrument := input.context.db.instruments_instrument[_]
+	to_number(instrument_id) == instrument.id
+	subject.identity == instrument.admin_identity_id
 }
 
 is_instrument_operator(subject, instrument_id) if {
