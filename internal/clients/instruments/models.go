@@ -117,8 +117,8 @@ type Instrument struct {
 	Name        string
 	Description string
 	AdminID     string
-	Cameras     []Camera
-	Controllers []Controller
+	Cameras     map[int64]Camera
+	Controllers map[int64]Controller
 }
 
 func (i Instrument) newInsertion() map[string]interface{} {
@@ -177,6 +177,8 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 			Name:        s.GetText("name"),
 			Description: s.GetText("description"),
 			AdminID:     s.GetText("admin_id"),
+			Cameras:     make(map[int64]Camera),
+			Controllers: make(map[int64]Controller),
 		}
 		if id != 0 {
 			sel.ids = append(sel.ids, id)
@@ -195,12 +197,12 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 		ID:           cameraID,
 		InstrumentID: id,
 	}) {
-		instrument.Cameras = append(instrument.Cameras, camera)
+		instrument.Cameras[cameraID] = camera
 	}
 
 	controllerID := s.GetInt64("controller_id")
 	controller := Controller{
-		ID:           s.GetInt64("controller_id"),
+		ID:           controllerID,
 		InstrumentID: s.GetInt64("id"),
 		URL:          s.GetText("controller_url"),
 		Protocol:     s.GetText("controller_protocol"),
@@ -209,7 +211,7 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 		ID:           controllerID,
 		InstrumentID: id,
 	}) {
-		instrument.Controllers = append(instrument.Controllers, controller)
+		instrument.Controllers[controllerID] = controller
 	}
 
 	sel.instruments[id] = instrument
