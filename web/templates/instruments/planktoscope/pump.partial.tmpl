@@ -43,7 +43,6 @@
                     name="direction"
                     value="forward"
                     {{if $pumpSettings.Forward}}checked{{end}}
-                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
                   />
                   Forward
                 </label>
@@ -53,7 +52,6 @@
                     name="direction"
                     value="backward"
                     {{if not $pumpSettings.Forward}}checked{{end}}
-                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
                   />
                   Backward
                 </label>
@@ -77,7 +75,6 @@
                     min="0"
                     max="10"
                     step="0.01"
-                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
                     value="{{$pumpSettings.Volume}}"
                   />
                 </div>
@@ -104,7 +101,6 @@
                     min="0"
                     max="10"
                     step="0.01"
-                    {{if not $auth.Identity.Authenticated}}disabled{{end}}
                     value="{{$pumpSettings.Flowrate}}"
                   />
                 </div>
@@ -116,40 +112,38 @@
           </div>
         </div>
 
-        {{if $auth.Identity.Authenticated}}
-          <div class="field is-horizontal">
-            <div class="field-label is-normal"><!--Left empty for spacing--></div>
-            <div class="field-body" >
-              <div class="field" data-form-submission-target="submitter">
-                <div class="field has-addons">
-                  <div class="control">
-                    <input
-                      class="button"
-                      type="submit"
-                      name="pumping"
-                      value="Stop"
-                      {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
-                      data-form-submission-target="submit"
-                    />
-                  </div>
-                  <div class="control">
-                    <input
-                      class="button"
-                      type="submit"
-                      name="pumping"
-                      {{if and $pump.StateKnown $pump.Pumping}}
-                        value="Restart"
-                      {{else}}
-                        value="Start"
-                      {{end}}
-                      data-form-submission-target="submit"
-                    />
-                  </div>
+        <div class="field is-horizontal">
+          <div class="field-label is-normal"><!--Left empty for spacing--></div>
+          <div class="field-body" >
+            <div class="field" data-form-submission-target="submitter">
+              <div class="field has-addons">
+                <div class="control">
+                  <input
+                    class="button"
+                    type="submit"
+                    name="pumping"
+                    value="Stop"
+                    {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
+                    data-form-submission-target="submit"
+                  />
+                </div>
+                <div class="control">
+                  <input
+                    class="button"
+                    type="submit"
+                    name="pumping"
+                    {{if and $pump.StateKnown $pump.Pumping}}
+                      value="Restart"
+                    {{else}}
+                      value="Start"
+                    {{end}}
+                    data-form-submission-target="submit"
+                  />
                 </div>
               </div>
             </div>
           </div>
-        {{end}}
+        </div>
       </form>
     </div>
   </div>

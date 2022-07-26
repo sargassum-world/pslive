@@ -63,7 +63,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	tsr.SUB("/instruments/:id/controllers/:controllerID/pump", turbostreams.EmptyHandler)
 	tsr.PUB("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPub())
 	tsr.MSG("/instruments/:id/controllers/:controllerID/pump", handling.HandleTSMsg(h.r, ss))
-	hr.POST("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPost(), haz)
+	hr.POST("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPost())
 	// TODO: make and use a middleware which checks to ensure the instrument exists
 	tsr.SUB("/instruments/:id/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/instruments/:id/chat/messages", handling.HandleTSMsg(h.r, ss))
