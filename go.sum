@@ -869,8 +869,8 @@ github.com/opencontainers/selinux v1.8.2/go.mod h1:MUIHuUEvKB1wtJjQdOyYRgOnLD2xA
 github.com/opencontainers/selinux v1.10.0/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuho1lHsJxIJ3gGbJI=
 github.com/opencontainers/selinux v1.10.1/go.mod h1:2i0OySw99QjzBBQByd1Gr9gSjvuho1lHsJxIJ3gGbJI=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
-github.com/ory/client-go v0.0.1-alpha.189 h1:0X03gUniBwN5tQVLUCR5xx0FpCpZVxUn1W8IoqtMQmY=
-github.com/ory/client-go v0.0.1-alpha.189/go.mod h1:dWbi9DBEjiDXwyuJ1+A2WT1/bIp9HwvVxZxzHzp4YHU=
+github.com/ory/client-go v0.2.0-alpha.4 h1:aMp2etphc2ZZ4MjTlzeq5Mf259a29NBSXUnx9cAvAOc=
+github.com/ory/client-go v0.2.0-alpha.4/go.mod h1:dWbi9DBEjiDXwyuJ1+A2WT1/bIp9HwvVxZxzHzp4YHU=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/pelletier/go-toml v1.8.1/go.mod h1:T2/BmBdy8dvIRq1a/8aqjN41wvWlN4lrapLU/GW4pbc=
@@ -1037,7 +1037,6 @@ github.com/ugorji/go v1.2.7/go.mod h1:nF9osbDWLy6bDVv/Rtoh6QgnvNDpmCalQV5urGCCS6
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/ugorji/go/codec v1.2.7/go.mod h1:WGN1fab3R1fzQlVQTkfxVtIBhWDRqOviHU95kRgeqEY=
-github.com/unrolled/secure v1.11.0 h1:fjkKhD/MsQnlmz/au+MmFptCFNhvf5iv04ALkdCXRCI=
 github.com/unrolled/secure v1.11.0/go.mod h1:BmF5hyM6tXczk3MpQkFf1hpKSRqCyhqcbiQtiAF7+40=
 github.com/unrolled/secure v1.12.0 h1:7k3jcgLwfjiKkhQde6VbQ3D4KDLtDBqDd/hs3PPANDY=
 github.com/unrolled/secure v1.12.0/go.mod h1:BmF5hyM6tXczk3MpQkFf1hpKSRqCyhqcbiQtiAF7+40=
