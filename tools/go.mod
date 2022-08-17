@@ -3,9 +3,9 @@ module github.com/sargassum-world/pslive/build
 go 1.16
 
 require (
-	cloud.google.com/go/iam v0.3.0 // indirect
 	github.com/deepmap/oapi-codegen v1.10.1
 	github.com/golangci/golangci-lint v1.48.0
 	github.com/goreleaser/goreleaser v1.6.3
+	github.com/hairyhenderson/gomplate/v3 v3.11.2
 	mvdan.cc/gofumpt v0.3.1
 )
