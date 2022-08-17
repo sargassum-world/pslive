@@ -1,6 +1,7 @@
 package instruments
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,7 +13,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
-	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
@@ -21,7 +22,7 @@ import (
 const pumpPartial = "instruments/planktoscope/pump.partial.tmpl"
 
 func replacePumpStream(
-	id, controllerID int64, instrument instruments.Instrument, a auth.Auth, pc *planktoscope.Client,
+	id, controllerID int64, a auth.Auth, pc *planktoscope.Client,
 ) turbostreams.Message {
 	state := pc.GetState()
 	return turbostreams.Message{
@@ -29,7 +30,7 @@ func replacePumpStream(
 		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/pump", id, controllerID),
 		Template: pumpPartial,
 		Data: map[string]interface{}{
-			"Instrument":   instrument,
+			"InstrumentID": id,
 			"ControllerID": controllerID,
 			"PumpSettings": state.PumpSettings,
 			"Pump":         state.Pump,
@@ -90,10 +91,6 @@ func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 		}
 
 		// Run queries
-		instrument, err := h.is.GetInstrument(c.Context(), id)
-		if err != nil {
-			return err
-		}
 		pc, ok := h.pco.Get(controllerID)
 		if !ok {
 			return errors.Errorf(
@@ -112,10 +109,82 @@ func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 					// Context was also canceled and it should have priority
 					return err
 				}
-				message := replacePumpStream(id, controllerID, instrument, auth.Auth{}, pc)
+				// We insert an empty Auth object because the MSG handler will add the auth object for each
+				// client
+				message := replacePumpStream(id, controllerID, auth.Auth{}, pc)
 				c.Publish(message)
 			}
 		}
+	}
+}
+
+type PlanktoscopePumpViewAuthz struct {
+	Set bool
+}
+
+type PlanktoscopeControllerViewAuthz struct {
+	Pump PlanktoscopePumpViewAuthz
+}
+
+func getPlanktoscopePumpViewAuthz(
+	ctx context.Context, id, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+) (authz PlanktoscopePumpViewAuthz, err error) {
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/pump", id, controllerID)
+	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
+		return PlanktoscopePumpViewAuthz{}, errors.Wrap(err, "couldn't check authz for setting pump")
+	}
+	return authz, nil
+}
+
+func getPlanktoscopeControllerViewAuthz(
+	ctx context.Context, id, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+) (authz PlanktoscopeControllerViewAuthz, err error) {
+	if authz.Pump, err = getPlanktoscopePumpViewAuthz(ctx, id, controllerID, a, azc); err != nil {
+		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for pump")
+	}
+	return authz, nil
+}
+
+func (h *Handlers) ModifyPumpMsgData() handling.DataModifier {
+	return func(
+		ctx context.Context, a auth.Auth, data map[string]interface{},
+	) (modifications map[string]interface{}, err error) {
+		instrumentID, ok := data["InstrumentID"]
+		if !ok {
+			return nil, errors.New(
+				"couldn't find instrument id from turbostreams message data to check authorizations",
+			)
+		}
+		id, ok := instrumentID.(int64)
+		if !ok {
+			return nil, errors.Errorf(
+				"instrument id has unexpected type %T in turbostreams message data for checking authorization",
+				instrumentID,
+			)
+		}
+		controllerID, ok := data["ControllerID"]
+		if !ok {
+			return nil, errors.Errorf(
+				"couldn't find controller id for instrument %d from turbostreams message data to check authorizations",
+				id,
+			)
+		}
+		cid, ok := controllerID.(int64)
+		if !ok {
+			return nil, errors.Errorf(
+				"controller id has unexpected type %T in turbostreams message data for checking authorization",
+				controllerID,
+			)
+		}
+		modifications = make(map[string]interface{})
+		if modifications["Authorizations"], err = getPlanktoscopePumpViewAuthz(
+			ctx, id, cid, a, h.azc,
+		); err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't check authz for pump of controller %d of instrument %d", cid, id,
+			)
+		}
+		return modifications, nil
 	}
 }
 
@@ -134,7 +203,6 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 		}
 
 		// Run queries
-		// FIXME: ensure that the controller belongs to the instrument and that the user is authorized!
 		pc, ok := h.pco.Get(id)
 		if !ok {
 			return errors.Errorf(

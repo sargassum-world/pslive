@@ -1,10 +1,10 @@
 {{$instruments := get . "Instruments"}}
 {{$adminIdentifiers := get . "AdminIdentifiers"}}
+{{$authorizeCreate := get . "AuthorizeCreate"}}
 {{$auth := get . "Auth"}}
-{{$showCreateButton := get . "ShowCreateButton"}}
 
 <turbo-frame id="/instruments/list">
-  {{if and $auth.Identity.Authenticated $showCreateButton}}
+  {{if $authorizeCreate}}
     {{
       template "shared/instruments/create-instrument.partial.tmpl" dict
       "Auth" $auth

@@ -1,9 +1,10 @@
-{{$topic := (get . "Topic")}}
-{{$auth := (get . "Auth")}}
-{{$focusOnLoad := (get . "FocusOnLoad")}}
+{{$topic := get . "Topic"}}
+{{$authorizeSend := get . "AuthorizeSend"}}
+{{$focusOnLoad := get . "FocusOnLoad"}}
+{{$auth := get . "Auth"}}
 
 <turbo-frame id="{{print $topic "/send"}}">
-  {{if $auth.Identity.Authenticated}}
+  {{if $authorizeSend}}
     <form
       action="{{print $topic "/messages"}}"
       method="POST"

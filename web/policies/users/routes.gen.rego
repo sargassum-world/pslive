@@ -42,6 +42,42 @@ allow if {
 }
 
 matching_routes contains route if {
+	"GET" == input.operation.method
+	["users", id, "info"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /users/:id/info"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["users", id, "info"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_user_get_info(id)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["users", id, "info", "email"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /users/:id/info/email"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["users", id, "info", "email"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_user_get_info_email(input.subject, id)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /users/:id/chat/users"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_user_get(id)
+}
+
+matching_routes contains route if {
 	"SUB" == input.operation.method
 	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "SUB /users/:id/chat/users"
@@ -73,6 +109,18 @@ matching_routes contains route if {
 allow if {
 	"MSG" == input.operation.method
 	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["users", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /users/:id/chat/messages"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["users", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_user_get(id)
 }
 
 matching_routes contains route if {

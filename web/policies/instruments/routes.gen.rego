@@ -90,6 +90,18 @@ allow if {
 }
 
 matching_routes contains route if {
+	"GET" == input.operation.method
+	["instruments", id, "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /instruments/:id/users"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["instruments", id, "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_instrument_get(id)
+}
+
+matching_routes contains route if {
 	"SUB" == input.operation.method
 	["instruments", id, "users"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "SUB /instruments/:id/users"
@@ -215,6 +227,18 @@ allow if {
 	"POST" == input.operation.method
 	["instruments", id, "controllers", controller_id, "pump"] = split(trim_prefix(input.resource.path, "/"), "/")
 	allow_controller_pump_post(input.subject, id, controller_id)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["instruments", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /instruments/:id/chat/messages"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["instruments", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_instrument_get(id)
 }
 
 matching_routes contains route if {

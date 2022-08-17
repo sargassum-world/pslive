@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
@@ -95,6 +96,47 @@ func getInstrumentViewData(
 	return vd, nil
 }
 
+type InstrumentViewAuthz struct {
+	SendChat    bool
+	Controllers map[int64]interface{}
+}
+
+func getInstrumentViewAuthz(
+	ctx context.Context, id int64, controllerIDs []int64, a auth.Auth, azc *auth.AuthzChecker,
+) (authz InstrumentViewAuthz, err error) {
+	eg, egctx := errgroup.WithContext(ctx)
+	controllerAuthorizations := make([]interface{}, len(controllerIDs))
+	for i, controllerID := range controllerIDs {
+		eg.Go(func(i int, cid int64) func() (err error) {
+			return func() error {
+				if controllerAuthorizations[i], err = getPlanktoscopeControllerViewAuthz(
+					egctx, id, cid, a, azc,
+				); err != nil {
+					return errors.Wrapf(
+						err, "couldn't check authz for controller %d for instrument %d", cid, id,
+					)
+				}
+				return nil
+			}
+		}(i, controllerID))
+	}
+	eg.Go(func() (err error) {
+		path := fmt.Sprintf("/instruments/%d/chat/messages", id)
+		if authz.SendChat, err = azc.Allow(egctx, a, path, http.MethodPost, nil); err != nil {
+			return errors.Wrapf(err, "couldn't check authz for sending to chat for instrument %d", id)
+		}
+		return nil
+	})
+	if err := eg.Wait(); err != nil {
+		return InstrumentViewAuthz{}, err
+	}
+	authz.Controllers = make(map[int64]interface{})
+	for i, controllerID := range controllerIDs {
+		authz.Controllers[controllerID] = controllerAuthorizations[i]
+	}
+	return authz, nil
+}
+
 func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 	t := "instruments/instrument.page.tmpl"
 	h.r.MustHave(t)
@@ -106,10 +148,14 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 		}
 
 		// Run queries
-		instrumentViewData, err := getInstrumentViewData(
-			c.Request().Context(), id, h.oc, h.is, h.pco, h.ps, h.cs,
-		)
+		ctx := c.Request().Context()
+		instrumentViewData, err := getInstrumentViewData(ctx, id, h.oc, h.is, h.pco, h.ps, h.cs)
 		if err != nil {
+			return err
+		}
+		if a.Authorizations, err = getInstrumentViewAuthz(
+			ctx, id, instrumentViewData.ControllerIDs, a, h.azc,
+		); err != nil {
 			return err
 		}
 

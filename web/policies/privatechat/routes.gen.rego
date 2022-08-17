@@ -15,6 +15,18 @@ in_scope if {
 # Policy Result & Error
 
 matching_routes contains route if {
+	"GET" == input.operation.method
+	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /private-chats/:first/:second/chat/users"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_private_chat_get(input.subject, first, second)
+}
+
+matching_routes contains route if {
 	"SUB" == input.operation.method
 	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "SUB /private-chats/:first/:second/chat/users"
@@ -23,7 +35,7 @@ matching_routes contains route if {
 allow if {
 	"SUB" == input.operation.method
 	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
-	allow_private_chat(input.subject, first, second)
+	allow_private_chat_get(input.subject, first, second)
 }
 
 matching_routes contains route if {
@@ -46,7 +58,19 @@ matching_routes contains route if {
 allow if {
 	"MSG" == input.operation.method
 	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
-	allow_private_chat(input.subject, first, second)
+	allow_private_chat_get(input.subject, first, second)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["private-chats", first, second, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /private-chats/:first/:second/chat/messages"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["private-chats", first, second, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_private_chat_get(input.subject, first, second)
 }
 
 matching_routes contains route if {
@@ -58,7 +82,7 @@ matching_routes contains route if {
 allow if {
 	"SUB" == input.operation.method
 	["private-chats", first, second, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
-	allow_private_chat(input.subject, first, second)
+	allow_private_chat_get(input.subject, first, second)
 }
 
 matching_routes contains route if {
@@ -70,7 +94,7 @@ matching_routes contains route if {
 allow if {
 	"MSG" == input.operation.method
 	["private-chats", first, second, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
-	allow_private_chat(input.subject, first, second)
+	allow_private_chat_get(input.subject, first, second)
 }
 
 matching_routes contains route if {
@@ -82,7 +106,7 @@ matching_routes contains route if {
 allow if {
 	"POST" == input.operation.method
 	["private-chats", first, second, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
-	allow_private_chat(input.subject, first, second)
+	allow_private_chat_post(input.subject, first, second)
 }
 
 errors contains error_matching if {

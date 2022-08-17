@@ -16,25 +16,33 @@ in_scope if {
 {{
 	template "policies/shared/routes.partial.tmpl" coll.Slice
 	(
+		coll.Slice "GET" "/private-chats/:first/:second/chat/users"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
 		coll.Slice "SUB" "/private-chats/:first/:second/chat/users"
-		"allow_private_chat(input.subject, first, second)"
+		"allow_private_chat_get(input.subject, first, second)"
 	)
 	(coll.Slice "UNSUB" "/private-chats/:first/:second/chat/users")
 	(
 		coll.Slice "MSG" "/private-chats/:first/:second/chat/users"
-		"allow_private_chat(input.subject, first, second)"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "GET" "/private-chats/:first/:second/chat/messages"
+		"allow_private_chat_get(input.subject, first, second)"
 	)
 	(
 		coll.Slice "SUB" "/private-chats/:first/:second/chat/messages"
-		"allow_private_chat(input.subject, first, second)"
+		"allow_private_chat_get(input.subject, first, second)"
 	)
 	(
 		coll.Slice "MSG" "/private-chats/:first/:second/chat/messages"
-		"allow_private_chat(input.subject, first, second)"
+		"allow_private_chat_get(input.subject, first, second)"
 	)
 	(
 		coll.Slice "POST" "/private-chats/:first/:second/chat/messages"
-		"allow_private_chat(input.subject, first, second)"
+		"allow_private_chat_post(input.subject, first, second)"
 	)
 }}
 

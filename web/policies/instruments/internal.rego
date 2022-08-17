@@ -40,7 +40,7 @@ allow_controller_pump_post(subject, instrument_id, controller_id) if {
 
 allow_instrument_chat_post(subject, instrument_id) if {
 	is_valid_instrument(instrument_id)
-	auth.is_authenticated(subject, instrument_id)
+	auth.is_authenticated(subject)
 }
 
 # Internal Attribute Checks
@@ -48,7 +48,7 @@ allow_instrument_chat_post(subject, instrument_id) if {
 is_valid_instrument(instrument_id) if {
 	instrument := input.context.db.instruments_instrument[_]
 
-	to_number(instrument_id) == instrument.id # TODO: implement
+	to_number(instrument_id) == instrument.id
 }
 
 is_valid_camera(instrument_id, camera_id) if {

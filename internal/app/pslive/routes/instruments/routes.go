@@ -18,7 +18,8 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
-	oc *ory.Client
+	oc  *ory.Client
+	azc *auth.AuthzChecker
 
 	tsh *turbostreams.MessagesHub
 
@@ -29,12 +30,13 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub,
+	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.MessagesHub,
 	is *instruments.Store, pco *planktoscope.Orchestrator, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		oc:  oc,
+		azc: azc,
 		tsh: tsh,
 		is:  is,
 		pco: pco,
@@ -60,12 +62,14 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	hr.POST("/instruments/:id/controllers/:controllerID", h.HandleInstrumentControllerPost())
 	tsr.SUB("/instruments/:id/controllers/:controllerID/pump", turbostreams.EmptyHandler)
 	tsr.PUB("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPub())
-	tsr.MSG("/instruments/:id/controllers/:controllerID/pump", handling.HandleTSMsg(h.r, ss))
+	tsr.MSG("/instruments/:id/controllers/:controllerID/pump", handling.HandleTSMsg(
+		h.r, ss, h.ModifyPumpMsgData(),
+	))
 	hr.POST("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPost())
 	tsr.SUB("/instruments/:id/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/instruments/:id/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll
 	hr.POST("/instruments/:id/chat/messages", handling.HandleChatMessagesPost(
-		h.r, h.oc, h.tsh, h.cs,
+		h.r, h.oc, h.azc, h.tsh, h.cs,
 	))
 }

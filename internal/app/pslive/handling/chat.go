@@ -67,21 +67,23 @@ func appendChatMessageStream(m ChatMessageViewData) turbostreams.Message {
 	}
 }
 
-func replaceChatSendStream(topic string, a auth.Auth) turbostreams.Message {
+func replaceChatSendStream(topic string, authorizeSend bool, a auth.Auth) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
 		Target:   topic + "/send",
 		Template: sendPartial,
 		Data: map[string]interface{}{
-			"Topic":       topic,
-			"Auth":        a,
-			"FocusOnLoad": true,
+			"Topic":         topic,
+			"AuthorizeSend": authorizeSend,
+			"FocusOnLoad":   true,
+			"Auth":          a,
 		},
 	}
 }
 
 func HandleChatMessagesPost(
-	r godest.TemplateRenderer, oc *ory.Client, tsh *turbostreams.MessagesHub, cs *chat.Store,
+	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker,
+	tsh *turbostreams.MessagesHub, cs *chat.Store,
 ) auth.HTTPHandlerFunc {
 	sendT := sendPartial
 	r.MustHave(sendT)
@@ -92,7 +94,8 @@ func HandleChatMessagesPost(
 		topic := strings.TrimSuffix(c.Request().URL.Path, "/messages")
 
 		// Run queries
-		user, err := oc.GetIdentifier(c.Request().Context(), a.Identity.User)
+		ctx := c.Request().Context()
+		user, err := oc.GetIdentifier(ctx, a.Identity.User)
 		if err != nil {
 			return err
 		}
@@ -102,7 +105,7 @@ func HandleChatMessagesPost(
 			SenderID: a.Identity.User,
 			Body:     body,
 		}
-		if m.ID, err = cs.AddMessage(c.Request().Context(), m); err != nil {
+		if m.ID, err = cs.AddMessage(ctx, m); err != nil {
 			return err
 		}
 		mvd := NewChatMessageViewData(m)
@@ -111,7 +114,11 @@ func HandleChatMessagesPost(
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {
-			return r.TurboStream(c.Response(), replaceChatSendStream(topic, a))
+			authorizeSend, err := azc.Allow(ctx, a, m.Topic, http.MethodPost, nil)
+			if err != nil {
+				return errors.Wrapf(err, "couldn't check authz for sending to chat for topic %s", topic)
+			}
+			return r.TurboStream(c.Response(), replaceChatSendStream(topic, authorizeSend, a))
 		}
 
 		// Redirect user

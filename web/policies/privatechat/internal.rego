@@ -6,20 +6,23 @@ import data.sargassum.pslive.internal.app.pslive.auth
 
 # Internal Route Checks
 
-allow_private_chat(subject, first, second) if {
-	# is_valid_chat(first, second) # TODO: implement user validity check
+allow_private_chat_get(subject, first, second) if {
+	is_valid_chat(first, second)
 	is_participant(subject, first, second)
 	auth.is_authenticated(subject)
 }
 
-# Internal Attribute Checks
-
-is_valid_user(user_id) if {
-	user := input.context.db.users_user[_]
-	to_number(user_id) == user.id
+allow_private_chat_post(subject, first, second) if {
+	allow_private_chat_get(subject, first, second)
 }
 
+# Internal Attribute Checks
+
+# TODO: implement (right now we don't have a users db table)
+is_valid_user(user_id) = true
+
 is_valid_chat(first, second) if {
+	first != second
 	is_valid_user(first)
 	is_valid_user(second)
 }

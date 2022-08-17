@@ -1,17 +1,18 @@
-{{$instrument := (get . "Instrument")}}
+{{$instrumentID := (get . "InstrumentID")}}
 {{$controllerID := (get . "ControllerID")}}
 {{$pumpSettings := (get . "PumpSettings")}}
 {{$pump := (get . "Pump")}}
-{{$auth := (get . "Auth")}}
+{{$authorizations := (get . "Authorizations")}}
 {{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+{{$auth := (get . "Auth")}}
 
 {{if $withTurboStreamSource}}
   {{
     template "shared/turbo-cable-stream-source.partial.tmpl"
-    (print "/instruments/" $instrument.ID "/controllers/" $controllerID "/pump")
+    (print "/instruments/" $instrumentID "/controllers/" $controllerID "/pump")
   }}
 {{end}}
-<turbo-frame id="/instruments/{{$instrument.ID}}/controllers/{{$controllerID}}/pump">
+<turbo-frame id="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/pump">
   <div class="card section-card wide-card">
     <div class="card-content">
       <h3>
@@ -23,7 +24,7 @@
         {{end}}
       </h3>
       <form
-        action="/instruments/{{$instrument.ID}}/controllers/{{$controllerID}}/pump"
+        action="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/pump"
         method="POST"
         data-controller="form-submission csrf"
         data-action="submit->form-submission#submit submit->csrf#addToken"
@@ -43,6 +44,7 @@
                     name="direction"
                     value="forward"
                     {{if $pumpSettings.Forward}}checked{{end}}
+                    {{if not $authorizations.Set}}disabled{{end}}
                   />
                   Forward
                 </label>
@@ -52,6 +54,7 @@
                     name="direction"
                     value="backward"
                     {{if not $pumpSettings.Forward}}checked{{end}}
+                    {{if not $authorizations.Set}}disabled{{end}}
                   />
                   Backward
                 </label>
@@ -75,6 +78,7 @@
                     min="0"
                     max="10"
                     step="0.01"
+                    {{if not $authorizations.Set}}disabled{{end}}
                     value="{{$pumpSettings.Volume}}"
                   />
                 </div>
@@ -101,6 +105,7 @@
                     min="0"
                     max="10"
                     step="0.01"
+                    {{if not $authorizations.Set}}disabled{{end}}
                     value="{{$pumpSettings.Flowrate}}"
                   />
                 </div>
@@ -112,38 +117,40 @@
           </div>
         </div>
 
-        <div class="field is-horizontal">
-          <div class="field-label is-normal"><!--Left empty for spacing--></div>
-          <div class="field-body" >
-            <div class="field" data-form-submission-target="submitter">
-              <div class="field has-addons">
-                <div class="control">
-                  <input
-                    class="button"
-                    type="submit"
-                    name="pumping"
-                    value="Stop"
-                    {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
-                    data-form-submission-target="submit"
-                  />
-                </div>
-                <div class="control">
-                  <input
-                    class="button"
-                    type="submit"
-                    name="pumping"
-                    {{if and $pump.StateKnown $pump.Pumping}}
-                      value="Restart"
-                    {{else}}
-                      value="Start"
-                    {{end}}
-                    data-form-submission-target="submit"
-                  />
+        {{if $authorizations.Set}}
+          <div class="field is-horizontal">
+            <div class="field-label is-normal"><!--Left empty for spacing--></div>
+            <div class="field-body" >
+              <div class="field" data-form-submission-target="submitter">
+                <div class="field has-addons">
+                  <div class="control">
+                    <input
+                      class="button"
+                      type="submit"
+                      name="pumping"
+                      value="Stop"
+                      {{if and $pump.StateKnown (not $pump.Pumping)}}disabled{{end}}
+                      data-form-submission-target="submit"
+                    />
+                  </div>
+                  <div class="control">
+                    <input
+                      class="button"
+                      type="submit"
+                      name="pumping"
+                      {{if and $pump.StateKnown $pump.Pumping}}
+                        value="Restart"
+                      {{else}}
+                        value="Start"
+                      {{end}}
+                      data-form-submission-target="submit"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        {{end}}
       </form>
     </div>
   </div>

@@ -7,6 +7,7 @@ import (
 
 	"github.com/atrox/haikunatorgo"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -38,13 +39,31 @@ func getInstrumentsViewData(
 	return vd, err
 }
 
+type InstrumentsViewAuthz struct {
+	CreateInstrument bool
+}
+
+func getInstrumentsViewAuthz(
+	ctx context.Context, a auth.Auth, azc *auth.AuthzChecker,
+) (authz InstrumentsViewAuthz, err error) {
+	path := "/instruments"
+	if authz.CreateInstrument, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
+		return InstrumentsViewAuthz{}, errors.Wrap(err, "couldn't check authz for creating instrument")
+	}
+	return authz, nil
+}
+
 func (h *Handlers) HandleInstrumentsGet() auth.HTTPHandlerFunc {
 	t := "instruments/instruments.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		instrumentsViewData, err := getInstrumentsViewData(c.Request().Context(), h.oc, h.is)
+		ctx := c.Request().Context()
+		instrumentsViewData, err := getInstrumentsViewData(ctx, h.oc, h.is)
 		if err != nil {
+			return err
+		}
+		if a.Authorizations, err = getInstrumentsViewAuthz(ctx, a, h.azc); err != nil {
 			return err
 		}
 

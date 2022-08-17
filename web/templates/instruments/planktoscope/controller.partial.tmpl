@@ -1,15 +1,17 @@
 {{$instrument := (get . "Instrument")}}
 {{$controllerID := (get . "ControllerID")}}
 {{$controller := (get . "Controller")}}
+{{$authorizations := (get . "Authorizations")}}
 {{$auth := (get . "Auth")}}
 
 <turbo-frame id="/instruments/{{$instrument.Name}}/controllers/{{$controllerID}}">
   {{
     template "instruments/planktoscope/pump.partial.tmpl" dict
-    "Instrument" $instrument
+    "InstrumentID" $instrument.ID
     "ControllerID" $controllerID
     "Pump" $controller.Pump
     "PumpSettings" $controller.PumpSettings
+    "Authorizations" $authorizations.Pump
     "Auth" $auth
     "WithTurboStreamSource" true
   }}

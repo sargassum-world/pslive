@@ -6,18 +6,25 @@ import data.sargassum.pslive.internal.app.pslive.auth
 
 # Internal Route Checks
 
-allow_user_get(id) = true # TODO: implement user validity check
+allow_user_get(id) if {
+	is_valid_user(id)
+}
 
-# is_valid_user(id) # TODO: implement user validity check
+allow_user_get_info(id) if {
+	is_valid_user(id)
+}
+
+allow_user_get_info_email(subject, id) if {
+	is_valid_user(id)
+	auth.is_authenticated(subject)
+}
 
 allow_user_chat_post(subject, id) if {
-	# is_valid_user(id) # TODO: implement user validity check
+	is_valid_user(id)
 	auth.is_authenticated(subject)
 }
 
 # Internal Attribute Checks
 
-is_valid_user(user_id) if {
-	user := input.context.db.users_user[_]
-	to_number(user_id) == user.id
-}
+# TODO: implement (right now we don't have a users db table)
+is_valid_user(user_id) = true

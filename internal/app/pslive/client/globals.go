@@ -9,6 +9,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
+	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -24,10 +25,10 @@ type Globals struct {
 	Cache  clientcache.Cache
 	DB     *database.DB
 
-	Sessions    session.Store
-	CSRFChecker *session.CSRFTokenChecker
-	Ory         *ory.Client
-	Opa         *opa.Client
+	Sessions     session.Store
+	CSRFChecker  *session.CSRFTokenChecker
+	Ory          *ory.Client
+	AuthzChecker *auth.AuthzChecker
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -73,10 +74,11 @@ func NewGlobals(
 		return nil, errors.Wrap(err, "couldn't set up ory config")
 	}
 	g.Ory = ory.NewClient(oryConfig, g.Cache, l)
-	g.Opa, err = opa.NewClient(regoRoutesPackage, opa.Modules(regoModules...))
+	opc, err := opa.NewClient(regoRoutesPackage, opa.Modules(regoModules...))
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up opa client")
 	}
+	g.AuthzChecker = auth.NewAuthzChecker(g.DB, opc)
 
 	g.ACCancellers = actioncable.NewCancellers()
 	tssConfig, err := turbostreams.GetSignerConfig()

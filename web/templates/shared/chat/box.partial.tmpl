@@ -1,7 +1,9 @@
-{{$topic := (get . "Topic")}}
-{{$messages := (get . "Messages")}}
-{{$auth := (get . "Auth")}}
+{{$topic := get . "Topic"}}
+{{$messages := get . "Messages"}}
+{{$authorizeSend := get . "AuthorizeSend"}}
 {{$isPublic := get . "IsPublic"}}
+{{$auth := get . "Auth"}}
+{{$meta := get . "Meta"}}
 
 <turbo-frame id="{{$topic}}">
   {{
@@ -23,12 +25,19 @@
         <div class="message-body">
           <p>
             Welcome!
-            {{if not $auth.Identity.Authenticated}}
-              Only logged-in users can send messages to this chat.
+            {{if not $authorizeSend}}
+              You are permitted to view this chat, but not to send messages to it.
+              {{if not $auth.Identity.Authenticated}}
+                You might be permitted to send messages if you
+                <a
+                  href="{{list "/login?return=" (queryEscape $meta.RequestURI) | join ""}}"
+                  data-turbo-frame="_top"
+                >sign in</a>.
+              {{end}}
             {{else if $isPublic}}
-              Please remember that anyone can view this chat, even people who are not logged in.
+              Please remember that anyone can view messages you send to this chat, even people who are not signed in.
             {{else}}
-              Please remember that this chat is not encrypted.
+              Please remember that messages you send to this chat are not encrypted, so you shouldn't send sensitive information here.
             {{end}}
           </p>
           <div class="buttons is-padded">
@@ -59,5 +68,7 @@
     template "shared/chat/send.partial.tmpl" dict
     "Topic" $topic
     "Auth" $auth
+    "AuthorizeSend" $authorizeSend
+    "FocusOnLoad" false
   }}
 </turbo-frame>

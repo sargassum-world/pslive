@@ -25,6 +25,7 @@ in_scope if {
 	(coll.Slice "POST" "/instruments/:id" "allow_instrument_post(input.subject, id)")
 	(coll.Slice "POST" "/instruments/:id/name" "allow_instrument_post(input.subject, id)")
 	(coll.Slice "POST" "/instruments/:id/description" "allow_instrument_post(input.subject, id)")
+	(coll.Slice "GET" "/instruments/:id/users" "allow_instrument_get(id)")
 	(coll.Slice "SUB" "/instruments/:id/users" "allow_instrument_get(id)")
 	(coll.Slice "UNSUB" "/instruments/:id/users")
 	(coll.Slice "MSG" "/instruments/:id/users")
@@ -48,6 +49,7 @@ in_scope if {
 		coll.Slice "POST" "/instruments/:id/controllers/:controller_id/pump"
 		"allow_controller_pump_post(input.subject, id, controller_id)"
 	)
+	(coll.Slice "GET" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
 	(coll.Slice "SUB" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
 	(coll.Slice "MSG" "/instruments/:id/chat/messages")
 	(

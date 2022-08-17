@@ -14,8 +14,9 @@ import (
 )
 
 type Auth struct {
-	Identity Identity
-	CSRF     CSRF
+	Identity       Identity
+	Authorizations interface{}
+	CSRF           CSRF
 }
 
 // Identity
