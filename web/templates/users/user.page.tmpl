@@ -41,9 +41,9 @@
             template "shared/chat/box.partial.tmpl" dict
             "Topic" (print "/users/" .Data.Identity.ID "/chat")
             "Messages" .Data.PublicChatMessages
-            "Auth" .Auth
             "AuthorizeSend" .Auth.Authorizations.SendPublicChat
             "IsPublic" true
+            "Auth" .Auth
             "Meta" .Meta
           }}
         </div>
@@ -69,9 +69,9 @@
               template "shared/chat/box.partial.tmpl" dict
               "Topic" (print "/private-chats/" $first "/" $second "/chat")
               "Messages" .Data.PrivateChatMessages
-              "Auth" .Auth
               "AuthorizeSend" .Auth.Authorizations.SendPrivateChat
               "IsPublic" false
+              "Auth" .Auth
               "Meta" .Meta
             }}
           </div>

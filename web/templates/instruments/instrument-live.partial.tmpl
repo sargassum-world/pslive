@@ -36,9 +36,9 @@
         template "shared/chat/box.partial.tmpl" dict
         "Topic" (print "/instruments/" $instrument.ID "/chat")
         "Messages" $chatMessages
-        "Auth" $auth
         "AuthorizeSend" $auth.Authorizations.SendChat
         "IsPublic" true
+        "Auth" $auth
         "Meta" $meta
       }}
     </div>

@@ -16,12 +16,14 @@ type DataModifier func(
 	ctx context.Context, a auth.Auth, data map[string]interface{},
 ) (modifications map[string]interface{}, err error)
 
-func AddAuthData(
-	_ context.Context, a auth.Auth, data map[string]interface{},
-) (modifications map[string]interface{}, err error) {
-	return map[string]interface{}{
-		"Auth": a,
-	}, nil
+func AddAuthData() DataModifier {
+	return func(
+		_ context.Context, a auth.Auth, data map[string]interface{},
+	) (modifications map[string]interface{}, err error) {
+		return map[string]interface{}{
+			"Auth": a,
+		}, nil
+	}
 }
 
 func ModifyData(
@@ -72,7 +74,7 @@ func ModifyData(
 func HandleTSMsg(
 	r godest.TemplateRenderer, ss session.Store, modifiers ...DataModifier,
 ) turbostreams.HandlerFunc {
-	modifiers = append([]DataModifier{AddAuthData}, modifiers...)
+	modifiers = append([]DataModifier{AddAuthData()}, modifiers...)
 	return auth.HandleTS(
 		func(c turbostreams.Context, a auth.Auth) (err error) {
 			// TODO: move this function into github.com/sargassum-world/fluitans/pkg/godest/turbostreams?

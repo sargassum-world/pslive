@@ -37,7 +37,7 @@ vet: ## go vet
 	go vet ./...
 
 .PHONY: fmt
-fmt: ## go fmt
+fmt: ## go fmt and opa
 	$(call print-target)
 	go fmt ./...
 	opa fmt -w .

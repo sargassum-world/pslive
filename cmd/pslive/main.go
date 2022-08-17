@@ -44,8 +44,7 @@ func main() {
 	e.Logger.Infof("attempting to shut down gracefully within %d sec", shutdownTimeout)
 	if err := server.Shutdown(ctxShutdown, e); err != nil {
 		e.Logger.Warn("forcibly closing http server due to failure of graceful shutdown")
-		closeErr := server.Close(e)
-		if closeErr != nil {
+		if closeErr := server.Close(e); closeErr != nil {
 			e.Logger.Error(closeErr)
 		}
 	}
