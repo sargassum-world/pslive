@@ -15,8 +15,9 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/klauspost/compress v1.15.7 // indirect
-	github.com/labstack/echo/v4 v4.7.2
+	github.com/labstack/echo/v4 v4.8.0
 	github.com/labstack/gommon v0.3.1
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/open-policy-agent/opa v0.42.0
 	github.com/ory/client-go v0.2.0-alpha.4
 	github.com/pkg/errors v0.9.1
@@ -25,10 +26,11 @@ require (
 	github.com/sargassum-world/fluitans v0.5.7
 	github.com/unrolled/secure v1.12.0
 	github.com/vektah/gqlparser/v2 v2.4.6 // indirect
-	golang.org/x/net v0.0.0-20220706163947-c90051bbdb60 // indirect
+	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 // indirect
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
 	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
-	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
+	golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2 // indirect
 	modernc.org/libc v1.16.14 // indirect
 	zombiezen.com/go/sqlite v0.9.3
 )
