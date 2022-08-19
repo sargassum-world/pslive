@@ -5,6 +5,7 @@
 {{$anonymousViewers := (get . "AnonymousViewers")}}
 {{$chatMessages := (get . "ChatMessages")}}
 {{$auth := (get . "Auth")}}
+{{$meta := get . "Meta"}}
 
 <turbo-frame id="/instruments/{{$instrument.ID}}/live">
   {{range $camera := $instrument.Cameras}}
@@ -35,8 +36,10 @@
         template "shared/chat/box.partial.tmpl" dict
         "Topic" (print "/instruments/" $instrument.ID "/chat")
         "Messages" $chatMessages
-        "Auth" $auth
+        "AuthorizeSend" $auth.Authorizations.SendChat
         "IsPublic" true
+        "Auth" $auth
+        "Meta" $meta
       }}
     </div>
   </div>
@@ -58,6 +61,7 @@
       "Instrument" $instrument
       "ControllerID" $controllerID
       "Controller" (index $controllers $controllerID)
+      "Authorizations" (index $auth.Authorizations.Controllers $controllerID)
       "Auth" $auth
     }}
   {{end}}

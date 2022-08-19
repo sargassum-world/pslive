@@ -9,13 +9,15 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 
+	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/clients/chat"
-	"github.com/sargassum-world/pslive/internal/clients/database"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
+	"github.com/sargassum-world/pslive/pkg/godest/database"
+	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 type Globals struct {
@@ -23,9 +25,10 @@ type Globals struct {
 	Cache  clientcache.Cache
 	DB     *database.DB
 
-	Sessions    session.Store
-	CSRFChecker *session.CSRFTokenChecker
-	Ory         *ory.Client
+	Sessions     session.Store
+	CSRFChecker  *session.CSRFTokenChecker
+	Ory          *ory.Client
+	AuthzChecker *auth.AuthzChecker
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -39,7 +42,10 @@ type Globals struct {
 	Logger godest.Logger
 }
 
-func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals, err error) {
+func NewGlobals(
+	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules [][]opa.Module,
+	l godest.Logger,
+) (g *Globals, err error) {
 	g = &Globals{}
 	g.Config, err = conf.GetConfig()
 	if err != nil {
@@ -68,6 +74,11 @@ func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals,
 		return nil, errors.Wrap(err, "couldn't set up ory config")
 	}
 	g.Ory = ory.NewClient(oryConfig, g.Cache, l)
+	opc, err := opa.NewClient(regoRoutesPackage, opa.Modules(regoModules...))
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up opa client")
+	}
+	g.AuthzChecker = auth.NewAuthzChecker(g.DB, opc)
 
 	g.ACCancellers = actioncable.NewCancellers()
 	tssConfig, err := turbostreams.GetSignerConfig()

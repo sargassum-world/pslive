@@ -14,6 +14,7 @@ func (h *TemplatedHandlers) getWebmanifest() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		const cacheMaxAge = 3600 // 1 hour
 		// Produce output
+		// TODO: set the app name from env var (to allow different names for dev vs. prod deployments)
 		return h.r.CacheablePage(
 			c.Response(), c.Request(), t, struct{}{}, struct{}{},
 			godest.WithContentType("application/manifest+json; charset=UTF-8"),

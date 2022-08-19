@@ -1,0 +1,52 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies.privatechat
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+# Policy Scope
+
+in_scope if {
+	glob.match("/private-chats/*", [], input.resource.path)
+}
+
+# Policy Result & Error
+
+{{
+	template "policies/shared/routes.partial.tmpl" coll.Slice
+	(
+		coll.Slice "GET" "/private-chats/:first/:second/chat/users"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "SUB" "/private-chats/:first/:second/chat/users"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(coll.Slice "UNSUB" "/private-chats/:first/:second/chat/users")
+	(
+		coll.Slice "MSG" "/private-chats/:first/:second/chat/users"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "GET" "/private-chats/:first/:second/chat/messages"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "SUB" "/private-chats/:first/:second/chat/messages"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "MSG" "/private-chats/:first/:second/chat/messages"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "POST" "/private-chats/:first/:second/chat/messages"
+		"allow_private_chat_post(input.subject, first, second)"
+	)
+}}
+
+errors contains error_matching if {
+	in_scope
+	error_matching := routing.error_matching_routes(matching_routes)
+}

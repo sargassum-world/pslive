@@ -6,8 +6,8 @@ import (
 	"io/fs"
 
 	"github.com/sargassum-world/pslive/internal/clients/chat"
-	"github.com/sargassum-world/pslive/internal/clients/database"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
+	"github.com/sargassum-world/pslive/pkg/godest/database"
 )
 
 // Randomly-generated 32-bit integer for the pslive app, to prevent migration of database files
@@ -26,6 +26,7 @@ var MigrationFiles []database.MigrationFile = []database.MigrationFile{
 	{Domain: "instruments", File: instruments.MigrationFiles[0]},
 	{Domain: "chat", File: chat.MigrationFiles[1]},
 	{Domain: "instruments", File: instruments.MigrationFiles[1]},
+	{Domain: "instruments", File: instruments.MigrationFiles[2]},
 }
 
 // Queries

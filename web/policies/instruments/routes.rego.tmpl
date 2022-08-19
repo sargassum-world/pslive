@@ -1,0 +1,64 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies.instruments
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+# Policy Scope
+
+in_scope if {
+	"/instruments" == input.resource.path
+}
+
+in_scope if {
+	glob.match("/instruments/*", [], input.resource.path)
+}
+
+# Policy Result & Error
+
+{{
+	template "policies/shared/routes.partial.tmpl" coll.Slice
+	(coll.Slice "GET" "/instruments")
+	(coll.Slice "POST" "/instruments" "allow_instruments_post(input.subject)")
+	(coll.Slice "GET" "/instruments/:id" "allow_instrument_get(id)")
+	(coll.Slice "POST" "/instruments/:id" "allow_instrument_post(input.subject, id)")
+	(coll.Slice "POST" "/instruments/:id/name" "allow_instrument_post(input.subject, id)")
+	(coll.Slice "POST" "/instruments/:id/description" "allow_instrument_post(input.subject, id)")
+	(coll.Slice "GET" "/instruments/:id/users" "allow_instrument_get(id)")
+	(coll.Slice "SUB" "/instruments/:id/users" "allow_instrument_get(id)")
+	(coll.Slice "UNSUB" "/instruments/:id/users")
+	(coll.Slice "MSG" "/instruments/:id/users")
+	(coll.Slice "POST" "/instruments/:id/cameras" "allow_instrument_post(input.subject, id)")
+	(
+		coll.Slice "POST" "/instruments/:id/cameras/:camera_id"
+		"allow_camera_post(input.subject, id, camera_id)"
+	)
+	(coll.Slice "POST" "/instruments/:id/controllers" "allow_instrument_post(input.subject, id)")
+	(
+		coll.Slice "POST" "/instruments/:id/controllers/:controller_id"
+		"allow_controller_post(input.subject, id, controller_id)"
+	)
+	(
+		coll.Slice "SUB" "/instruments/:id/controllers/:controller_id/pump"
+		"allow_controller_get(id, id, controller_id)"
+	)
+	(coll.Slice "PUB" "/instruments/:id/controllers/:controller_id/pump")
+	(coll.Slice "MSG" "/instruments/:id/controllers/:controller_id/pump")
+	(
+		coll.Slice "POST" "/instruments/:id/controllers/:controller_id/pump"
+		"allow_controller_pump_post(input.subject, id, controller_id)"
+	)
+	(coll.Slice "GET" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
+	(coll.Slice "SUB" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
+	(coll.Slice "MSG" "/instruments/:id/chat/messages")
+	(
+		coll.Slice "POST" "/instruments/:id/chat/messages"
+		"allow_instrument_chat_post(input.subject, id)"
+	)
+}}
+
+errors contains error_matching if {
+	in_scope
+	error_matching := routing.error_matching_routes(matching_routes)
+}

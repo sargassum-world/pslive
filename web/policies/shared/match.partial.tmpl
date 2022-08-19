@@ -1,0 +1,7 @@
+{{- $method := index . 0 -}}
+{{- $path := index . 1 -}}
+	"{{$method}}" == input.operation.method
+	[{{
+		template "policies/shared/path_parts.partial.tmpl" $path
+	}}] = split(trim_prefix(input.resource.path, "/"), "/")
+{{- /* This comment is just here to delete whitespace */ -}}

@@ -9,11 +9,14 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
+
+	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 type Auth struct {
-	Identity Identity
-	CSRF     CSRF
+	Identity       Identity
+	Authorizations interface{}
+	CSRF           CSRF
 }
 
 // Identity
@@ -21,6 +24,10 @@ type Auth struct {
 type Identity struct {
 	Authenticated bool
 	User          string
+}
+
+func (i Identity) NewSubject() opa.Subject {
+	return opa.NewSubject(i.User, i.Authenticated)
 }
 
 func SetIdentity(s *sessions.Session, username string) {

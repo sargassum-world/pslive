@@ -18,7 +18,7 @@ type (
 
 func HandleHTTP(h HTTPHandlerFunc, ss session.Store) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		a, sess, err := GetWithSession(c.Request(), ss, c.Logger())
+		a, sess, err := GetFromRequest(c.Request(), ss, c.Logger())
 		// We don't expect the handler to write to the session, so we save it now
 		if serr := sess.Save(c.Request(), c.Response()); serr != nil {
 			return errors.Wrap(err, "couldn't save new session to replace invalid session")
@@ -32,7 +32,7 @@ func HandleHTTP(h HTTPHandlerFunc, ss session.Store) echo.HandlerFunc {
 
 func HandleHTTPWithSession(h HTTPHandlerFuncWithSession, ss session.Store) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		a, sess, err := GetWithSession(c.Request(), ss, c.Logger())
+		a, sess, err := GetFromRequest(c.Request(), ss, c.Logger())
 		if err != nil {
 			return err
 		}
@@ -99,16 +99,11 @@ type (
 
 func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
 	return func(c turbostreams.Context) error {
-		sess, err := ss.Lookup(c.SessionID())
+		a, _, err := LookupStored(c.SessionID(), ss)
 		if err != nil {
-			return errors.Wrapf(err, "couldn't lookup session to check authz on %s", c.Topic())
-		}
-		if sess == nil {
-			return h(c, Auth{})
-		}
-		a, err := GetWithoutRequest(*sess, ss)
-		if err != nil {
-			return err
+			return errors.Wrapf(
+				err, "couldn't lookup auth info for session to check authz on %s", c.Topic(),
+			)
 		}
 		return h(c, a)
 	}
@@ -116,16 +111,11 @@ func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
 
 func HandleTSWithSession(h TSHandlerFuncWithSession, ss session.Store) turbostreams.HandlerFunc {
 	return func(c turbostreams.Context) error {
-		sess, err := ss.Lookup(c.SessionID())
+		a, sess, err := LookupStored(c.SessionID(), ss)
 		if err != nil {
-			return errors.Wrapf(err, "couldn't lookup session to check authz on %s", c.Topic())
-		}
-		if sess == nil {
-			return h(c, Auth{}, sess)
-		}
-		a, err := GetWithoutRequest(*sess, ss)
-		if err != nil {
-			return err
+			return errors.Wrapf(
+				err, "couldn't lookup auth info for session to check authz on %s", c.Topic(),
+			)
 		}
 		return h(c, a, sess)
 	}

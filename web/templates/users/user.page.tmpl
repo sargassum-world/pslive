@@ -19,11 +19,13 @@
 
     <section class="section content">
       <h1>User {{.Data.Identity.Identifier}}</h1>
-      <turbo-frame id="/users/{{.Data.Identity.Identifier}}/info">
-        {{if .Auth.Identity.Authenticated}}
-          <p>Email: {{.Data.Identity.Email}}</p>
-        {{end}}
-      </turbo-frame>
+      {{if .Auth.Authorizations.GetInfo}}
+        <turbo-frame id="/users/{{.Data.Identity.Identifier}}/info">
+          {{if .Auth.Authorizations.GetInfoEmail}}
+            <p>Email: {{.Data.Identity.Email}}</p>
+          {{end}}
+        </turbo-frame>
+      {{end}}
       <h2>Chat</h2>
       <div class="card section-card wide-card">
         <div class="card-content">
@@ -39,12 +41,14 @@
             template "shared/chat/box.partial.tmpl" dict
             "Topic" (print "/users/" .Data.Identity.ID "/chat")
             "Messages" .Data.PublicChatMessages
-            "Auth" .Auth
+            "AuthorizeSend" .Auth.Authorizations.SendPublicChat
             "IsPublic" true
+            "Auth" .Auth
+            "Meta" .Meta
           }}
         </div>
       </div>
-      {{if and .Auth.Identity.Authenticated (ne .Auth.Identity.User .Data.Identity.ID)}}
+      {{if .Auth.Authorizations.GetPrivateChat}}
         <div class="card section-card wide-card">
           <div class="card-content">
             <h3>Direct Chat</h3>
@@ -65,7 +69,10 @@
               template "shared/chat/box.partial.tmpl" dict
               "Topic" (print "/private-chats/" $first "/" $second "/chat")
               "Messages" .Data.PrivateChatMessages
+              "AuthorizeSend" .Auth.Authorizations.SendPrivateChat
+              "IsPublic" false
               "Auth" .Auth
+              "Meta" .Meta
             }}
           </div>
         </div>
@@ -74,8 +81,8 @@
       {{
         template "shared/instruments/instruments-list.partial.tmpl" dict
         "Instruments" .Data.Instruments
+        "AuthorizeCreate" (and .Auth.Authorizations.CreateInstrument (eq .Auth.Identity.User .Data.Identity.ID))
         "Auth" .Auth
-        "ShowCreateButton" (eq .Auth.Identity.User .Data.Identity.ID)
       }}
     </section>
   </main>

@@ -1,0 +1,13 @@
+{{- $policies := . -}}
+
+{{- range $index, $policy := $policies -}}
+
+{{- if eq $index 0 -}}
+{{template "policies/shared/policy.partial.tmpl" $policy}}
+{{else if lt $index (sub (len $policies) 1)}}
+{{template "policies/shared/policy.partial.tmpl" $policy}}
+{{else}}
+{{template "policies/shared/policy.partial.tmpl" $policy -}}
+{{- end -}}
+
+{{- end -}}
