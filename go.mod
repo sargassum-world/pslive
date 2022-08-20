@@ -32,5 +32,5 @@ require (
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2 // indirect
 	modernc.org/libc v1.16.14 // indirect
-	zombiezen.com/go/sqlite v0.9.3
+	zombiezen.com/go/sqlite v0.10.1
 )
