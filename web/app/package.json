@@ -10,14 +10,14 @@
     "lint:fix": "prettier --write ./src/**/*.{js,svelte,html} && eslint --fix src/**/*.{js,svelte}"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^17.0.0",
-    "@rollup/plugin-node-resolve": "^11.0.0",
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-replace": "^4.0.0",
     "@sargassum-world/styles": "^0.2.0",
     "bulma": "^0.9.4",
     "eslint": "^8.22.0",
     "eslint-plugin-import": "^2.24.2",
-    "eslint-plugin-svelte3": "^3.2.1",
+    "eslint-plugin-svelte3": "^4.0.0",
     "prettier": "^2.7.1",
     "prettier-plugin-svelte": "^2.4.0",
     "purify-css": "^1.2.5",
