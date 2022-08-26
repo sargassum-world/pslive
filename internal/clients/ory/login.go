@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -124,14 +124,14 @@ func (c *Client) SubmitLoginFlow(
 	// Process the response. Adapted from the implementation of the github.com/ory/client-go package's
 	// V0alpha2ApiService.SubmitSelfServiceLoginFlowExecute method
 	// TODO: move this into a private utility method
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "couldn't read Ory Kratos submit login flow response body")
 	}
 	if err := res.Body.Close(); err != nil {
 		return nil, nil, errors.Wrap(err, "couldn't close Ory Kratos submit login flow response body")
 	}
-	res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	res.Body = io.NopCloser(bytes.NewBuffer(body))
 	if res.StatusCode >= http.StatusMultipleChoices { // i.e. 300
 		// TODO: parse and handle the various error codes
 		return nil, nil, errors.Errorf("ory login flow response error %d", res.StatusCode)
@@ -186,14 +186,14 @@ func (c *Client) PerformLogout(
 		return nil, errors.Wrap(err, "couldn't perform Ory Kratos submit logout flow request")
 	}
 	if res.StatusCode >= http.StatusMultipleChoices { // i.e. 300
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't read Ory Kratos submit logout flow response body")
 		}
 		if err := res.Body.Close(); err != nil {
 			return nil, errors.Wrap(err, "couldn't close Ory Kratos submit logout flow response body")
 		}
-		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		res.Body = io.NopCloser(bytes.NewBuffer(body))
 		// TODO: parse and handle the various error codes
 		return nil, errors.Errorf(
 			"ory logout flow response error %d: %s", res.StatusCode, string(body),

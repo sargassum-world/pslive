@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
 
       - uses: open-policy-agent/setup-opa@v1
         with:
@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
 
       - name: Release test
         run: make build

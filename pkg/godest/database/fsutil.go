@@ -1,8 +1,8 @@
 package database
 
 import (
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -41,7 +41,7 @@ func readFile(filename string, f fs.FS) ([]byte, error) {
 		}
 	}()
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
