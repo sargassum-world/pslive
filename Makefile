@@ -41,6 +41,7 @@ fmt: ## go fmt and opa
 	$(call print-target)
 	go fmt ./...
 	opa fmt -w .
+	cd web/app && yarn format
 
 .PHONY: lint
 lint: ## golangci-lint and opa
@@ -48,6 +49,7 @@ lint: ## golangci-lint and opa
 	golangci-lint run
 	opa fmt --fail -l .
 	opa check --strict `find . -type f -name "*.rego"`
+	cd web/app && yarn lint
 
 .PHONY: test
 test: ## go test with race detector and code covarage
