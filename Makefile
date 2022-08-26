@@ -49,7 +49,7 @@ lint: ## golangci-lint and opa
 	golangci-lint run
 	opa fmt --fail -l .
 	opa check --strict `find . -type f -name "*.rego"`
-	cd web/app && yarn lint
+	cd web/app && yarn run svelte-check && yarn lint
 
 .PHONY: test
 test: ## go test with race detector and code covarage
