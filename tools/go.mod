@@ -4,9 +4,17 @@ go 1.16
 
 require (
 	cloud.google.com/go/iam v0.3.0 // indirect
+	cloud.google.com/go/kms v1.1.0 // indirect
+	cloud.google.com/go/storage v1.18.2 // indirect
+	github.com/Azure/azure-sdk-for-go v60.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.10 // indirect
+	github.com/Azure/go-autorest/autorest/azure/cli v0.4.4 // indirect
+	github.com/DisgoOrg/log v1.1.2 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.11.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kms v1.11.1 // indirect
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/golangci/golangci-lint v1.46.2
-	github.com/goreleaser/goreleaser v1.6.3
+	github.com/goreleaser/goreleaser v1.10.3
 	github.com/hairyhenderson/gomplate/v3 v3.10.0
 	github.com/open-policy-agent/opa v0.43.0
 	mvdan.cc/gofumpt v0.3.1
