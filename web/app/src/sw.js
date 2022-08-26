@@ -24,7 +24,7 @@ const faviconCacheFirst = new CacheFirst({
       maxAgeSeconds: 1 * 24 * 60 * 60,
     }),
   ],
-})
+});
 warmStrategyCache({
   urls: ['/favicon.ico'],
   strategy: faviconCacheFirst,
@@ -40,14 +40,14 @@ const fontCacheFirst = new CacheFirst({
       maxAgeSeconds: 90 * 24 * 60 * 60,
     }),
   ],
-})
+});
 warmStrategyCache({
   urls: [
     '/fonts/atkinson-hyperlegible-latin-400-normal.woff2',
     '/fonts/atkinson-hyperlegible-latin-700-normal.woff2',
   ],
   strategy: fontCacheFirst,
-})
+});
 registerRoute(/fonts\/.*/, fontCacheFirst);
 
 // Pages (no cache)

@@ -22,3 +22,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Maintain dependencies for web app assets
+  - package-ecosystem: "npm"
+    directory: "/web/app"
+    schedule:
+      interval: "weekly"

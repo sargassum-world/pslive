@@ -12,7 +12,7 @@ import {
   TurboCacheController,
   Turbo,
 } from '@sargassum-world/stimulated';
-import { Application } from 'stimulus';
+import { Application } from '@hotwired/stimulus';
 
 Turbo.session.drive = true;
 

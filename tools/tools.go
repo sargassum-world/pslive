@@ -12,5 +12,6 @@ import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/goreleaser/goreleaser"
 	_ "github.com/hairyhenderson/gomplate/v3/cmd/gomplate"
+	_ "github.com/open-policy-agent/opa"
 	_ "mvdan.cc/gofumpt"
 )
