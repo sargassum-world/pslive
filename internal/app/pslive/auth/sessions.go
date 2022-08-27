@@ -5,8 +5,8 @@ import (
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/session"
 )
 
 func get(s sessions.Session, ss session.Store) (a Auth, err error) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/godest"
 )
 
 const (

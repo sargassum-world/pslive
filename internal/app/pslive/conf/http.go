@@ -2,7 +2,7 @@ package conf
 
 import (
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/env"
+	"github.com/sargassum-world/godest/env"
 )
 
 type HTTPConfig struct {
@@ -11,7 +11,7 @@ type HTTPConfig struct {
 
 func getHTTPConfig() (c HTTPConfig, err error) {
 	const defaultGzipLevel = 1
-	rawGzipLevel, err := env.GetInt64("FLUITANS_HTTP_GZIPLEVEL", defaultGzipLevel)
+	rawGzipLevel, err := env.GetInt64("PSLIVE_HTTP_GZIPLEVEL", defaultGzipLevel)
 	if err != nil {
 		return HTTPConfig{}, errors.Wrap(err, "couldn't make gzip level config")
 	}

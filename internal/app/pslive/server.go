@@ -13,8 +13,8 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
+	"github.com/sargassum-world/godest"
+	gmw "github.com/sargassum-world/godest/middleware"
 	"github.com/unrolled/secure"
 	"golang.org/x/sync/errgroup"
 

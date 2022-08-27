@@ -10,7 +10,7 @@ import (
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
