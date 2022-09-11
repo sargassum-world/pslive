@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
-    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-node-resolve": "^14.0.1",
     "@rollup/plugin-replace": "^4.0.0",
     "@sargassum-world/styles": "^0.2.0",
     "bulma": "^0.9.4",
@@ -28,7 +28,7 @@
     "rollup-plugin-svelte": "^7.0.0",
     "rollup-plugin-terser": "^7.0.0",
     "sass": "^1.54.5",
-    "svelte": "^3.49.0",
+    "svelte": "^3.50.0",
     "svelte-check": "^2.8.1",
     "svelte-dark-mode": "^2.0.0",
     "svelte-preprocess": "^4.10.7"
