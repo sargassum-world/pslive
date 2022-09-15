@@ -1,7 +1,7 @@
 package tmplfunc
 
 import (
-	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/godest"
 )
 
 type HashedNamers struct {

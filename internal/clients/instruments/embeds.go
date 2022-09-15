@@ -4,7 +4,7 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/sargassum-world/pslive/pkg/godest/database"
+	"github.com/sargassum-world/godest/database"
 )
 
 // Migrations

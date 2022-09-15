@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 )
@@ -29,7 +29,7 @@ func AddAuthData() DataModifier {
 func ModifyData(
 	ctx context.Context, a auth.Auth, messages []turbostreams.Message, modifiers ...DataModifier,
 ) ([]turbostreams.Message, error) {
-	// TODO: move this function into github.com/sargassum-world/fluitans/pkg/godest/turbostreams?
+	// TODO: move this function into github.com/sargassum-world/godest/turbostreams?
 	// (with a generic type for Auth)
 	modified := make([]turbostreams.Message, len(messages))
 	for i, m := range messages {

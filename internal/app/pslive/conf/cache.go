@@ -3,7 +3,7 @@ package conf
 import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/env"
+	"github.com/sargassum-world/godest/env"
 )
 
 const cacheEnvPrefix = "CACHE_"

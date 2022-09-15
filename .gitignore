@@ -41,3 +41,6 @@ dist/
 
 # Database files
 db.sqlite3*
+
+# Imported rego dependencies
+.regodeps/

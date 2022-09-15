@@ -15,6 +15,7 @@ clean: ## remove files created during build pipeline
 	rm -rf web/app/public/build
 	rm -rf dist
 	rm -f coverage.*
+	rm -rf .regodeps
 
 .PHONY: install
 install: ## go install tools
@@ -48,6 +49,7 @@ lint: ## golangci-lint and opa
 	$(call print-target)
 	golangci-lint run
 	opa fmt --fail -l .
+	go run ./devtools/regodeps
 	opa check --strict `find . -type f -name "*.rego"`
 	cd web/app && yarn run svelte-check && yarn lint
 

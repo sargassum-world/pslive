@@ -8,9 +8,8 @@ import (
 	"io/fs"
 
 	"github.com/benbjohnson/hashfs"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/opa"
 )
 
 // Embeds are embedded filesystems

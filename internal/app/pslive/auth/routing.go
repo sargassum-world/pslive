@@ -4,9 +4,9 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/turbostreams"
 )
 
 // HTTP

@@ -7,9 +7,9 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/httperr"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/httperr"
+	"github.com/sargassum-world/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 )

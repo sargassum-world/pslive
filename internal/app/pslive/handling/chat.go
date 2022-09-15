@@ -8,8 +8,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/chat"

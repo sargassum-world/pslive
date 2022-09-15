@@ -3,7 +3,7 @@ package ory
 import (
 	"fmt"
 
-	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/godest/clientcache"
 )
 
 type Cache struct {

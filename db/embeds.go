@@ -5,9 +5,10 @@ import (
 	"embed"
 	"io/fs"
 
+	"github.com/sargassum-world/godest/database"
+
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
-	"github.com/sargassum-world/pslive/pkg/godest/database"
 )
 
 // Randomly-generated 32-bit integer for the pslive app, to prevent migration of database files

@@ -3,7 +3,7 @@ package ory
 import (
 	ory "github.com/ory/client-go"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/env"
+	"github.com/sargassum-world/godest/env"
 )
 
 const envPrefix = "ORY_"

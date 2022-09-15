@@ -21,7 +21,9 @@ func main() {
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
-	server.Register(e)
+	if err = server.Register(e); err != nil {
+		e.Logger.Fatal(err)
+	}
 
 	// Run server
 	ctxRun, cancelRun := signal.NotifyContext(

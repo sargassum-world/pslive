@@ -8,12 +8,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest/database"
+	"github.com/sargassum-world/godest/opa"
+	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/turbostreams"
 	"zombiezen.com/go/sqlite"
-
-	"github.com/sargassum-world/pslive/pkg/godest/database"
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 // Authorization

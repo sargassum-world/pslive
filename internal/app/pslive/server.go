@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/gorilla/csrf"
@@ -13,9 +12,12 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/database"
+	gmw "github.com/sargassum-world/godest/middleware"
+	"github.com/sargassum-world/godest/opa"
 	"github.com/unrolled/secure"
+	"github.com/unrolled/secure/cspbuilder"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/pslive/db"
@@ -25,8 +27,6 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
 	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
-	"github.com/sargassum-world/pslive/pkg/godest/database"
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
 	"github.com/sargassum-world/pslive/web"
 )
 
@@ -39,12 +39,18 @@ type Server struct {
 	Handlers *routes.Handlers
 }
 
-func NewRegoModules() [][]opa.Module {
-	return [][]opa.Module{
+func RegoDeps() []opa.Module {
+	return opa.CollectModules(
 		opa.RegoModules(),
+	)
+}
+
+func NewRegoModules() []opa.Module {
+	return opa.CollectModules(
+		RegoDeps(),
 		auth.RegoModules(),
 		web.RegoModules(),
-	}
+	)
 }
 
 func NewServer(logger godest.Logger) (s *Server, err error) {
@@ -83,35 +89,45 @@ func (s *Server) configureLogging(e *echo.Echo) {
 	e.Logger.SetLevel(log.INFO) // TODO: set level via env var
 }
 
-func (s *Server) configureHeaders(e *echo.Echo) {
-	csp := strings.Join([]string{
-		"default-src 'self'",
-		// Warning: script-src 'self' may not be safe to use if we're hosting user-uploaded content.
-		// Then we'll need to provide hashes for scripts & styles we include by URL, and we'll need to
-		// add the SRI integrity attribute to the tags including those files; however, it's unclear
-		// how well-supported they are by browsers.
-		fmt.Sprintf(
-			"script-src 'self' 'unsafe-inline' %s", strings.Join(s.Inlines.ComputeJSHashesForCSP(), " "),
-		),
-		fmt.Sprintf(
-			"style-src 'self' 'unsafe-inline' %s", strings.Join(append(
-				s.Inlines.ComputeCSSHashesForCSP(),
-				// Note: Turbo Drive tries to install a style tag for its progress bar, which leads to a CSP
-				// error. We add a hash for it here, assuming ProgressBar.animationDuration == 300:
-				"'sha512-rVca7GmrbBAUUoTnu9V9a6ZR4WAZdxFUnrsg3B+1zEsES4K6q7EW02LIXdYmE5aofGOwLySKKtOafC0hq892BA=='",
-			), " "),
-		),
-		"object-src 'none'",
-		// Needed for the service worker to be able to fetch camera streams, csrf, etc. from localhost
-		// or proper domains
-		"connect-src *",
-		"child-src 'self'",
-		"img-src *",
-		"base-uri 'none'",
-		"form-action 'self'",
-		"frame-ancestors 'none'",
-		// TODO: add HTTPS-related settings for CSP, including upgrade-insecure-requests
-	}, "; ")
+func (s *Server) configureHeaders(e *echo.Echo) error {
+	cspBuilder := cspbuilder.Builder{
+		Directives: map[string][]string{
+			cspbuilder.DefaultSrc: {"'self'"},
+			cspbuilder.ScriptSrc: append(
+				// Warning: script-src 'self' may not be safe to use if we're hosting user-uploaded content.
+				// Then we'll need to provide hashes for scripts & styles we include by URL, and we'll need
+				// to add the SRI integrity attribute to the tags including those files; however, it's
+				// unclear how well-supported they are by browsers.
+				[]string{"'self'", "'unsafe-inline'"},
+				s.Inlines.ComputeJSHashesForCSP()...,
+			),
+			cspbuilder.StyleSrc: append(
+				[]string{
+					"'self'",
+					"'unsafe-inline'",
+					// Note: Turbo Drive tries to install a style tag for its progress bar, which leads to a CSP
+					// error. We add a hash for it here, assuming ProgressBar.animationDuration == 300:
+					"'sha512-rVca7GmrbBAUUoTnu9V9a6ZR4WAZdxFUnrsg3B+1zEsES4K6q7EW02LIXdYmE5aofGOwLySKKtOafC0hq892BA=='",
+				},
+				s.Inlines.ComputeCSSHashesForCSP()...,
+			),
+			cspbuilder.ObjectSrc: {"'none'"},
+			// Needed for the service worker to be able to fetch camera streams, csrf, etc. from localhost
+			// or proper domains
+			cspbuilder.ConnectSrc:     {"*"},
+			cspbuilder.ChildSrc:       {"'self'"},
+			cspbuilder.ImgSrc:         {"*"},
+			cspbuilder.BaseURI:        {"'none'"},
+			cspbuilder.FormAction:     {"'self'"},
+			cspbuilder.FrameAncestors: {"'none'"},
+			// TODO: add HTTPS-related settings for CSP, including upgrade-insecure-requests
+		},
+	}
+	csp, err := cspBuilder.Build()
+	if err != nil {
+		return errors.Wrap(err, "couldn't build content security policy")
+	}
+
 	e.Use(echo.WrapMiddleware(secure.New(secure.Options{
 		// TODO: add HTTPS options
 		FrameDeny:               true,
@@ -122,12 +138,15 @@ func (s *Server) configureHeaders(e *echo.Echo) {
 	}).Handler))
 	e.Use(echo.WrapMiddleware(gmw.SetCORP("same-site")))
 	e.Use(echo.WrapMiddleware(gmw.SetCOEP("require-corp")))
+	return nil
 }
 
-func (s *Server) Register(e *echo.Echo) {
+func (s *Server) Register(e *echo.Echo) error {
 	e.Use(middleware.Recover())
 	s.configureLogging(e)
-	s.configureHeaders(e)
+	if err := s.configureHeaders(e); err != nil {
+		return errors.Wrap(err, "couldn't configure http headers")
+	}
 
 	// Compression Middleware
 	e.Use(middleware.Decompress())
@@ -150,6 +169,7 @@ func (s *Server) Register(e *echo.Echo) {
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
+	return nil
 }
 
 // Running

@@ -2,8 +2,8 @@
 package routes
 
 import (
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
