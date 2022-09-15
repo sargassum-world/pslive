@@ -15,7 +15,7 @@
     "@rollup/plugin-replace": "^4.0.0",
     "@sargassum-world/styles": "^0.2.0",
     "bulma": "^0.9.4",
-    "eslint": "^8.22.0",
+    "eslint": "^8.23.1",
     "eslint-plugin-import": "^2.24.2",
     "eslint-plugin-svelte3": "^4.0.0",
     "prettier": "^2.7.1",
@@ -34,7 +34,7 @@
     "svelte-preprocess": "^4.10.7"
   },
   "dependencies": {
-    "@fontsource/atkinson-hyperlegible": "^4.5.8",
+    "@fontsource/atkinson-hyperlegible": "^4.5.9",
     "@fontsource/oxygen-mono": "^4.5.9",
     "@hotwired/stimulus": "^3.0.1",
     "@hotwired/turbo": "^7.0.1",
