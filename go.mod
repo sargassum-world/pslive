@@ -17,7 +17,7 @@ require (
 	github.com/ory/client-go v0.2.0-alpha.4
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/fluitans v0.5.7
-	github.com/unrolled/secure v1.12.0
+	github.com/unrolled/secure v1.13.0
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	zombiezen.com/go/sqlite v0.10.1
 )
