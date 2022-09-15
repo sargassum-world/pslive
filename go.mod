@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/labstack/gommon v0.3.1
-	github.com/open-policy-agent/opa v0.43.0
+	github.com/open-policy-agent/opa v0.44.0
 	github.com/ory/client-go v0.2.0-alpha.4
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/fluitans v0.5.7
@@ -46,16 +46,15 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/prometheus/common v0.35.0 // indirect
 	github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/twmb/murmur3 v1.1.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
-	github.com/vektah/gqlparser/v2 v2.4.6 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -68,7 +67,7 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	modernc.org/libc v1.16.14 // indirect
 	modernc.org/mathutil v1.4.1 // indirect
