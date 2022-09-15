@@ -3,7 +3,7 @@ package auth
 import (
 	_ "embed"
 
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
+	"github.com/sargassum-world/godest/opa"
 )
 
 //go:embed authn.rego

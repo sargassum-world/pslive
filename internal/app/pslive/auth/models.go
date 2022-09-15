@@ -8,9 +8,8 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/opa"
 	"github.com/sargassum-world/godest/session"
-
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 type Auth struct {

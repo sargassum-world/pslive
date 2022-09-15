@@ -6,6 +6,8 @@ import (
 	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/actioncable"
 	"github.com/sargassum-world/godest/clientcache"
+	"github.com/sargassum-world/godest/database"
+	"github.com/sargassum-world/godest/opa"
 	"github.com/sargassum-world/godest/session"
 	"github.com/sargassum-world/godest/turbostreams"
 
@@ -16,8 +18,6 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
-	"github.com/sargassum-world/pslive/pkg/godest/database"
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
 )
 
 type Globals struct {
@@ -43,7 +43,7 @@ type Globals struct {
 }
 
 func NewGlobals(
-	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules [][]opa.Module,
+	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules []opa.Module,
 	l godest.Logger,
 ) (g *Globals, err error) {
 	g = &Globals{}

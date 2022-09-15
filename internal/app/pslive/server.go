@@ -14,7 +14,9 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/database"
 	gmw "github.com/sargassum-world/godest/middleware"
+	"github.com/sargassum-world/godest/opa"
 	"github.com/unrolled/secure"
 	"golang.org/x/sync/errgroup"
 
@@ -25,8 +27,6 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
 	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
-	"github.com/sargassum-world/pslive/pkg/godest/database"
-	"github.com/sargassum-world/pslive/pkg/godest/opa"
 	"github.com/sargassum-world/pslive/web"
 )
 
@@ -39,12 +39,18 @@ type Server struct {
 	Handlers *routes.Handlers
 }
 
-func NewRegoModules() [][]opa.Module {
-	return [][]opa.Module{
+func RegoDeps() []opa.Module {
+	return opa.CollectModules(
 		opa.RegoModules(),
+	)
+}
+
+func NewRegoModules() []opa.Module {
+	return opa.CollectModules(
+		RegoDeps(),
 		auth.RegoModules(),
 		web.RegoModules(),
-	}
+	)
 }
 
 func NewServer(logger godest.Logger) (s *Server, err error) {
