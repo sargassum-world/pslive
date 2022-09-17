@@ -22,7 +22,7 @@ func NewStore(db *database.DB) *Store {
 
 // Camera
 
-//go:embed insert-camera.sql
+//go:embed queries/insert-camera.sql
 var rawInsertCameraQuery string
 var insertCameraQuery string = strings.TrimSpace(rawInsertCameraQuery)
 
@@ -37,7 +37,7 @@ func (s *Store) AddCamera(ctx context.Context, c Camera) (cameraID int64, err er
 	return rowID, err
 }
 
-//go:embed update-camera.sql
+//go:embed queries/update-camera.sql
 var rawUpdateCameraQuery string
 var updateCameraQuery string = strings.TrimSpace(rawUpdateCameraQuery)
 
@@ -48,7 +48,7 @@ func (s *Store) UpdateCamera(ctx context.Context, c Camera) (err error) {
 	)
 }
 
-//go:embed delete-camera.sql
+//go:embed queries/delete-camera.sql
 var rawDeleteCameraQuery string
 var deleteCameraQuery string = strings.TrimSpace(rawDeleteCameraQuery)
 
@@ -61,7 +61,7 @@ func (s *Store) DeleteCamera(ctx context.Context, id int64) (err error) {
 
 // Controller
 
-//go:embed insert-controller.sql
+//go:embed queries/insert-controller.sql
 var rawInsertControllerQuery string
 var insertControllerQuery string = strings.TrimSpace(rawInsertControllerQuery)
 
@@ -76,7 +76,7 @@ func (s *Store) AddController(ctx context.Context, c Controller) (controllerID i
 	return rowID, err
 }
 
-//go:embed update-controller.sql
+//go:embed queries/update-controller.sql
 var rawUpdateControllerQuery string
 var updateControllerQuery string = strings.TrimSpace(rawUpdateControllerQuery)
 
@@ -87,7 +87,7 @@ func (s *Store) UpdateController(ctx context.Context, c Controller) (err error) 
 	)
 }
 
-//go:embed delete-controller.sql
+//go:embed queries/delete-controller.sql
 var rawDeleteControllerQuery string
 var deleteControllerQuery string = strings.TrimSpace(rawDeleteControllerQuery)
 
@@ -100,7 +100,7 @@ func (s *Store) DeleteController(ctx context.Context, id int64) (err error) {
 
 // Controllers
 
-//go:embed select-controllers-by-protocol.sql
+//go:embed queries/select-controllers-by-protocol.sql
 var rawSelectControllersByProtocolQuery string
 var selectControllersByProtocolQuery string = strings.TrimSpace(rawSelectControllersByProtocolQuery)
 
@@ -119,7 +119,7 @@ func (s *Store) GetControllersByProtocol(
 
 // Instrument
 
-//go:embed insert-instrument.sql
+//go:embed queries/insert-instrument.sql
 var rawInsertInstrumentQuery string
 var insertInstrumentQuery string = strings.TrimSpace(rawInsertInstrumentQuery)
 
@@ -134,7 +134,7 @@ func (s *Store) AddInstrument(ctx context.Context, i Instrument) (instrumentID i
 	return rowID, err
 }
 
-//go:embed update-instrument-name.sql
+//go:embed queries/update-instrument-name.sql
 var rawUpdateInstrumentNameQuery string
 var updateInstrumentNameQuery string = strings.TrimSpace(rawUpdateInstrumentNameQuery)
 
@@ -148,7 +148,7 @@ func (s *Store) UpdateInstrumentName(ctx context.Context, id int64, name string)
 	)
 }
 
-//go:embed update-instrument-description.sql
+//go:embed queries/update-instrument-description.sql
 var rawUpdateInstrumentDescriptionQuery string
 var updateInstrumentDescriptionQuery string = strings.TrimSpace(rawUpdateInstrumentDescriptionQuery)
 
@@ -164,7 +164,7 @@ func (s *Store) UpdateInstrumentDescription(
 	)
 }
 
-//go:embed delete-instrument.sql
+//go:embed queries/delete-instrument.sql
 var rawDeleteInstrumentQuery string
 var deleteInstrumentQuery string = strings.TrimSpace(rawDeleteInstrumentQuery)
 
@@ -175,7 +175,7 @@ func (s *Store) DeleteInstrument(ctx context.Context, id int64) (err error) {
 	)
 }
 
-//go:embed select-instrument.sql
+//go:embed queries/select-instrument.sql
 var rawSelectInstrumentQuery string
 var selectInstrumentQuery string = strings.TrimSpace(rawSelectInstrumentQuery)
 
@@ -198,7 +198,7 @@ func (s *Store) GetInstrument(ctx context.Context, id int64) (i Instrument, err 
 
 // Instruments
 
-//go:embed select-instruments.sql
+//go:embed queries/select-instruments.sql
 var rawSelectInstrumentsQuery string
 var selectInstrumentsQuery string = strings.TrimSpace(rawSelectInstrumentsQuery)
 
@@ -212,7 +212,7 @@ func (s *Store) GetInstruments(ctx context.Context) (instruments []Instrument, e
 	return sel.Instruments(), nil
 }
 
-//go:embed select-instruments-by-admin-id.sql
+//go:embed queries/select-instruments-by-admin-id.sql
 var rawSelectInstrumentsByAdminIDQuery string
 var selectInstrumentsByAdminIDQuery string = strings.TrimSpace(rawSelectInstrumentsByAdminIDQuery)
 

@@ -20,7 +20,7 @@ func NewStore(db *database.DB) *Store {
 	}
 }
 
-//go:embed insert-message.sql
+//go:embed queries/insert-message.sql
 var rawInsertMessageQuery string
 var insertMessageQuery string = strings.TrimSpace(rawInsertMessageQuery)
 
@@ -35,7 +35,7 @@ func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err
 	return rowID, err
 }
 
-//go:embed select-messages-by-topic.sql
+//go:embed queries/select-messages-by-topic.sql
 var rawSelectMessagesByTopicQuery string
 var selectMessagesByTopicQuery string = strings.TrimSpace(rawSelectMessagesByTopicQuery)
 
