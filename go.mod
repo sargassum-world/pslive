@@ -14,7 +14,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/labstack/gommon v0.3.1
 	github.com/open-policy-agent/opa v0.44.0
-	github.com/ory/client-go v0.2.0-alpha.43
+	github.com/ory/client-go v0.2.0-alpha.48
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/godest v0.2.0
 	github.com/unrolled/secure v1.13.0
