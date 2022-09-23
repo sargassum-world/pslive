@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/gorilla/csrf"
@@ -169,6 +170,9 @@ func (s *Server) Register(e *echo.Echo) error {
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
+
+	// Gob encodings
+	auth.RegisterGobTypes()
 	return nil
 }
 
@@ -192,6 +196,14 @@ func (s *Server) openDB(ctx context.Context) error {
 
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error {
+		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
+			ctx, time.Hour,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
+		}
+		return nil
+	})
 	eg.Go(func() error {
 		if err := workers.EstablishPlanktoscopeControllerConnections(
 			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,

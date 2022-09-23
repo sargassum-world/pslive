@@ -72,7 +72,7 @@ func ModifyData(
 }
 
 func HandleTSMsg(
-	r godest.TemplateRenderer, ss session.Store, modifiers ...DataModifier,
+	r godest.TemplateRenderer, ss *session.Store, modifiers ...DataModifier,
 ) turbostreams.HandlerFunc {
 	modifiers = append([]DataModifier{AddAuthData()}, modifiers...)
 	return auth.HandleTS(

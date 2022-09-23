@@ -9,6 +9,7 @@ import (
 	"github.com/sargassum-world/godest/database"
 	"github.com/sargassum-world/godest/opa"
 	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/session/sqlitestore"
 	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
@@ -25,10 +26,11 @@ type Globals struct {
 	Cache  clientcache.Cache
 	DB     *database.DB
 
-	Sessions     session.Store
-	CSRFChecker  *session.CSRFTokenChecker
-	Ory          *ory.Client
-	AuthzChecker *auth.AuthzChecker
+	Sessions        *session.Store
+	SessionsBacking *sqlitestore.SqliteStore
+	CSRFChecker     *session.CSRFTokenChecker
+	Ory             *ory.Client
+	AuthzChecker    *auth.AuthzChecker
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -67,7 +69,7 @@ func NewGlobals(
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
-	g.Sessions = session.NewMemStore(sessionsConfig)
+	g.Sessions, g.SessionsBacking = sqlitestore.NewStore(g.DB, sessionsConfig)
 	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
 	oryConfig, err := ory.GetConfig()
 	if err != nil {

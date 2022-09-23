@@ -27,7 +27,7 @@ var rawInsertCameraQuery string
 var insertCameraQuery string = strings.TrimSpace(rawInsertCameraQuery)
 
 func (s *Store) AddCamera(ctx context.Context, c Camera) (cameraID int64, err error) {
-	rowID, err := s.db.ExecuteInsertion(ctx, insertCameraQuery, c.newInsertion())
+	rowID, err := s.db.ExecuteInsertionForID(ctx, insertCameraQuery, c.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add camera for instrument %d", c.InstrumentID)
 	}
@@ -66,7 +66,7 @@ var rawInsertControllerQuery string
 var insertControllerQuery string = strings.TrimSpace(rawInsertControllerQuery)
 
 func (s *Store) AddController(ctx context.Context, c Controller) (controllerID int64, err error) {
-	rowID, err := s.db.ExecuteInsertion(ctx, insertControllerQuery, c.newInsertion())
+	rowID, err := s.db.ExecuteInsertionForID(ctx, insertControllerQuery, c.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add controller for instrument %d", c.InstrumentID)
 	}
@@ -124,7 +124,7 @@ var rawInsertInstrumentQuery string
 var insertInstrumentQuery string = strings.TrimSpace(rawInsertInstrumentQuery)
 
 func (s *Store) AddInstrument(ctx context.Context, i Instrument) (instrumentID int64, err error) {
-	rowID, err := s.db.ExecuteInsertion(ctx, insertInstrumentQuery, i.newInsertion())
+	rowID, err := s.db.ExecuteInsertionForID(ctx, insertInstrumentQuery, i.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add instrument with admin %s", i.AdminID)
 	}
@@ -182,10 +182,7 @@ var selectInstrumentQuery string = strings.TrimSpace(rawSelectInstrumentQuery)
 func (s *Store) GetInstrument(ctx context.Context, id int64) (i Instrument, err error) {
 	sel := newInstrumentsSelector()
 	if err = s.db.ExecuteSelection(
-		ctx, selectInstrumentQuery, map[string]interface{}{
-			"$id": id,
-		},
-		sel.Step,
+		ctx, selectInstrumentQuery, newInstrumentSelection(id), sel.Step,
 	); err != nil {
 		return Instrument{}, errors.Wrapf(err, "couldn't get instrument with id %d", id)
 	}
@@ -205,7 +202,7 @@ var selectInstrumentsQuery string = strings.TrimSpace(rawSelectInstrumentsQuery)
 func (s *Store) GetInstruments(ctx context.Context) (instruments []Instrument, err error) {
 	sel := newInstrumentsSelector()
 	if err = s.db.ExecuteSelection(
-		ctx, selectInstrumentsQuery, map[string]interface{}{}, sel.Step,
+		ctx, selectInstrumentsQuery, newInstrumentsSelection(), sel.Step,
 	); err != nil {
 		return nil, errors.Wrapf(err, "couldn't get instruments")
 	}

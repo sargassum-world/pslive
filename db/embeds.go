@@ -6,13 +6,14 @@ import (
 	"io/fs"
 
 	"github.com/sargassum-world/godest/database"
+	sessions "github.com/sargassum-world/godest/session/sqlitestore"
 
 	"github.com/sargassum-world/pslive/internal/clients/chat"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
 )
 
-// Randomly-generated 32-bit integer for the pslive app, to prevent migration of database files
-// from other applications.
+// Randomly-generated 32-bit integer for the pslive app, to prevent accidental migration of database
+// files from other applications.
 const appID = 370761302
 
 // Migrations
@@ -20,6 +21,7 @@ const appID = 370761302
 var DomainEmbeds map[string]database.DomainEmbeds = map[string]database.DomainEmbeds{
 	"chat":        chat.NewDomainEmbeds(),
 	"instruments": instruments.NewDomainEmbeds(),
+	"sessions":    sessions.NewDomainEmbeds(),
 }
 
 var MigrationFiles []database.MigrationFile = []database.MigrationFile{
@@ -28,6 +30,7 @@ var MigrationFiles []database.MigrationFile = []database.MigrationFile{
 	{Domain: "chat", File: chat.MigrationFiles[1]},
 	{Domain: "instruments", File: instruments.MigrationFiles[1]},
 	{Domain: "instruments", File: instruments.MigrationFiles[2]},
+	{Domain: "sessions", File: sessions.MigrationFiles[0]},
 }
 
 // Queries

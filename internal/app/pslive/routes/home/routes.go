@@ -19,7 +19,7 @@ func New(r godest.TemplateRenderer) *Handlers {
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, ss session.Store) {
+func (h *Handlers) Register(er godest.EchoRouter, ss *session.Store) {
 	ar := auth.NewHTTPRouter(er, ss)
 	ar.GET("/", h.HandleHomeGet())
 }
