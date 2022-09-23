@@ -208,10 +208,10 @@
     "@rails/actioncable" "^7.0.3-1"
     async-mutex "^0.3.2"
 
-"@sargassum-world/styles@^0.2.0":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@sargassum-world/styles/-/styles-0.2.1.tgz#91394ad6900a3b6648c5b8173e85b76cf9713ee2"
-  integrity sha512-3wXDXRI1hiDi0lfzIIFl2VllQ+HF5LrzOrfAuiLTWqbTPfc1vLaKj7W0VjjWeM8klf5rwZ37CURs4cB/1XQ9Xw==
+"@sargassum-world/styles@^0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@sargassum-world/styles/-/styles-0.2.2.tgz#3df48dff01ec1691f0c8f68326480a4e9471cede"
+  integrity sha512-Oxc3PrkVEB29LzqpbxfzyRKKkhnK8USHdC5VeQe2na9/6ImKBxOJT6Y0Zv34njnL3XUboDvyTjKZQ6sEdpZ2fA==
 
 "@types/estree@*":
   version "0.0.51"

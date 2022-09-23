@@ -13,7 +13,7 @@
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^14.1.0",
     "@rollup/plugin-replace": "^4.0.0",
-    "@sargassum-world/styles": "^0.2.0",
+    "@sargassum-world/styles": "^0.2.2",
     "bulma": "^0.9.4",
     "eslint": "^8.23.1",
     "eslint-plugin-import": "^2.24.2",
