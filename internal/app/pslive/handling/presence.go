@@ -33,7 +33,7 @@ const (
 )
 
 func HandlePresenceSub(
-	r godest.TemplateRenderer, ss session.Store, oc *ory.Client, ps *presence.Store,
+	r godest.TemplateRenderer, ss *session.Store, oc *ory.Client, ps *presence.Store,
 ) turbostreams.HandlerFunc {
 	t := usersPartial
 	r.MustHave(t)
@@ -59,7 +59,7 @@ func HandlePresenceSub(
 }
 
 func HandlePresenceUnsub(
-	r godest.TemplateRenderer, ss session.Store, ps *presence.Store,
+	r godest.TemplateRenderer, ss *session.Store, ps *presence.Store,
 ) turbostreams.HandlerFunc {
 	t := usersPartial
 	r.MustHave(t)

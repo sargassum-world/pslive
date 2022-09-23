@@ -16,7 +16,7 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
-	ss session.Store
+	ss *session.Store
 	cc *session.CSRFTokenChecker
 
 	acc *actioncable.Cancellers
@@ -29,7 +29,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, ss session.Store, cc *session.CSRFTokenChecker,
+	r godest.TemplateRenderer, ss *session.Store, cc *session.CSRFTokenChecker,
 	acc *actioncable.Cancellers, tss turbostreams.Signer, tsb *turbostreams.Broker, l godest.Logger,
 ) *Handlers {
 	return &Handlers{

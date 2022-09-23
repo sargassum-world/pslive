@@ -9,7 +9,7 @@ import (
 	"github.com/sargassum-world/godest/session"
 )
 
-func get(s sessions.Session, ss session.Store) (a Auth, err error) {
+func get(s sessions.Session, ss *session.Store) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
 		return Auth{}, err
@@ -25,7 +25,7 @@ func get(s sessions.Session, ss session.Store) (a Auth, err error) {
 	return a, nil
 }
 
-func LookupStored(id string, ss session.Store) (a Auth, s *sessions.Session, err error) {
+func LookupStored(id string, ss *session.Store) (a Auth, s *sessions.Session, err error) {
 	s, err = ss.Lookup(id)
 	if err != nil || s == nil {
 		return Auth{}, s, err
@@ -37,7 +37,7 @@ func LookupStored(id string, ss session.Store) (a Auth, s *sessions.Session, err
 // HTTP
 
 func GetFromRequest(
-	r *http.Request, ss session.Store, l godest.Logger,
+	r *http.Request, ss *session.Store, l godest.Logger,
 ) (a Auth, s *sessions.Session, err error) {
 	s, err = ss.Get(r)
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
-	ss session.Store
+	ss *session.Store
 	oc *ory.Client
 
 	acc *actioncable.Cancellers
@@ -25,7 +25,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, ss session.Store, oc *ory.Client, acc *actioncable.Cancellers,
+	r godest.TemplateRenderer, ss *session.Store, oc *ory.Client, acc *actioncable.Cancellers,
 	ps *presence.Store, l godest.Logger,
 ) *Handlers {
 	return &Handlers{

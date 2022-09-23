@@ -20,7 +20,7 @@ type ErrorData struct {
 	Messages []string
 }
 
-func NewHTTPErrorHandler(tr godest.TemplateRenderer, ss session.Store) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr godest.TemplateRenderer, ss *session.Store) echo.HTTPErrorHandler {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
@@ -64,7 +64,7 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, ss session.Store) echo.HTTP
 }
 
 func NewCSRFErrorHandler(
-	tr godest.TemplateRenderer, l echo.Logger, ss session.Store,
+	tr godest.TemplateRenderer, l echo.Logger, ss *session.Store,
 ) http.HandlerFunc {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {

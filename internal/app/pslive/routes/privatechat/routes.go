@@ -39,7 +39,7 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
+func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store) {
 	hr := auth.NewHTTPRouter(er, ss)
 	// TODO: make and use a middleware which checks to ensure the users exist
 	tsr.SUB(

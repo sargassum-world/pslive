@@ -20,12 +20,12 @@ func NewStore(db *database.DB) *Store {
 	}
 }
 
-//go:embed insert-message.sql
+//go:embed queries/insert-message.sql
 var rawInsertMessageQuery string
 var insertMessageQuery string = strings.TrimSpace(rawInsertMessageQuery)
 
 func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err error) {
-	rowID, err := s.db.ExecuteInsertion(ctx, insertMessageQuery, m.newInsertion())
+	rowID, err := s.db.ExecuteInsertionForID(ctx, insertMessageQuery, m.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add chat message with topic %s", m.Topic)
 	}
@@ -35,7 +35,7 @@ func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err
 	return rowID, err
 }
 
-//go:embed select-messages-by-topic.sql
+//go:embed queries/select-messages-by-topic.sql
 var rawSelectMessagesByTopicQuery string
 var selectMessagesByTopicQuery string = strings.TrimSpace(rawSelectMessagesByTopicQuery)
 
@@ -46,12 +46,7 @@ func (s *Store) GetMessagesByTopic(
 ) (messages []Message, err error) {
 	sel := newMessagesSelector()
 	if err = s.db.ExecuteSelection(
-		ctx, selectMessagesByTopicQuery,
-		map[string]interface{}{
-			"$topic":      topic,
-			"$rows_limit": messagesLimit,
-		},
-		sel.Step,
+		ctx, selectMessagesByTopicQuery, newMessagesByTopicSelection(topic, messagesLimit), sel.Step,
 	); err != nil {
 		return nil, errors.Wrapf(err, "couldn't get chat messages with topic %s", topic)
 	}

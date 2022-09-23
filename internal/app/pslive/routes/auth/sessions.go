@@ -70,6 +70,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		c.SetCookie(cookie)
 
 		// Make login page
+		// TODO: instead have a SSO-style way to login on accounts.sargassum.world
 		loginViewData := LoginViewData{
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
@@ -119,7 +120,7 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, identifier, returnURL string, omitCSRFToken bool, ss session.Store,
+	c echo.Context, identifier, returnURL string, omitCSRFToken bool, ss *session.Store,
 ) error {
 	// Update session
 	sess, err := ss.Get(c.Request())
@@ -145,7 +146,7 @@ func handleAuthenticationSuccess(
 	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.Store) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, ss *session.Store) error {
 	// Update session
 	sess, serr := ss.Get(c.Request())
 	if serr != nil {
@@ -169,7 +170,7 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.St
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
-func handleLogin(c echo.Context, oc *ory.Client, ss session.Store, l godest.Logger) error {
+func handleLogin(c echo.Context, oc *ory.Client, ss *session.Store, l godest.Logger) error {
 	// Parse params
 	identifier := c.FormValue("identifier")
 	password := c.FormValue("password")
@@ -203,7 +204,8 @@ func handleLogin(c echo.Context, oc *ory.Client, ss session.Store, l godest.Logg
 }
 
 func handleLogout(
-	c echo.Context, oc *ory.Client, ss session.Store, acc *actioncable.Cancellers, ps *presence.Store,
+	c echo.Context,
+	oc *ory.Client, ss *session.Store, acc *actioncable.Cancellers, ps *presence.Store,
 ) error {
 	// Invalidate the session cookie
 	// TODO: add a client-side controller to automatically submit a logout request after the

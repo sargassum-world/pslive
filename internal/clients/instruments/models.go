@@ -15,9 +15,9 @@ type Camera struct {
 
 func (c Camera) newInsertion() map[string]interface{} {
 	return map[string]interface{}{
+		"$instrument_id": c.InstrumentID,
 		"$url":           c.URL,
 		"$protocol":      c.Protocol,
-		"$instrument_id": c.InstrumentID,
 	}
 }
 
@@ -46,9 +46,9 @@ type Controller struct {
 
 func (c Controller) newInsertion() map[string]interface{} {
 	return map[string]interface{}{
+		"$instrument_id": c.InstrumentID,
 		"$url":           c.URL,
 		"$protocol":      c.Protocol,
-		"$instrument_id": c.InstrumentID,
 	}
 }
 
@@ -155,7 +155,17 @@ func (i Instrument) newAdminIDSelection() map[string]interface{} {
 	}
 }
 
+func newInstrumentSelection(id int64) map[string]interface{} {
+	return map[string]interface{}{
+		"$id": id,
+	}
+}
+
 // Instruments
+
+func newInstrumentsSelection() map[string]interface{} {
+	return map[string]interface{}{}
+}
 
 type instrumentsSelector struct {
 	ids         []int64

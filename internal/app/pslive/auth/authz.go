@@ -176,7 +176,7 @@ func (azc *AuthzChecker) RequireTSAuthz(
 	)
 }
 
-func (azc *AuthzChecker) NewHTTPMiddleware(ss session.Store) echo.MiddlewareFunc {
+func (azc *AuthzChecker) NewHTTPMiddleware(ss *session.Store) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			method := c.Request().Method
@@ -213,7 +213,7 @@ func (azc *AuthzChecker) NewHTTPMiddleware(ss session.Store) echo.MiddlewareFunc
 	}
 }
 
-func (azc *AuthzChecker) NewTSMiddleware(ss session.Store) turbostreams.MiddlewareFunc {
+func (azc *AuthzChecker) NewTSMiddleware(ss *session.Store) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
 		return func(c turbostreams.Context) error {
 			method := c.Method()

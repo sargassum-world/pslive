@@ -6,6 +6,8 @@ import (
 	"zombiezen.com/go/sqlite"
 )
 
+// Message
+
 type Message struct {
 	ID       int64
 	Topic    string
@@ -20,6 +22,15 @@ func (m Message) newInsertion() map[string]interface{} {
 		"$send_time": m.SendTime.UnixMilli(),
 		"$sender_id": m.SenderID,
 		"$body":      m.Body,
+	}
+}
+
+// Messages
+
+func newMessagesByTopicSelection(topic string, messagesLimit int64) map[string]interface{} {
+	return map[string]interface{}{
+		"$topic":      topic,
+		"$rows_limit": messagesLimit,
 	}
 }
 

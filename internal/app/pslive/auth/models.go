@@ -18,6 +18,12 @@ type Auth struct {
 	CSRF           CSRF
 }
 
+func RegisterGobTypes() {
+	gob.Register(Identity{})
+	gob.Register(CSRF{})
+	gob.Register(CSRFBehavior{})
+}
+
 // Identity
 
 type Identity struct {
@@ -35,7 +41,6 @@ func SetIdentity(s *sessions.Session, username string) {
 		User:          username,
 	}
 	s.Values["identity"] = identity
-	gob.Register(identity)
 }
 
 func GetIdentity(s sessions.Session) (identity Identity, err error) {
@@ -72,7 +77,6 @@ func SetCSRFBehavior(s *sessions.Session, inlineToken bool) {
 		InlineToken: inlineToken,
 	}
 	s.Values["csrfBehavior"] = behavior
-	gob.Register(behavior)
 }
 
 func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {

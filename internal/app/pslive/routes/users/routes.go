@@ -42,7 +42,7 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
+func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store) {
 	hr := auth.NewHTTPRouter(er, ss)
 	hr.GET("/users", h.HandleUsersGet())
 	hr.GET("/users/:id", h.HandleUserGet())
