@@ -19,7 +19,7 @@
     "eslint-plugin-import": "^2.24.2",
     "eslint-plugin-svelte3": "^4.0.0",
     "prettier": "^2.7.1",
-    "prettier-plugin-svelte": "^2.4.0",
+    "prettier-plugin-svelte": "^2.7.1",
     "purify-css": "^1.2.5",
     "rollup": "^2.79.0",
     "rollup-plugin-copy": "^3.4.0",
