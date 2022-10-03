@@ -8,7 +8,7 @@ require (
 	github.com/goreleaser/goreleaser v1.11.4
 	github.com/hairyhenderson/gomplate/v3 v3.11.3
 	github.com/open-policy-agent/opa v0.44.0
-	mvdan.cc/gofumpt v0.3.1
+	mvdan.cc/gofumpt v0.4.0
 )
 
 require (
