@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/labstack/gommon v0.3.1
-	github.com/open-policy-agent/opa v0.44.0
+	github.com/open-policy-agent/opa v0.45.0
 	github.com/ory/client-go v0.2.0-alpha.48
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/godest v0.3.0
@@ -28,7 +28,6 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.2.0 // indirect
-	github.com/bytecodealliance/wasmtime-go v0.38.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
