@@ -27,7 +27,7 @@ type EncodableFrame interface {
 
 type Frame struct {
 	Timestamp time.Time
-	Data      *bytes.Buffer
+	Data      []byte
 	Error     error
 }
 
@@ -36,11 +36,11 @@ func (f Frame) Time() time.Time {
 }
 
 func (f Frame) JPEG() ([]byte, error) {
-	return f.Data.Bytes(), nil
+	return f.Data, nil
 }
 
 func (f Frame) Image() (image.Image, error) {
-	return jpeg.Decode(f.Data)
+	return jpeg.Decode(bytes.NewReader(f.Data))
 }
 
 func (f Frame) Err() error {
@@ -90,7 +90,7 @@ func StartURLReader(
 func ReadFrame(m *multipart.Reader) (frame Frame, err error) {
 	part, err := m.NextPart()
 	if err == io.EOF {
-		return Frame{}, nil
+		return Frame{}, err
 	}
 	if err != nil {
 		return Frame{}, errors.Wrap(err, "couldn't get next part from stream")
@@ -100,7 +100,6 @@ func ReadFrame(m *multipart.Reader) (frame Frame, err error) {
 	}
 	frame = Frame{
 		Timestamp: time.Now(),
-		Data:      &bytes.Buffer{},
 	}
 	const base = 10
 	const timestampSize = 64
@@ -109,9 +108,11 @@ func ReadFrame(m *multipart.Reader) (frame Frame, err error) {
 	); perr == nil {
 		frame.Timestamp = time.UnixMilli(parsedTimestamp)
 	}
-	if _, err = io.Copy(frame.Data, part); err != nil {
+	buffer := &bytes.Buffer{}
+	if _, err = io.Copy(buffer, part); err != nil {
 		return Frame{}, errors.Wrap(err, "couldn't jpeg-decode stream part")
 	}
+	frame.Data = buffer.Bytes()
 	return frame, err
 }
 

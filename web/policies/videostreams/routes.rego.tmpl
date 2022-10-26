@@ -30,7 +30,6 @@ in_scope if {
 	(coll.Slice "GET" "/video-streams/external-stream/frame.jpeg")
 	(coll.Slice "GET" "/video-streams/external-stream/stream.mjpeg")
 }}
-{{- /* TODO: implement authz checks against the cameras database */}}
 
 errors contains error_matching if {
 	in_scope

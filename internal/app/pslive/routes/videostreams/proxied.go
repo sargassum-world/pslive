@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -223,11 +224,11 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 			handling.Repeat(ctx, 0, func() (done bool, err error) {
 				// Load data
 				encodedFrame, err := mjpeg.ReadFrame(reader)
+				if errors.Is(err, io.EOF) {
+					return true, nil
+				}
 				if err != nil {
 					return false, errors.Wrap(err, "couldn't read mjpeg frame")
-				}
-				if encodedFrame == (mjpeg.Frame{}) {
-					return true, nil
 				}
 
 				// Publish data
