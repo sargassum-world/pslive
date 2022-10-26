@@ -204,8 +204,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/open-policy-agent/opa v0.45.0 h1:P5nuhVRtR+e58fk3CMMbiqr6ZFyWQPNOC3otsorGsFs=
 github.com/open-policy-agent/opa v0.45.0/go.mod h1:/OnsYljNEWJ6DXeFOOnoGn8CvwZGMUS4iRqzYdJvmBI=
-github.com/ory/client-go v0.2.0-alpha.48 h1:aOSIJN9zFgEvTQ6hrpnbyx8XP0g8DUGKFLUx0rdzF0k=
-github.com/ory/client-go v0.2.0-alpha.48/go.mod h1:dWbi9DBEjiDXwyuJ1+A2WT1/bIp9HwvVxZxzHzp4YHU=
+github.com/ory/client-go v0.2.0-alpha.60 h1:sMAqrKP5eUNYyyOYbSjDTwr8EucDxYLGrQC093ZX5pU=
+github.com/ory/client-go v0.2.0-alpha.60/go.mod h1:dWbi9DBEjiDXwyuJ1+A2WT1/bIp9HwvVxZxzHzp4YHU=
 github.com/paulbellamy/ratecounter v0.2.0 h1:2L/RhJq+HA8gBQImDXtLPrDXK5qAj6ozWVK/zFXVJGs=
 github.com/paulbellamy/ratecounter v0.2.0/go.mod h1:Hfx1hDpSGoqxkVVpBi/IlYD7kChlfo5C6hzIHwPqfFE=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
