@@ -88,7 +88,6 @@ allow if {
 	["video-streams", "external-stream", "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
 }
 
-
 errors contains error_matching if {
 	in_scope
 	error_matching := routing.error_matching_routes(matching_routes)
