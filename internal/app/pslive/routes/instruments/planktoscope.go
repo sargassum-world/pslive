@@ -79,7 +79,7 @@ func handlePumpSettings(
 func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 	t := pumpPartial
 	h.r.MustHave(t)
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		// Parse params
 		id, err := parseID(c.Param("id"), "instrument")
 		if err != nil {

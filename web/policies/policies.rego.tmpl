@@ -12,6 +12,7 @@ import data.sargassum.pslive.web.policies.home
 import data.sargassum.pslive.web.policies.instruments
 import data.sargassum.pslive.web.policies.privatechat
 import data.sargassum.pslive.web.policies.users
+import data.sargassum.pslive.web.policies.videostreams
 
 {{
 	template "policies/shared/policies.partial.tmpl" coll.Slice
@@ -22,7 +23,10 @@ import data.sargassum.pslive.web.policies.users
 	"instruments"
 	"privatechat"
 	"users"
+	"videostreams"
 }}
+
+# Error handling
 
 errors contains error_matching if {
 	error_matching := routing.error_matching_policies(matching_policies)

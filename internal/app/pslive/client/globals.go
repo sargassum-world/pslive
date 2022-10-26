@@ -19,6 +19,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
+	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
 type Globals struct {
@@ -40,6 +41,7 @@ type Globals struct {
 	Planktoscopes *planktoscope.Orchestrator
 	Presence      *presence.Store
 	Chat          *chat.Store
+	VSBroker      *videostreams.Broker
 
 	Logger godest.Logger
 }
@@ -94,6 +96,7 @@ func NewGlobals(
 	g.Planktoscopes = planktoscope.NewOrchestrator(l)
 	g.Presence = presence.NewStore()
 	g.Chat = chat.NewStore(g.DB)
+	g.VSBroker = videostreams.NewBroker(l)
 
 	g.Logger = l
 	return g, nil

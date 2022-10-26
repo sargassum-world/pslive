@@ -38,7 +38,7 @@ func HandlePresenceSub(
 	t := usersPartial
 	r.MustHave(t)
 	return auth.HandleTSWithSession(
-		func(c turbostreams.Context, a auth.Auth, sess *sessions.Session) (err error) {
+		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) (err error) {
 			if a.Identity.User != "" && !ps.IsKnown(sess.ID) {
 				user, err := oc.GetIdentifier(c.Context(), a.Identity.User)
 				if err != nil {
@@ -64,7 +64,7 @@ func HandlePresenceUnsub(
 	t := usersPartial
 	r.MustHave(t)
 	return auth.HandleTSWithSession(
-		func(c turbostreams.Context, a auth.Auth, sess *sessions.Session) error {
+		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) error {
 			if ps.Remove(c.Topic(), sess.ID) {
 				c.Publish(replacePresenceStream(c.Topic(), t, ps))
 			}

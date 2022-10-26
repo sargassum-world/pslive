@@ -1,0 +1,38 @@
+{{template "policies/shared/generated.partial.tmpl"}}
+package sargassum.pslive.web.policies.videostreams
+
+import future.keywords
+
+import data.sargassum.godest.routing
+
+# Policy Scope
+
+in_scope if {
+	glob.match("/video-streams/*", [], input.resource.path)
+}
+
+in_scope if {
+	glob.match("/video-streams/*.jpeg", [], input.resource.path)
+}
+
+in_scope if {
+	glob.match("/video-streams/*.mjpeg", [], input.resource.path)
+}
+
+# Policy Result & Error
+
+{{
+	template "policies/shared/routes.partial.tmpl" coll.Slice
+	(coll.Slice "GET" "/video-streams/random-color/frame.jpeg")
+	(coll.Slice "GET" "/video-streams/random-color/stream.mjpeg")
+	(coll.Slice "GET" "/video-streams/animated-color/frame.jpeg")
+	(coll.Slice "GET" "/video-streams/animated-color/stream.mjpeg")
+	(coll.Slice "GET" "/video-streams/external-stream/frame.jpeg")
+	(coll.Slice "GET" "/video-streams/external-stream/stream.mjpeg")
+}}
+{{/* TODO: implement authz checks against the cameras database */}}
+
+errors contains error_matching if {
+	in_scope
+	error_matching := routing.error_matching_routes(matching_routes)
+}

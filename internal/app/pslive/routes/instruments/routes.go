@@ -21,7 +21,7 @@ type Handlers struct {
 	oc  *ory.Client
 	azc *auth.AuthzChecker
 
-	tsh *turbostreams.MessagesHub
+	tsh *turbostreams.Hub
 
 	is  *instruments.Store
 	pco *planktoscope.Orchestrator
@@ -30,7 +30,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.MessagesHub,
+	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
 	is *instruments.Store, pco *planktoscope.Orchestrator, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
@@ -45,7 +45,9 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store) {
+func (h *Handlers) Register(
+	er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store,
+) {
 	hr := auth.NewHTTPRouter(er, ss)
 	hr.GET("/instruments", h.HandleInstrumentsGet())
 	hr.POST("/instruments", h.HandleInstrumentsPost())

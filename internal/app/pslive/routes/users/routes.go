@@ -20,7 +20,7 @@ type Handlers struct {
 	oc  *ory.Client
 	azc *auth.AuthzChecker
 
-	tsh *turbostreams.MessagesHub
+	tsh *turbostreams.Hub
 
 	is *instruments.Store
 	ps *presence.Store
@@ -28,7 +28,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.MessagesHub,
+	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
 	is *instruments.Store, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
@@ -42,7 +42,9 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store) {
+func (h *Handlers) Register(
+	er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store,
+) {
 	hr := auth.NewHTTPRouter(er, ss)
 	hr.GET("/users", h.HandleUsersGet())
 	hr.GET("/users/:id", h.HandleUserGet())
