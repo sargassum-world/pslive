@@ -23,7 +23,7 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 
 		acc := actioncable.Upgrade(wsc, actioncable.WithChannels(
 			map[string]actioncable.ChannelFactory{
-				turbostreams.ChannelName: h.tsb.ChannelFactory(sess.ID, h.tss.Check),
+				turbostreams.ChannelName: turbostreams.NewChannelFactory(h.tsb, sess.ID, h.tss.Check),
 			},
 			make(map[string]actioncable.Channel),
 			actioncable.WithCSRFTokenChecker(func(token string) error {

@@ -169,7 +169,7 @@ func (s *Server) Register(e *echo.Echo) error {
 
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
-	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
+	s.Handlers.Register(e, s.Globals.TSBroker, s.Globals.VSBroker, s.Embeds)
 
 	// Gob encodings
 	auth.RegisterGobTypes()
@@ -218,6 +218,14 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 		if err := s.Globals.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(
 				err, "turbo streams broker encountered error while serving",
+			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := s.Globals.VSBroker.Serve(ctx); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(
+				err, "video streams broker encountered error while serving",
 			))
 		}
 		return nil

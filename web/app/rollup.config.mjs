@@ -5,6 +5,7 @@ import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import css from 'rollup-plugin-css-only';
 import scss from 'rollup-plugin-scss';
+import sass from 'sass';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import purify from 'purify-css';
 import copy from 'rollup-plugin-copy';
@@ -28,7 +29,7 @@ function themeGenerator(theme) {
 					'node_modules',
 					'src'
 				],
-				runtime: require('sass'),
+				runtime: sass,
 				output: function (styles, styleNodes) {
 					if (!existsSync(buildDir)) {
 						mkdirSync(buildDir, { recursive: true });

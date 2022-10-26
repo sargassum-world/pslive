@@ -95,12 +95,12 @@ func (r *HTTPRouter) TRACE(path string, h HTTPHandlerFunc, m ...echo.MiddlewareF
 // Turbo Streams
 
 type (
-	TSHandlerFunc            func(c turbostreams.Context, a Auth) error
-	TSHandlerFuncWithSession func(c turbostreams.Context, a Auth, sess *sessions.Session) error
+	TSHandlerFunc            func(c *turbostreams.Context, a Auth) error
+	TSHandlerFuncWithSession func(c *turbostreams.Context, a Auth, sess *sessions.Session) error
 )
 
 func HandleTS(h TSHandlerFunc, ss *session.Store) turbostreams.HandlerFunc {
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		a, _, err := LookupStored(c.SessionID(), ss)
 		if err != nil {
 			return errors.Wrapf(
@@ -112,7 +112,7 @@ func HandleTS(h TSHandlerFunc, ss *session.Store) turbostreams.HandlerFunc {
 }
 
 func HandleTSWithSession(h TSHandlerFuncWithSession, ss *session.Store) turbostreams.HandlerFunc {
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		a, sess, err := LookupStored(c.SessionID(), ss)
 		if err != nil {
 			return errors.Wrapf(

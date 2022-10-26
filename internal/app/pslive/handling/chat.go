@@ -83,7 +83,7 @@ func replaceChatSendStream(topic string, authorizeSend bool, a auth.Auth) turbos
 
 func HandleChatMessagesPost(
 	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker,
-	tsh *turbostreams.MessagesHub, cs *chat.Store,
+	tsh *turbostreams.Hub, cs *chat.Store,
 ) auth.HTTPHandlerFunc {
 	sendT := sendPartial
 	r.MustHave(sendT)
@@ -110,7 +110,7 @@ func HandleChatMessagesPost(
 		}
 		mvd := NewChatMessageViewData(m)
 		mvd.SenderIdentifier = user
-		tsh.Broadcast(m.Topic, appendChatMessageStream(mvd))
+		tsh.Broadcast(m.Topic, []turbostreams.Message{appendChatMessageStream(mvd)})
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {

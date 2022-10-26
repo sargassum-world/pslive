@@ -107,8 +107,8 @@ func getInstrumentViewAuthz(
 	eg, egctx := errgroup.WithContext(ctx)
 	controllerAuthorizations := make([]interface{}, len(controllerIDs))
 	for i, controllerID := range controllerIDs {
-		eg.Go(func(i int, cid int64) func() (err error) {
-			return func() error {
+		eg.Go(func(i int, cid int64) func() error {
+			return func() (err error) {
 				if controllerAuthorizations[i], err = getPlanktoscopeControllerViewAuthz(
 					egctx, id, cid, a, azc,
 				); err != nil {

@@ -13,6 +13,8 @@ import (
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/instruments"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/privatechat"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/users"
+	"github.com/sargassum-world/pslive/internal/app/pslive/routes/videostreams"
+	vsc "github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
 type Handlers struct {
@@ -27,7 +29,9 @@ func New(r godest.TemplateRenderer, globals *client.Globals) *Handlers {
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em godest.Embeds) {
+func (h *Handlers) Register(
+	er godest.EchoRouter, tsr turbostreams.Router, vsr vsc.Router, em godest.Embeds,
+) {
 	ss := h.globals.Sessions
 	oc := h.globals.Ory
 	azc := h.globals.AuthzChecker
@@ -45,12 +49,13 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	).Register(er)
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
-	instruments.New(
-		h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs,
-	).Register(er, tsr, ss)
+	instruments.New(h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs).Register(er, tsr, ss)
 	privatechat.New(h.r, oc, azc, tsh, ps, cs).Register(er, tsr, ss)
 	users.New(h.r, oc, azc, tsh, is, ps, cs).Register(er, tsr, ss)
+	videostreams.New(h.globals.VSBroker).Register(er, vsr)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)
 	tsr.UNSUB("/*", turbostreams.EmptyHandler)
+	vsr.SUB("/*", vsc.EmptyHandler)
+	vsr.UNSUB("/*", vsc.EmptyHandler)
 }

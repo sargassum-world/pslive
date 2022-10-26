@@ -156,7 +156,7 @@ func (azc *AuthzChecker) RequireHTTPAuthz(c echo.Context, a Auth) (authzErr erro
 }
 
 func (azc *AuthzChecker) RequireTSAuthz(
-	c turbostreams.Context, a Auth,
+	c *turbostreams.Context, a Auth,
 ) (authzErr error, evalErr error) {
 	if c.Method() == turbostreams.MethodUnsub || c.Method() == turbostreams.MethodPub {
 		// We can't prevent unsubscription; and closing a tab triggers an unsubscription while also
@@ -215,7 +215,7 @@ func (azc *AuthzChecker) NewHTTPMiddleware(ss *session.Store) echo.MiddlewareFun
 
 func (azc *AuthzChecker) NewTSMiddleware(ss *session.Store) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
-		return func(c turbostreams.Context) error {
+		return func(c *turbostreams.Context) error {
 			method := c.Method()
 			topic := c.Topic()
 

@@ -76,7 +76,7 @@ func HandleTSMsg(
 ) turbostreams.HandlerFunc {
 	modifiers = append([]DataModifier{AddAuthData()}, modifiers...)
 	return auth.HandleTS(
-		func(c turbostreams.Context, a auth.Auth) (err error) {
+		func(c *turbostreams.Context, a auth.Auth) (err error) {
 			// TODO: move this function into github.com/sargassum-world/fluitans/pkg/godest/turbostreams?
 			// (without prepending AddAuthData though, and with a generic type for Auth)
 			ctx := c.Context()

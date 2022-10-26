@@ -1,5 +1,7 @@
 {{- $policy := . -}}
 
+# Policy {{$policy}}
+
 matching_policies contains "{{$policy}}" if {
 	{{$policy}}.in_scope
 }
