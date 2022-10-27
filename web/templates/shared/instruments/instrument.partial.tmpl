@@ -44,7 +44,7 @@
         {{range $camera := $instrument.Cameras}}
           {{if not $cameraFound}}
             <img
-              class="instrument-camera-stream"
+              class="instrument-camera-preview"
               src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/frame.jpeg"
               data-controller="image-autoreload"
               data-image-autoreload-min-interval-value="5"

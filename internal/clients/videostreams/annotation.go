@@ -61,16 +61,16 @@ func AddLabel(im draw.Image, label string, co color.Color, x, y int) {
 
 const annotationBarMargin = 6
 
-var lineHeight = fontFace.Metrics().Height.Round()
+var LineHeight = fontFace.Metrics().Height.Round()
 
 func AddAnnotationPadding(source image.Image, topLines, bottomLines int) (output draw.Image) {
 	topHeight := 0
 	if topLines > 0 {
-		topHeight = topLines*lineHeight + annotationBarMargin
+		topHeight = topLines*LineHeight + annotationBarMargin
 	}
 	bottomHeight := 0
 	if bottomLines > 0 {
-		bottomHeight = bottomLines*lineHeight + annotationBarMargin
+		bottomHeight = bottomLines*LineHeight + annotationBarMargin
 	}
 
 	output = image.NewRGBA(image.Rectangle{
@@ -92,7 +92,7 @@ func AddAnnotationPadding(source image.Image, topLines, bottomLines int) (output
 
 func AnnotateTop(im draw.Image, annotations string, lines int) {
 	const max = 255
-	height := lines*lineHeight + annotationBarMargin
+	height := lines*LineHeight + annotationBarMargin
 	backgroundColor := color.RGBA{A: max}
 	labelColor := color.RGBA{max, max, max, max}
 	draw.Draw(im, image.Rectangle{

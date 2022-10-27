@@ -10,7 +10,7 @@ import {
   ThemeController,
   TurboCableStreamSourceElement,
   TurboCacheController,
-	ImageAutoreloadController,
+  ImageAutoreloadController,
   Turbo,
 } from '@sargassum-world/stimulated';
 import { Application } from '@hotwired/stimulus';

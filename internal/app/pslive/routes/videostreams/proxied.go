@@ -59,6 +59,9 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 		// Generate data
 		frame := <-frameBuffer
 		cancel()
+		if frame == nil {
+			return errors.Wrap(err, "couldn't load frame")
+		}
 		f, err := frame.AsImageFrame()
 		if err != nil {
 			return errors.Wrap(err, "couldn't read frame as image")

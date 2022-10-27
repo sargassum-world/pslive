@@ -3,6 +3,9 @@ package instruments
 import (
 	"context"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,6 +35,54 @@ func parseIntParam(raw, name string, defaultValue int) (parsed int, err error) {
 	return parsed, err
 }
 
+func newErrorFrame(width, height int, message string) *videostreams.ImageFrame {
+	const max = 255
+	const margin = 10
+	output := image.NewRGBA(image.Rect(0, 0, width, height))
+	fillImage(output, color.RGBA{0, 0, 0, max})
+	const divisor = 2
+	videostreams.AddLabel(
+		output, message, color.RGBA{max, max, max, max},
+		margin, (height-videostreams.LineHeight)/divisor,
+	)
+	const quality = 80
+	return &videostreams.ImageFrame{
+		Im: output,
+		Meta: &videostreams.Metadata{
+			Settings: videostreams.Settings{
+				JPEGEncodeQuality: quality,
+			},
+		},
+	}
+}
+
+func fillImage(im draw.Image, co color.Color) {
+	draw.Draw(im, im.Bounds(), &image.Uniform{co}, image.Point{}, draw.Src)
+}
+
+// Error images
+
+const (
+	errorWidth  = 320
+	errorHeight = 240
+)
+
+func newErrorJPEG(width, height int, message string) []byte {
+	output, _, err := newErrorFrame(
+		width, height, message,
+	).AsJPEG()
+	if err != nil {
+		panic(err)
+	}
+	return output
+}
+
+var (
+	jpegError    = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+	frameError   = newErrorFrame(errorWidth, errorHeight, "stream failed")
+	frameLoading = newErrorFrame(errorWidth, errorHeight, "loading stream...")
+)
+
 // Handlers
 
 func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
@@ -53,7 +104,7 @@ func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 		// Parse params
 		id, err := parseID(c.Param("cameraID"), "camera")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "couldn't parse camera ID path parameter")
 		}
 		const defaultHeight = 400
 		height, err := parseIntParam(c.QueryParam("height"), "height", defaultHeight)
@@ -83,9 +134,12 @@ func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 		// Generate data
 		frame := <-frameBuffer
 		cancel()
+		if frame == nil {
+			return c.Blob(http.StatusNotFound, "image/jpeg", jpegError)
+		}
 		f, err := frame.AsImageFrame()
 		if err != nil {
-			return errors.Wrap(err, "couldn't read frame as image")
+			return c.Blob(http.StatusNotFound, "image/jpeg", jpegError)
 		}
 		f = f.WithResizeToHeight(height)
 		f.Meta.Settings.JPEGEncodeQuality = quality
@@ -106,7 +160,11 @@ func externalSourceFrameSender(
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
 		if err = frame.Error(); err != nil {
-			return false, errors.Wrapf(err, "error with stream source")
+			if err := handling.Except(
+				ss.SendFrame(frameError), context.Canceled, syscall.EPIPE,
+			); err != nil {
+				return false, errors.Wrap(err, "couldn't send mjpeg loading frame")
+			}
 		}
 
 		// Generate output
@@ -164,6 +222,11 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 				c.Logger().Error(errors.Wrap(err, "couldn't close stream"))
 			}
 		}()
+		if err := handling.Except(
+			ss.SendFrame(frameLoading), context.Canceled, syscall.EPIPE,
+		); err != nil {
+			return errors.Wrap(err, "couldn't send mjpeg loading frame")
+		}
 
 		// Subscribe to source stream
 		ctx := c.Request().Context()
