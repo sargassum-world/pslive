@@ -167,12 +167,12 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 		query, err := c.Query()
 		if err != nil {
 			err = errors.Wrap(err, "couldn't parse topic query params")
-			c.Publish(videostreams.NewErrorFrame(err))
+			c.Publish(mjpeg.NewErrorFrame(err))
 			return err
 		}
 		source, err := parseURLParam(query.Get("url"))
 		if err != nil {
-			c.Publish(videostreams.NewErrorFrame(err))
+			c.Publish(mjpeg.NewErrorFrame(err))
 			return err
 		}
 
@@ -181,7 +181,7 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 		r, err := mjpeg.NewReceiverFromURL(ctx, h.hc, source)
 		if err != nil {
 			err = errors.Wrapf(err, "couldn't start mjpeg receiver for %s", source)
-			c.Publish(videostreams.NewErrorFrame(err))
+			c.Publish(mjpeg.NewErrorFrame(err))
 			return err
 		}
 		defer r.Close()

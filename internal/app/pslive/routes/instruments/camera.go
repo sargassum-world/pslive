@@ -160,11 +160,12 @@ func externalSourceFrameSender(
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
 		if err = frame.Error(); err != nil {
-			if err := handling.Except(
+			if herr := handling.Except(
 				ss.SendFrame(frameError), context.Canceled, syscall.EPIPE,
-			); err != nil {
-				return false, errors.Wrap(err, "couldn't send mjpeg loading frame")
+			); herr != nil {
+				return false, errors.Wrap(err, "couldn't send mjpeg error frame")
 			}
+			return false, err
 		}
 
 		// Generate output
@@ -189,9 +190,7 @@ func externalSourceFrameSender(
 		// TODO: implement image resizing
 
 		// Send output
-		if err := handling.Except(
-			ss.SendFrame(frame), context.Canceled, syscall.EPIPE,
-		); err != nil {
+		if err := handling.Except(ss.SendFrame(frame), context.Canceled, syscall.EPIPE); err != nil {
 			return false, errors.Wrap(err, "couldn't send mjpeg frame")
 		}
 		return false, nil

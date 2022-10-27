@@ -26,6 +26,12 @@ type JPEGFrame struct {
 	err      error
 }
 
+func NewErrorFrame(err error) *JPEGFrame {
+	return &JPEGFrame{
+		err: err,
+	}
+}
+
 func (f *JPEGFrame) AsImage() (image.Image, videostreams.Operation, error) {
 	im, err := jpeg.Decode(bytes.NewReader(f.jpeg))
 	if err != nil {
