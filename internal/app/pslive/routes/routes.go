@@ -48,7 +48,7 @@ func (h *Handlers) Register(
 	cable.New(
 		h.r, ss, h.globals.CSRFChecker, acc, h.globals.TSSigner, h.globals.TSBroker, l,
 	).Register(er)
-	home.New(h.r).Register(er, ss)
+	home.New(h.r, oc, is, ps).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
 	instruments.New(h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs, vsb).Register(er, tsr, ss)
 	privatechat.New(h.r, oc, azc, tsh, ps, cs).Register(er, tsr, ss)

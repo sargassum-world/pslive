@@ -1,12 +1,16 @@
 {{$topic := get . "Topic"}}
 {{$known := get . "Known"}}
 {{$anonymous := get . "Anonymous"}}
+{{$join := get . "Join"}}
 {{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 
 {{if $withTurboStreamSource}}
-  {{template "shared/turbo-cable-stream-source.partial.tmpl" $topic}}
+  {{if $join}}
+    {{template "shared/turbo-cable-stream-source.partial.tmpl" $topic}}
+  {{end}}
+  {{template "shared/turbo-cable-stream-source.partial.tmpl" (print $topic "/list")}}
 {{end}}
-<turbo-frame id="{{$topic}}" target="_top">
+<turbo-frame id="{{$topic}}/list" target="_top">
   {{if $known}}
     {{if eq (len $known) 1}}
       {{$user := index $known 0}}

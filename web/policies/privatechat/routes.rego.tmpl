@@ -25,7 +25,11 @@ in_scope if {
 	)
 	(coll.Slice "UNSUB" "/private-chats/:first/:second/chat/users")
 	(
-		coll.Slice "MSG" "/private-chats/:first/:second/chat/users"
+		coll.Slice "SUB" "/private-chats/:first/:second/chat/users/list"
+		"allow_private_chat_get(input.subject, first, second)"
+	)
+	(
+		coll.Slice "MSG" "/private-chats/:first/:second/chat/users/list"
 		"allow_private_chat_get(input.subject, first, second)"
 	)
 	(

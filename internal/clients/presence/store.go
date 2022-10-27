@@ -100,6 +100,13 @@ func (s *Store) List(topic string) (users []User, anonymousSessions []string) {
 	return users, anonymousSessions
 }
 
+func (s *Store) Count(topic string) (count int) {
+	s.pmu.RLock()
+	defer s.pmu.RUnlock()
+
+	return len(s.presences[topic])
+}
+
 func (s *Store) IsKnown(sessionID string) bool {
 	s.umu.RLock()
 	defer s.umu.RUnlock()

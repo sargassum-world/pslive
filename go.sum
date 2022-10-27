@@ -225,8 +225,8 @@ github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qq
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
-github.com/sargassum-world/godest v0.4.1 h1:Bt2jfENQmEL8RyZRU8YATs5wYU5Gdoh8naekBppzQk0=
-github.com/sargassum-world/godest v0.4.1/go.mod h1:AcdcV4i64CScoG2pHHbif2fRs8x5Mgsjjr8wdyEws3k=
+github.com/sargassum-world/godest v0.4.2 h1:81JkBD3WLYZHNqBfsJW/0K5FT2frvJkQm9309X5Vzro=
+github.com/sargassum-world/godest v0.4.2/go.mod h1:AcdcV4i64CScoG2pHHbif2fRs8x5Mgsjjr8wdyEws3k=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/shopspring/decimal v1.3.1 h1:2Usl1nmF/WZucqkFZhnfFYxxxu8LG21F6nPQBE5gKV8=
 github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=

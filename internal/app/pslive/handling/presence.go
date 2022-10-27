@@ -13,11 +13,11 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-func replacePresenceStream(topic, partial string, ps *presence.Store) turbostreams.Message {
+func replacePresenceListStream(topic, partial string, ps *presence.Store) turbostreams.Message {
 	known, anonymous := ps.List(topic)
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   topic,
+		Target:   topic + "/list",
 		Template: partial,
 		Data: map[string]interface{}{
 			"Topic":     topic,
@@ -27,16 +27,32 @@ func replacePresenceStream(topic, partial string, ps *presence.Store) turbostrea
 	}
 }
 
+func replacePresenceCountStream(topic, partial string, ps *presence.Store) turbostreams.Message {
+	count := ps.Count(topic)
+	return turbostreams.Message{
+		Action:   turbostreams.ActionReplace,
+		Target:   topic + "/count",
+		Template: partial,
+		Data: map[string]interface{}{
+			"Topic": topic,
+			"Count": count,
+		},
+	}
+}
+
 const (
-	usersPartial = "shared/presence/users.partial.tmpl"
-	subPubDelay  = 100 // ms; delay the pub so that we can update the page whose GET caused the sub
+	usersListPartial  = "shared/presence/users-list.partial.tmpl"
+	usersCountPartial = "shared/presence/users-count.partial.tmpl"
+	subPubDelay       = 100 // ms; delay the pub so that we can update the page whose GET caused the sub
 )
 
 func HandlePresenceSub(
 	r godest.TemplateRenderer, ss *session.Store, oc *ory.Client, ps *presence.Store,
 ) turbostreams.HandlerFunc {
-	t := usersPartial
-	r.MustHave(t)
+	tList := usersListPartial
+	r.MustHave(tList)
+	tCount := usersCountPartial
+	r.MustHave(tCount)
 	return auth.HandleTSWithSession(
 		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) (err error) {
 			if a.Identity.User != "" && !ps.IsKnown(sess.ID) {
@@ -49,7 +65,8 @@ func HandlePresenceSub(
 			if ps.Add(c.Topic(), sess.ID) {
 				go func() {
 					time.Sleep(subPubDelay * time.Millisecond)
-					c.Publish(replacePresenceStream(c.Topic(), t, ps))
+					c.Broadcast(c.Topic()+"/list", replacePresenceListStream(c.Topic(), tList, ps))
+					c.Broadcast(c.Topic()+"/count", replacePresenceCountStream(c.Topic(), tCount, ps))
 				}()
 			}
 			return nil
@@ -61,12 +78,15 @@ func HandlePresenceSub(
 func HandlePresenceUnsub(
 	r godest.TemplateRenderer, ss *session.Store, ps *presence.Store,
 ) turbostreams.HandlerFunc {
-	t := usersPartial
-	r.MustHave(t)
+	tList := usersListPartial
+	r.MustHave(tList)
+	tCount := usersCountPartial
+	r.MustHave(tCount)
 	return auth.HandleTSWithSession(
 		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) error {
 			if ps.Remove(c.Topic(), sess.ID) {
-				c.Publish(replacePresenceStream(c.Topic(), t, ps))
+				c.Broadcast(c.Topic()+"/list", replacePresenceListStream(c.Topic(), tList, ps))
+				c.Broadcast(c.Topic()+"/count", replacePresenceCountStream(c.Topic(), tCount, ps))
 			}
 			return nil
 		},

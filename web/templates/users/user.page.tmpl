@@ -31,10 +31,11 @@
         <div class="card-content">
           <h3>Public Chat</h3>
           {{
-            template "shared/presence/users.partial.tmpl" dict
+            template "shared/presence/users-list.partial.tmpl" dict
             "Topic" (print "/users/" .Data.Identity.ID "/chat/users")
             "Known" .Data.PublicKnownViewers
             "Anonymous" .Data.PublicAnonymousViewers
+            "Join" true
             "WithTurboStreamSource" true
           }}
           {{
@@ -59,10 +60,11 @@
               {{$second = .Data.Identity.ID}}
             {{end}}
             {{
-              template "shared/presence/users.partial.tmpl" dict
+              template "shared/presence/users-list.partial.tmpl" dict
               "Topic" (print "/private-chats/" $first "/" $second "/chat/users")
               "Known" .Data.PrivateKnownViewers
               "Anonymous" .Data.PrivateAnonymousViewers
+              "Join" true
               "WithTurboStreamSource" true
             }}
             {{

@@ -133,14 +133,49 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["instruments", id, "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /instruments/:id/users/list"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["instruments", id, "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_instrument_get(id)
+}
+
+matching_routes contains route if {
 	"MSG" == input.operation.method
-	["instruments", id, "users"] = split(trim_prefix(input.resource.path, "/"), "/")
-	route := "MSG /instruments/:id/users"
+	["instruments", id, "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /instruments/:id/users/list"
 }
 
 allow if {
 	"MSG" == input.operation.method
-	["instruments", id, "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	["instruments", id, "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"SUB" == input.operation.method
+	["instruments", id, "users", "count"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /instruments/:id/users/count"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["instruments", id, "users", "count"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_instrument_get(id)
+}
+
+matching_routes contains route if {
+	"MSG" == input.operation.method
+	["instruments", id, "users", "count"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /instruments/:id/users/count"
+}
+
+allow if {
+	"MSG" == input.operation.method
+	["instruments", id, "users", "count"] = split(trim_prefix(input.resource.path, "/"), "/")
 }
 
 matching_routes contains route if {

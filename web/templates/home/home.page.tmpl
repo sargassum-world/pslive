@@ -6,8 +6,29 @@
 {{define "content"}}
   <main class="main-container">
     <section class="section content">
-      <h1>PlanktoScope Live</h1>
-      <p>Welcome!</p>
+      <h1>Sargassum Live</h1>
+      <div class="card-width">
+        <p>
+          Welcome! Sargassum Live is a platform to remotely view and operate microscopes around the
+          world for ecological monitoring, to collect and explore data in real time, and to chat
+          and learn from other people about the microscopic world.
+        </p>
+        <p>
+          The Sargassum Live platform is in the alpha testing stage, which means you should expect to
+          encounter missing features and software problems. Right now it is being developed for
+          use with the PlanktoScope, a low-cost and open-source flow-through microscopy system
+          designed to count and classify plankton. Want to learn more, or build your own PlanktoScope?
+          Visit the <a href="https://www.planktoscope.org/">PlanktoScope project</a> website!
+        </p>
+      </div>
+
+      <h2>Live Instruments</h2>
+      {{
+        template "shared/instruments/instruments-gallery.partial.tmpl" dict
+        "Instruments" .Data.CameraInstruments
+        "AdminIdentifiers" .Data.AdminIdentifiers
+        "PresenceCounts" .Data.PresenceCounts
+      }}
     </section>
   </main>
 {{end}}

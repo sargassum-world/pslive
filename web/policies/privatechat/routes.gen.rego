@@ -50,14 +50,26 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["private-chats", first, second, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /private-chats/:first/:second/chat/users/list"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["private-chats", first, second, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_private_chat_get(input.subject, first, second)
+}
+
+matching_routes contains route if {
 	"MSG" == input.operation.method
-	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
-	route := "MSG /private-chats/:first/:second/chat/users"
+	["private-chats", first, second, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /private-chats/:first/:second/chat/users/list"
 }
 
 allow if {
 	"MSG" == input.operation.method
-	["private-chats", first, second, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	["private-chats", first, second, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
 	allow_private_chat_get(input.subject, first, second)
 }
 

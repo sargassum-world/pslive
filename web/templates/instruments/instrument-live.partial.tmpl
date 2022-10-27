@@ -12,7 +12,7 @@
     <div class="section-card wide-card">
       {{if eq $camera.Protocol "mjpeg"}}
         <img
-          id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}"
+          id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/stream"
           class="instrument-camera-stream"
           src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/stream.mjpeg"
           crossorigin
@@ -47,10 +47,11 @@
     <div class="card-content">
       <h3>Users</h3>
       {{
-        template "shared/presence/users.partial.tmpl" dict
+        template "shared/presence/users-list.partial.tmpl" dict
         "Topic" (print "/instruments/" $instrument.ID "/users")
         "Known" $knownViewers
         "Anonymous" $anonymousViewers
+        "Join" true
         "WithTurboStreamSource" true
       }}
     </div>

@@ -17,7 +17,7 @@ require (
 	github.com/ory/client-go v0.2.0-alpha.60
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.4.1
+	github.com/sargassum-world/godest v0.4.2
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/image v0.1.0
 	golang.org/x/sync v0.1.0
