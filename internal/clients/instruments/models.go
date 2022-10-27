@@ -35,6 +35,50 @@ func (c Camera) newDelete() map[string]interface{} {
 	}
 }
 
+func newCameraSelection(id int64) map[string]interface{} {
+	return map[string]interface{}{
+		"$id": id,
+	}
+}
+
+// Cameras
+
+type camerasSelector struct {
+	ids     []int64
+	cameras map[int64]Camera
+}
+
+func newCamerasSelector() *camerasSelector {
+	return &camerasSelector{
+		ids:     make([]int64, 0),
+		cameras: make(map[int64]Camera),
+	}
+}
+
+func (sel *camerasSelector) Step(s *sqlite.Stmt) error {
+	id := s.GetInt64("id")
+	if _, ok := sel.cameras[id]; !ok {
+		sel.cameras[id] = Camera{
+			ID:           s.GetInt64("id"),
+			InstrumentID: s.GetInt64("instrument_id"),
+			URL:          s.GetText("url"),
+			Protocol:     s.GetText("protocol"),
+		}
+		if id != 0 {
+			sel.ids = append(sel.ids, id)
+		}
+	}
+	return nil
+}
+
+func (sel *camerasSelector) Cameras() []Camera {
+	cameras := make([]Camera, len(sel.ids))
+	for i, id := range sel.ids {
+		cameras[i] = sel.cameras[id]
+	}
+	return cameras
+}
+
 // Controller
 
 type Controller struct {

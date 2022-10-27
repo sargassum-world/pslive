@@ -15,6 +15,11 @@ allow_instrument_post(subject, instrument_id) if {
 	is_instrument_admin(subject, instrument_id)
 }
 
+allow_camera_get(instrument_id, camera_id) if {
+	is_valid_instrument(instrument_id)
+	is_valid_camera(instrument_id, camera_id)
+}
+
 allow_camera_post(subject, instrument_id, camera_id) if {
 	is_valid_instrument(instrument_id)
 	is_valid_camera(instrument_id, camera_id)

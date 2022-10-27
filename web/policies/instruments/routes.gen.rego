@@ -16,6 +16,14 @@ in_scope if {
 	glob.match("/instruments/*", [], input.resource.path)
 }
 
+in_scope if {
+	glob.match("/instruments/*.jpeg", [], input.resource.path)
+}
+
+in_scope if {
+	glob.match("/instruments/*.mjpeg", [], input.resource.path)
+}
+
 # Policy Result & Error
 
 matching_routes contains route if {
@@ -157,6 +165,30 @@ allow if {
 	"POST" == input.operation.method
 	["instruments", id, "cameras", camera_id] = split(trim_prefix(input.resource.path, "/"), "/")
 	allow_camera_post(input.subject, id, camera_id)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["instruments", id, "cameras", camera_id, "frame.jpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /instruments/:id/cameras/:camera_id/frame.jpeg"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["instruments", id, "cameras", camera_id, "frame.jpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_camera_get(id, camera_id)
+}
+
+matching_routes contains route if {
+	"GET" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "GET /instruments/:id/cameras/:camera_id/stream.mjpeg"
+}
+
+allow if {
+	"GET" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_camera_get(id, camera_id)
 }
 
 matching_routes contains route if {

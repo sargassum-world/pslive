@@ -15,6 +15,14 @@ in_scope if {
 	glob.match("/instruments/*", [], input.resource.path)
 }
 
+in_scope if {
+	glob.match("/instruments/*.jpeg", [], input.resource.path)
+}
+
+in_scope if {
+	glob.match("/instruments/*.mjpeg", [], input.resource.path)
+}
+
 # Policy Result & Error
 
 {{
@@ -33,6 +41,14 @@ in_scope if {
 	(
 		coll.Slice "POST" "/instruments/:id/cameras/:camera_id"
 		"allow_camera_post(input.subject, id, camera_id)"
+	)
+	(
+		coll.Slice "GET" "/instruments/:id/cameras/:camera_id/frame.jpeg"
+		"allow_camera_get(id, camera_id)"
+	)
+	(
+		coll.Slice "GET" "/instruments/:id/cameras/:camera_id/stream.mjpeg"
+		"allow_camera_get(id, camera_id)"
 	)
 	(coll.Slice "POST" "/instruments/:id/controllers" "allow_instrument_post(input.subject, id)")
 	(

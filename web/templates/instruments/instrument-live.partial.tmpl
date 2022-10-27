@@ -14,7 +14,7 @@
         <img
           id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}"
           class="instrument-camera-stream"
-          src="{{$camera.URL}}"
+          src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/stream.mjpeg"
           crossorigin
         >
       {{else}}
