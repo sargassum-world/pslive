@@ -13,6 +13,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/ory"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 	"github.com/sargassum-world/pslive/internal/clients/presence"
+	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
 type Handlers struct {
@@ -27,11 +28,13 @@ type Handlers struct {
 	pco *planktoscope.Orchestrator
 	ps  *presence.Store
 	cs  *chat.Store
+	vsb *videostreams.Broker
 }
 
 func New(
 	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
-	is *instruments.Store, pco *planktoscope.Orchestrator, ps *presence.Store, cs *chat.Store,
+	is *instruments.Store, pco *planktoscope.Orchestrator,
+	ps *presence.Store, cs *chat.Store, vsb *videostreams.Broker,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
@@ -42,6 +45,7 @@ func New(
 		pco: pco,
 		ps:  ps,
 		cs:  cs,
+		vsb: vsb,
 	}
 }
 
@@ -57,9 +61,14 @@ func (h *Handlers) Register(
 	hr.POST("/instruments/:id/description", h.HandleInstrumentDescriptionPost())
 	tsr.SUB("/instruments/:id/users", handling.HandlePresenceSub(h.r, ss, h.oc, h.ps))
 	tsr.UNSUB("/instruments/:id/users", handling.HandlePresenceUnsub(h.r, ss, h.ps))
-	tsr.MSG("/instruments/:id/users", handling.HandleTSMsg(h.r, ss))
+	tsr.SUB("/instruments/:id/users/list", turbostreams.EmptyHandler)
+	tsr.MSG("/instruments/:id/users/list", handling.HandleTSMsg(h.r, ss))
+	tsr.SUB("/instruments/:id/users/count", turbostreams.EmptyHandler)
+	tsr.MSG("/instruments/:id/users/count", handling.HandleTSMsg(h.r, ss))
 	hr.POST("/instruments/:id/cameras", h.HandleInstrumentCamerasPost())
 	hr.POST("/instruments/:id/cameras/:cameraID", h.HandleInstrumentCameraPost())
+	er.GET("/instruments/:id/cameras/:cameraID/frame.jpeg", h.HandleInstrumentCameraFrameGet())
+	er.GET("/instruments/:id/cameras/:cameraID/stream.mjpeg", h.HandleInstrumentCameraStreamGet())
 	hr.POST("/instruments/:id/controllers", h.HandleInstrumentControllersPost())
 	hr.POST("/instruments/:id/controllers/:controllerID", h.HandleInstrumentControllerPost())
 	tsr.SUB("/instruments/:id/controllers/:controllerID/pump", turbostreams.EmptyHandler)

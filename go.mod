@@ -14,10 +14,10 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/labstack/gommon v0.4.0
 	github.com/open-policy-agent/opa v0.45.0
-	github.com/ory/client-go v0.2.0-alpha.48
+	github.com/ory/client-go v0.2.0-alpha.60
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.4.1
+	github.com/sargassum-world/godest v0.4.2
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/image v0.1.0
 	golang.org/x/sync v0.1.0
@@ -61,7 +61,7 @@ require (
 	github.com/yashtewari/glob-intersection v0.1.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
+	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.1.0 // indirect

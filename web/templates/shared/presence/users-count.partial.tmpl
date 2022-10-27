@@ -1,0 +1,20 @@
+{{$topic := get . "Topic"}}
+{{$count := get . "Count"}}
+{{$join := get . "Join"}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{if $withTurboStreamSource}}
+  {{if $join}}
+    {{template "shared/turbo-cable-stream-source.partial.tmpl" $topic}}
+  {{end}}
+  {{template "shared/turbo-cable-stream-source.partial.tmpl" (print $topic "/count")}}
+{{end}}
+<turbo-frame id="{{$topic}}/count">
+  {{if eq $count 0}}
+    No users
+  {{else if eq $count 1}}
+    1 user
+  {{else}}
+    {{$count}} users
+  {{end}}
+</turbo-frame>

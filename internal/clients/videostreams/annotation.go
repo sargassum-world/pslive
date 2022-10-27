@@ -14,24 +14,32 @@ import (
 
 const timestampFormat = "2006-01-02 15:04:05.000 UTC"
 
-type Metadata struct {
-	Width     int
-	Height    int
-	Timestamp time.Time
+type AnnotationMetadata struct {
+	Width       int
+	Height      int
+	Timestamp   time.Time
+	JPEGQuality int
 
 	FPSCount  int64
 	FPSPeriod float32
-	Quality   int
 }
 
-func (m Metadata) String() string {
+func (m AnnotationMetadata) String() string {
 	return fmt.Sprintf(
 		"[%dx%d] [%s] [%.1f fps] [q=%3d]",
 		m.Width, m.Height,
 		m.Timestamp.UTC().Format(timestampFormat),
 		float32(m.FPSCount)/m.FPSPeriod,
-		m.Quality,
+		m.JPEGQuality,
 	)
+}
+
+func (m AnnotationMetadata) WithFrameData(f *ImageFrame) AnnotationMetadata {
+	m.Width = f.Im.Bounds().Max.X
+	m.Height = f.Im.Bounds().Max.Y
+	m.Timestamp = f.Meta.ReceiveTime
+	m.JPEGQuality = f.Meta.Settings.JPEGEncodeQuality
+	return m
 }
 
 // Drawing
@@ -51,38 +59,48 @@ func AddLabel(im draw.Image, label string, co color.Color, x, y int) {
 	d.DrawString(label)
 }
 
-const annotationBarMargin = 4
+const annotationBarMargin = 6
 
-var (
-	annotationBarHeight = fontFace.Metrics().Height.Round() + annotationBarMargin
-	annotationOffset    = image.Point{
-		X: 0,
-		Y: annotationBarHeight,
+var LineHeight = fontFace.Metrics().Height.Round()
+
+func AddAnnotationPadding(source image.Image, topLines, bottomLines int) (output draw.Image) {
+	topHeight := 0
+	if topLines > 0 {
+		topHeight = topLines*LineHeight + annotationBarMargin
 	}
-)
+	bottomHeight := 0
+	if bottomLines > 0 {
+		bottomHeight = bottomLines*LineHeight + annotationBarMargin
+	}
 
-func CopyForAnnotation(source image.Image) (output draw.Image) {
 	output = image.NewRGBA(image.Rectangle{
 		Min: source.Bounds().Min,
-		Max: source.Bounds().Max.Add(annotationOffset),
+		Max: source.Bounds().Max.Add(image.Point{
+			Y: topHeight + bottomHeight,
+		}),
 	})
 	draw.Draw(output, image.Rectangle{
-		Min: source.Bounds().Min.Add(annotationOffset),
-		Max: source.Bounds().Max.Add(annotationOffset),
+		Min: source.Bounds().Min.Add(image.Point{
+			Y: topHeight,
+		}),
+		Max: source.Bounds().Max.Add(image.Point{
+			Y: topHeight + bottomHeight,
+		}),
 	}, source, image.Point{}, draw.Src)
 	return output
 }
 
-func Annotate(im draw.Image, timestamp time.Time, metadata fmt.Stringer) {
+func AnnotateTop(im draw.Image, annotations string, lines int) {
 	const max = 255
+	height := lines*LineHeight + annotationBarMargin
 	backgroundColor := color.RGBA{A: max}
 	labelColor := color.RGBA{max, max, max, max}
 	draw.Draw(im, image.Rectangle{
 		Min: im.Bounds().Min,
 		Max: image.Point{
 			X: im.Bounds().Max.X,
-			Y: annotationBarHeight,
+			Y: height,
 		},
 	}, &image.Uniform{backgroundColor}, image.Point{}, draw.Src)
-	AddLabel(im, metadata.String(), labelColor, annotationBarMargin, 0)
+	AddLabel(im, annotations, labelColor, annotationBarMargin, 0)
 }

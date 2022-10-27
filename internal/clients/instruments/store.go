@@ -59,6 +59,24 @@ func (s *Store) DeleteCamera(ctx context.Context, id int64) (err error) {
 	)
 }
 
+//go:embed queries/select-camera.sql
+var rawSelectCameraQuery string
+var selectCameraQuery string = strings.TrimSpace(rawSelectCameraQuery)
+
+func (s *Store) GetCamera(ctx context.Context, id int64) (i Camera, err error) {
+	sel := newCamerasSelector()
+	if err = s.db.ExecuteSelection(
+		ctx, selectCameraQuery, newCameraSelection(id), sel.Step,
+	); err != nil {
+		return Camera{}, errors.Wrapf(err, "couldn't get camera with id %d", id)
+	}
+	cameras := sel.Cameras()
+	if len(cameras) == 0 {
+		return Camera{}, errors.Errorf("couldn't get non-existent camera with id %d", id)
+	}
+	return cameras[0], nil
+}
+
 // Controller
 
 //go:embed queries/insert-controller.sql

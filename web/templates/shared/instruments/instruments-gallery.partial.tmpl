@@ -1,0 +1,22 @@
+{{$instruments := get . "Instruments"}}
+{{$adminIdentifiers := get . "AdminIdentifiers"}}
+{{$presenceCounts := get . "PresenceCounts"}}
+
+<turbo-frame id="/instruments/gallery">
+  {{range $instrument := $instruments}}
+    {{$identifier := index $adminIdentifiers $instrument.AdminID}}
+    {{$presenceCount := index $presenceCounts $instrument.ID}}
+    {{
+      template "shared/instruments/instrument.partial.tmpl" dict
+      "Instrument" $instrument
+      "AdminIdentifier" $identifier
+      "PresenceCount" $presenceCount
+    }}
+  {{else}}
+    <div class="card section-card is-block">
+      <div class="card-content">
+        <p>No instruments are registered yet!</p>
+      </div>
+    </div>
+  {{end}}
+</turbo-frame>

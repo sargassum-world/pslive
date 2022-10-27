@@ -48,7 +48,8 @@ func (h *Handlers) Register(
 		"/private-chats/:first/:second/chat/users", handling.HandlePresenceSub(h.r, ss, h.oc, h.ps),
 	)
 	tsr.UNSUB("/private-chats/:first/:second/chat/users", handling.HandlePresenceUnsub(h.r, ss, h.ps))
-	tsr.MSG("/private-chats/:first/:second/chat/users", handling.HandleTSMsg(h.r, ss))
+	tsr.SUB("/private-chats/:first/:second/chat/users/list", turbostreams.EmptyHandler)
+	tsr.MSG("/private-chats/:first/:second/chat/users/list", handling.HandleTSMsg(h.r, ss))
 	tsr.SUB("/private-chats/:first/:second/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/private-chats/:first/:second/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll

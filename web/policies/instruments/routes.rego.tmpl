@@ -15,6 +15,14 @@ in_scope if {
 	glob.match("/instruments/*", [], input.resource.path)
 }
 
+in_scope if {
+	glob.match("/instruments/*.jpeg", [], input.resource.path)
+}
+
+in_scope if {
+	glob.match("/instruments/*.mjpeg", [], input.resource.path)
+}
+
 # Policy Result & Error
 
 {{
@@ -28,11 +36,22 @@ in_scope if {
 	(coll.Slice "GET" "/instruments/:id/users" "allow_instrument_get(id)")
 	(coll.Slice "SUB" "/instruments/:id/users" "allow_instrument_get(id)")
 	(coll.Slice "UNSUB" "/instruments/:id/users")
-	(coll.Slice "MSG" "/instruments/:id/users")
+	(coll.Slice "SUB" "/instruments/:id/users/list" "allow_instrument_get(id)")
+	(coll.Slice "MSG" "/instruments/:id/users/list")
+	(coll.Slice "SUB" "/instruments/:id/users/count" "allow_instrument_get(id)")
+	(coll.Slice "MSG" "/instruments/:id/users/count")
 	(coll.Slice "POST" "/instruments/:id/cameras" "allow_instrument_post(input.subject, id)")
 	(
 		coll.Slice "POST" "/instruments/:id/cameras/:camera_id"
 		"allow_camera_post(input.subject, id, camera_id)"
+	)
+	(
+		coll.Slice "GET" "/instruments/:id/cameras/:camera_id/frame.jpeg"
+		"allow_camera_get(id, camera_id)"
+	)
+	(
+		coll.Slice "GET" "/instruments/:id/cameras/:camera_id/stream.mjpeg"
+		"allow_camera_get(id, camera_id)"
 	)
 	(coll.Slice "POST" "/instruments/:id/controllers" "allow_instrument_post(input.subject, id)")
 	(

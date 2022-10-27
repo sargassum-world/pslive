@@ -53,12 +53,7 @@
   resolved "https://registry.yarnpkg.com/@hotwired/stimulus/-/stimulus-3.1.0.tgz#20215251e5afe6e0a3787285181ba1bfc9097df0"
   integrity sha512-iDMHUhiEJ1xFeicyHcZQQgBzhtk5mPR0QZO3L6wtqzMsJEk2TKECuCQTGKjm+KJTHVY0dKq1dOOAWvODjpd2Mg==
 
-"@hotwired/turbo@^7.0.1":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.1.0.tgz#27e44e0e3dc5bd1d4bda0766d579cf5a14091cd7"
-  integrity sha512-Q8kGjqwPqER+CtpQudbH+3Zgs2X4zb6pBAlr6NsKTXadg45pAOvxI9i4QpuHbwSzR2+x87HUm+rot9F/Pe8rxA==
-
-"@hotwired/turbo@^7.2.2":
+"@hotwired/turbo@^7.0.1", "@hotwired/turbo@^7.2.2":
   version "7.2.4"
   resolved "https://registry.yarnpkg.com/@hotwired/turbo/-/turbo-7.2.4.tgz#0d35541be32cfae3b4f78c6ab9138f5b21f28a21"
   integrity sha512-c3xlOroHp/cCZHDOuLp6uzQYEbvXBUVaal0puXoGJ9M8L/KHwZ3hQozD4dVeSN9msHWLxxtmPT1TlCN7gFhj4w==
@@ -144,9 +139,9 @@
     fastq "^1.6.0"
 
 "@rails/actioncable@^7.0.3-1":
-  version "7.0.3-1"
-  resolved "https://registry.yarnpkg.com/@rails/actioncable/-/actioncable-7.0.3-1.tgz#041a5c81cdf0c68b70a783fdc3ffad0835c3da02"
-  integrity sha512-c2TEL1hLjgSZLqTD6US25nYWv3zKaY2VVzJSqiDIlV6EkEEBirf1REOz6gPbC9Eb+5e0wI/Fp0IbAHL+86eKxg==
+  version "7.0.4"
+  resolved "https://registry.yarnpkg.com/@rails/actioncable/-/actioncable-7.0.4.tgz#70a3ca56809f7aaabb80af2f9c01ae51e1a8ed41"
+  integrity sha512-tz4oM+Zn9CYsvtyicsa/AwzKZKL+ITHWkhiu7x+xF77clh2b4Rm+s6xnOgY/sGDWoFWZmtKsE95hxBPkgQQNnQ==
 
 "@rollup/plugin-commonjs@^22.0.2":
   version "22.0.2"
@@ -199,14 +194,14 @@
     picomatch "^2.2.2"
 
 "@sargassum-world/stimulated@^0.4.3":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.4.3.tgz#48f695361851566baf1ec1229f574a18c1f0ec7c"
-  integrity sha512-BVHPZqaCLLkMwjkKV4ZtffGYP5iq4HoeSc9BbsvPlBSxrIkbwgEyWp8ve2UaAMxnvOxNYmcxMiSVinGVliQlsg==
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.4.4.tgz#b58446140ce7c9903eb49ca239c207bf2244b6ad"
+  integrity sha512-cTHxy8T/9dt8KIJHk6WvIszAqXCxSwEKBiQB5V1V2Pn1V0rKjn0oEQDBZ1TuJC0Dt/fAdZzstmBWJFY2S+ZhQw==
   dependencies:
     "@hotwired/stimulus" "3.1.0"
     "@hotwired/turbo" "^7.0.1"
     "@rails/actioncable" "^7.0.3-1"
-    async-mutex "^0.3.2"
+    async-mutex "0.4.0"
 
 "@sargassum-world/styles@^0.2.2":
   version "0.2.2"
@@ -365,12 +360,12 @@ array.prototype.flat@^1.2.5:
     es-abstract "^1.19.2"
     es-shim-unscopables "^1.0.0"
 
-async-mutex@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.3.2.tgz#1485eda5bda1b0ec7c8df1ac2e815757ad1831df"
-  integrity sha512-HuTK7E7MT7jZEh1P9GtRW9+aTWiDWWi9InbZ5hjxrnRa39KS4BW04+xLBhYNS2aXhHUIKZSw3gj4Pn1pj+qGAA==
+async-mutex@0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.4.0.tgz#ae8048cd4d04ace94347507504b3cf15e631c25f"
+  integrity sha512-eJFZ1YhRR8UN8eBLoNzcDPcy/jqjsg6I1AP+KvWQX80BqOSW1oJPJXDylPUEeMr2ZQvHgnQ//Lp6f3RQ1zI7HA==
   dependencies:
-    tslib "^2.3.1"
+    tslib "^2.4.0"
 
 atob@^2.1.2:
   version "2.1.2"
@@ -2251,7 +2246,7 @@ tsconfig-paths@^3.14.1:
     minimist "^1.2.6"
     strip-bom "^3.0.0"
 
-tslib@^2.3.1:
+tslib@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.4.0.tgz#7cecaa7f073ce680a05847aa77be941098f36dc3"
   integrity sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==

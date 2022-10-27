@@ -314,35 +314,6 @@ func handleInstrumentComponentPost(
 	}
 }
 
-// Cameras
-
-func (h *Handlers) HandleInstrumentCamerasPost() auth.HTTPHandlerFunc {
-	return handleInstrumentComponentsPost(
-		func(ctx context.Context, id int64, url, protocol string) error {
-			_, err := h.is.AddCamera(ctx, instruments.Camera{
-				InstrumentID: id,
-				URL:          url,
-				Protocol:     protocol,
-			})
-			return err
-		},
-	)
-}
-
-func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
-	return handleInstrumentComponentPost(
-		"camera",
-		func(ctx context.Context, componentID int64, url, protocol string) error {
-			return h.is.UpdateCamera(ctx, instruments.Camera{
-				ID:       componentID,
-				URL:      url,
-				Protocol: protocol,
-			})
-		},
-		h.is.DeleteCamera,
-	)
-}
-
 // Controllers
 
 func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {

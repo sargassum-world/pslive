@@ -38,7 +38,6 @@ func (h *Handlers) Register(er godest.EchoRouter, vsr videostreams.Router) {
 	er.GET("/video-streams/animated-color/frame.jpeg", h.HandleAnimatedColorFrameGet())
 	er.GET("/video-streams/animated-color/stream.mjpeg", h.HandleAnimatedColorStreamGet())
 	vsr.PUB("/video-streams/animated-color/source.mjpeg", h.HandleAnimatedColorSourcePub())
-	// TODO: implement
 	er.GET("/video-streams/external-stream/frame.jpeg", h.HandleExternalSourceFrameGet())
 	er.GET("/video-streams/external-stream/stream.mjpeg", h.HandleExternalSourceStreamGet())
 	vsr.PUB("/video-streams/external-stream/source.mjpeg", h.HandleExternalSourcePub())

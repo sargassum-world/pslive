@@ -41,18 +41,19 @@ func (h *Handlers) Register(
 	is := h.globals.Instruments
 	ps := h.globals.Presence
 	cs := h.globals.Chat
+	vsb := h.globals.VSBroker
 
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
 	cable.New(
 		h.r, ss, h.globals.CSRFChecker, acc, h.globals.TSSigner, h.globals.TSBroker, l,
 	).Register(er)
-	home.New(h.r).Register(er, ss)
+	home.New(h.r, oc, is, ps).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
-	instruments.New(h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs).Register(er, tsr, ss)
+	instruments.New(h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs, vsb).Register(er, tsr, ss)
 	privatechat.New(h.r, oc, azc, tsh, ps, cs).Register(er, tsr, ss)
 	users.New(h.r, oc, azc, tsh, is, ps, cs).Register(er, tsr, ss)
-	videostreams.New(h.globals.VSBroker).Register(er, vsr)
+	videostreams.New(vsb).Register(er, vsr)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)
 	tsr.UNSUB("/*", turbostreams.EmptyHandler)

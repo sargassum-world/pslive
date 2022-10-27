@@ -1,0 +1,60 @@
+{{$instrument := get . "Instrument"}}
+{{$adminIdentifier := get . "AdminIdentifier"}}
+{{$presenceCount := get . "PresenceCount"}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}">
+  <article class="panel entity-panel" id="instrument-{{$instrument.ID}}">
+    <header class="panel-heading">
+      <h3 class="entity-name is-size-4">
+        {{if $adminIdentifier}}
+          <a href="/users/{{$instrument.AdminID}}" data-turbo-frame="_top">{{$adminIdentifier}}</a>
+        {{else}}
+          <span class="tag is-warning">Unknown</span>
+        {{end}}
+        /
+        {{if eq 0 (len $instrument.Name)}}
+          <span class="tag is-warning">
+            <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
+              Unnamed Instrument
+            </a>
+          </span>
+        {{else}}
+          <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
+            {{$instrument.Name}}
+          </a>
+        {{end}}
+      </h3>
+      <div class="tags">
+        <span class="tag is-info">
+          {{
+            template "shared/presence/users-count.partial.tmpl" dict
+            "Topic" (print "/instruments/" $instrument.ID "/users")
+            "Count" $presenceCount
+            "WithTurboStreamSource" true
+          }}
+        </span>
+        {{if gt (len $instrument.Cameras) 1}}
+          <span class="tag is-info">{{len $instrument.Cameras}} cameras</span>
+        {{end}}
+      </div>
+    </header>
+    <div class="panel-block">
+      <div>
+        {{$cameraFound := false}}
+        {{range $camera := $instrument.Cameras}}
+          {{if not $cameraFound}}
+            <img
+              class="instrument-camera-preview"
+              src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/frame.jpeg"
+              data-controller="image-autoreload"
+              data-image-autoreload-min-interval-value="5"
+              data-image-autoreload-max-interval-value="15"
+            >
+          {{end}}
+          {{$cameraFound = true}}
+        {{end}}
+      <div>
+      <p>{{index (splitList "\n" $instrument.Description) 0}}</p>
+    </div>
+  </article>
+</turbo-frame>

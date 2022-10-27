@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -138,29 +137,24 @@ func (h *Handlers) HandleAnimatedColorFrameGet() echo.HandlerFunc {
 		// Generate data
 		frame := <-frameBuffer
 		cancel()
-		if err = frame.Err(); err != nil {
+		f, err := frame.AsImageFrame()
+		if err != nil {
 			return errors.Wrapf(err, "error with animation source")
 		}
-		im, err := frame.Image()
-		if err != nil {
-			return errors.Wrap(err, "couldn't convert frame to image")
-		}
+		co := f.Im.At(f.Im.Bounds().Min.X, f.Im.Bounds().Min.Y)
 		output := image.NewRGBA(image.Rect(0, 0, width, height))
-		minBounds := im.Bounds().Min
-		fillImage(output, im.At(minBounds.X, minBounds.Y))
-		frame = videostreams.ImageFrame{
-			Timestamp:   frame.Time(),
-			Data:        output,
-			JPEGQuality: quality,
+		fillImage(output, co)
+		f = &videostreams.ImageFrame{
+			Im:   output,
+			Meta: f.Meta.WithOp(videostreams.Operationf("resize to %dx%d", width, height)),
 		}
+		f.Meta.Settings.JPEGEncodeQuality = quality
 
 		// Produce output
-		frameJPEG, err := frame.JPEG()
+		frameJPEG, _, err := f.AsJPEG()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
-		const base = 10
-		c.Response().Header().Set("X-Timestamp", strconv.FormatInt(frame.Time().UnixMilli(), base))
 		return c.Blob(http.StatusOK, "image/jpeg", frameJPEG)
 	}
 }
@@ -170,36 +164,32 @@ func animatedColorStreamFrameSender(
 	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
-		if err = frame.Err(); err != nil {
+		if err = frame.Error(); err != nil {
 			return false, errors.Wrapf(err, "error with animation source")
 		}
 
 		// Generate output
-		im, err := frame.Image()
+		f, err := frame.AsImageFrame()
 		if err != nil {
-			return false, errors.Wrap(err, "couldn't convert frame to image")
+			return false, errors.Wrap(err, "couldn't read frame as image")
 		}
-		fpsCounter.Incr(1)
+		co := f.Im.At(f.Im.Bounds().Min.X, f.Im.Bounds().Min.Y)
 		output := image.NewRGBA(image.Rect(0, 0, width, height))
-		minBounds := im.Bounds().Min
-		fillImage(output, im.At(minBounds.X, minBounds.Y))
+		fillImage(output, co)
+		f = &videostreams.ImageFrame{
+			Im:   output,
+			Meta: f.Meta.WithOp(videostreams.Operationf("resize to %dx%d", width, height)),
+		}
+		f.Meta.Settings.JPEGEncodeQuality = quality
 		if annotated {
-			videostreams.Annotate(
-				output, frame.Time(), videostreams.Metadata{
-					Width:     output.Bounds().Max.X,
-					Height:    output.Bounds().Max.Y,
-					Timestamp: frame.Time(),
-					FPSCount:  fpsCounter.Rate(),
-					FPSPeriod: fpsPeriod,
-					Quality:   quality,
-				},
-			)
+			fpsCounter.Incr(1)
+			metadata := videostreams.AnnotationMetadata{
+				FPSCount:  fpsCounter.Rate(),
+				FPSPeriod: fpsPeriod,
+			}.WithFrameData(f)
+			f = f.WithAnnotation(metadata.String(), 1)
 		}
-		frame = videostreams.ImageFrame{
-			Timestamp:   frame.Time(),
-			Data:        output,
-			JPEGQuality: quality,
-		}
+		frame = f
 
 		// Send output
 		if err = handling.Except(

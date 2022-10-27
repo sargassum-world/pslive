@@ -10,6 +10,7 @@ import {
   ThemeController,
   TurboCableStreamSourceElement,
   TurboCacheController,
+  ImageAutoreloadController,
   Turbo,
 } from '@sargassum-world/stimulated';
 import { Application } from '@hotwired/stimulus';
@@ -26,6 +27,7 @@ Stimulus.register('csrf', CSRFController);
 Stimulus.register('default-scrollable', DefaultScrollableController);
 Stimulus.register('form-submission', FormSubmissionController);
 Stimulus.register('hideable', HideableController);
+Stimulus.register('image-autoreload', ImageAutoreloadController);
 Stimulus.register('load-focus', LoadFocusController);
 Stimulus.register('load-scroll', LoadScrollController);
 Stimulus.register('navigation-link', NavigationLinkController);

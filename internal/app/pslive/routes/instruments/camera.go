@@ -1,11 +1,14 @@
-package videostreams
+package instruments
 
 import (
 	"context"
 	"fmt"
-	"io"
+	"image"
+	"image/color"
+	"image/draw"
 	"net/http"
 	"net/url"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -14,26 +17,96 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest/handling"
 
+	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/mjpeg"
 	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
-// Helpers
+// Camera stream processing helpers
 
-func parseURLParam(raw string) (string, error) {
-	if raw == "" {
-		return "", errors.New("missing query param 'url' to specify the external source")
+func parseIntParam(raw, name string, defaultValue int) (parsed int, err error) {
+	parsed = defaultValue
+	if raw != "" {
+		if parsed, err = strconv.Atoi(raw); err != nil {
+			return 0, errors.Wrapf(err, "invalid %s parameter %s", name, raw)
+		}
 	}
-	source, err := url.QueryUnescape(raw)
-	return source, errors.Wrapf(err, "couldn't parse source url %s", raw)
+	return parsed, err
 }
+
+func newErrorFrame(width, height int, message string) *videostreams.ImageFrame {
+	const max = 255
+	const margin = 10
+	output := image.NewRGBA(image.Rect(0, 0, width, height))
+	fillImage(output, color.RGBA{0, 0, 0, max})
+	const divisor = 2
+	videostreams.AddLabel(
+		output, message, color.RGBA{max, max, max, max},
+		margin, (height-videostreams.LineHeight)/divisor,
+	)
+	const quality = 80
+	return &videostreams.ImageFrame{
+		Im: output,
+		Meta: &videostreams.Metadata{
+			Settings: videostreams.Settings{
+				JPEGEncodeQuality: quality,
+			},
+		},
+	}
+}
+
+func fillImage(im draw.Image, co color.Color) {
+	draw.Draw(im, im.Bounds(), &image.Uniform{co}, image.Point{}, draw.Src)
+}
+
+// Error images
+
+const (
+	errorWidth  = 320
+	errorHeight = 240
+)
+
+func newErrorJPEG(width, height int, message string) []byte {
+	output, _, err := newErrorFrame(
+		width, height, message,
+	).AsJPEG()
+	if err != nil {
+		panic(err)
+	}
+	return output
+}
+
+var (
+	jpegError    = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+	frameError   = newErrorFrame(errorWidth, errorHeight, "stream failed")
+	frameLoading = newErrorFrame(errorWidth, errorHeight, "loading stream...")
+)
 
 // Handlers
 
-func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
+func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
+	return handleInstrumentComponentPost(
+		"camera",
+		func(ctx context.Context, componentID int64, url, protocol string) error {
+			return h.is.UpdateCamera(ctx, instruments.Camera{
+				ID:       componentID,
+				URL:      url,
+				Protocol: protocol,
+			})
+		},
+		h.is.DeleteCamera,
+	)
+}
+
+func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		// Parse params
-		const defaultHeight = 360
+		id, err := parseID(c.Param("cameraID"), "camera")
+		if err != nil {
+			return errors.Wrap(err, "couldn't parse camera ID path parameter")
+		}
+		const defaultHeight = 400
 		height, err := parseIntParam(c.QueryParam("height"), "height", defaultHeight)
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse image height query parameter")
@@ -43,11 +116,13 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse image quality query parameter")
 		}
-		rawURL := c.QueryParam("url")
-		sourceURL, err := url.QueryUnescape(rawURL)
+
+		// Run queries
+		camera, err := h.is.GetCamera(c.Request().Context(), id)
 		if err != nil {
-			return errors.Wrapf(err, "couldn't parse source url %s", rawURL)
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", id))
 		}
+		sourceURL := camera.URL
 
 		// Subscribe to source stream
 		ctx, cancel := context.WithCancel(c.Request().Context())
@@ -60,11 +135,11 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 		frame := <-frameBuffer
 		cancel()
 		if frame == nil {
-			return errors.Wrap(err, "couldn't load frame")
+			return c.Blob(http.StatusNotFound, "image/jpeg", jpegError)
 		}
 		f, err := frame.AsImageFrame()
 		if err != nil {
-			return errors.Wrap(err, "couldn't read frame as image")
+			return c.Blob(http.StatusNotFound, "image/jpeg", jpegError)
 		}
 		f = f.WithResizeToHeight(height)
 		f.Meta.Settings.JPEGEncodeQuality = quality
@@ -85,7 +160,11 @@ func externalSourceFrameSender(
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
 		if err = frame.Error(); err != nil {
-			return false, errors.Wrapf(err, "error with video source")
+			if err := handling.Except(
+				ss.SendFrame(frameError), context.Canceled, syscall.EPIPE,
+			); err != nil {
+				return false, errors.Wrap(err, "couldn't send mjpeg loading frame")
+			}
 		}
 
 		// Generate output
@@ -119,16 +198,22 @@ func externalSourceFrameSender(
 	}
 }
 
-func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
+func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Parse params
-		annotated := c.QueryParam("annotated") == "true"
-		rawURL := c.QueryParam("url")
-		sourceURL, err := url.QueryUnescape(rawURL)
+		id, err := parseID(c.Param("cameraID"), "camera")
 		if err != nil {
-			return errors.Wrapf(err, "couldn't parse source url %s", rawURL)
+			return err
 		}
+		annotated := c.QueryParam("annotated") == "true"
 		// TODO: implement a max framerate
+
+		// Run queries
+		camera, err := h.is.GetCamera(c.Request().Context(), id)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", id))
+		}
+		sourceURL := camera.URL
 
 		// Set up output stream
 		ss := mjpeg.StartStream(c.Response().Writer)
@@ -137,6 +222,11 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 				c.Logger().Error(errors.Wrap(err, "couldn't close stream"))
 			}
 		}()
+		if err := handling.Except(
+			ss.SendFrame(frameLoading), context.Canceled, syscall.EPIPE,
+		); err != nil {
+			return errors.Wrap(err, "couldn't send mjpeg loading frame")
+		}
 
 		// Subscribe to source stream
 		ctx := c.Request().Context()
@@ -158,51 +248,5 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))
 		}
 		return nil
-	}
-}
-
-func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
-	return func(c *videostreams.Context) error {
-		// Parse params from topic
-		query, err := c.Query()
-		if err != nil {
-			err = errors.Wrap(err, "couldn't parse topic query params")
-			c.Publish(videostreams.NewErrorFrame(err))
-			return err
-		}
-		source, err := parseURLParam(query.Get("url"))
-		if err != nil {
-			c.Publish(videostreams.NewErrorFrame(err))
-			return err
-		}
-
-		// Start reading the MJPEG stream
-		ctx := c.Context()
-		r, err := mjpeg.NewReceiverFromURL(ctx, h.hc, source)
-		if err != nil {
-			err = errors.Wrapf(err, "couldn't start mjpeg receiver for %s", source)
-			c.Publish(videostreams.NewErrorFrame(err))
-			return err
-		}
-		defer r.Close()
-
-		// Read MJPEG stream parts
-		return handling.Except(
-			handling.Repeat(ctx, 0, func() (done bool, err error) {
-				// Load data
-				encodedFrame, err := r.Receive()
-				if errors.Is(err, io.EOF) {
-					return true, nil
-				}
-				if err != nil {
-					return false, errors.Wrap(err, "couldn't read mjpeg frame")
-				}
-
-				// Publish data
-				c.Publish(encodedFrame)
-				return false, nil
-			}),
-			context.Canceled,
-		)
 	}
 }

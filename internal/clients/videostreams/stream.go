@@ -5,64 +5,103 @@ package videostreams
 import (
 	"bytes"
 	"image"
-	"image/draw"
 	"image/jpeg"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
+// Metadata
+
+type Settings struct {
+	JPEGEncodeQuality int
+}
+
+type Metadata struct {
+	FromSource  map[string][]string
+	ReceiveTime time.Time
+	Operations  *OpChain
+	Settings    Settings
+}
+
+func (m *Metadata) WithOp(op Operation) *Metadata {
+	if op == Nop {
+		return m
+	}
+	return &Metadata{
+		FromSource:  m.FromSource,
+		ReceiveTime: m.ReceiveTime,
+		Operations:  m.Operations.With(op),
+		Settings:    m.Settings,
+	}
+}
+
+func (m *Metadata) WithSettings(settings Settings) *Metadata {
+	return &Metadata{
+		FromSource:  m.FromSource,
+		ReceiveTime: m.ReceiveTime,
+		Operations:  m.Operations,
+		Settings:    settings,
+	}
+}
+
+// Frame
+
 type Frame interface {
-	Time() time.Time
-	Image() (image.Image, error)
-	JPEG() ([]byte, error)
-	Err() error
+	AsImageFrame() (*ImageFrame, error)
+	AsJPEG() ([]byte, Operation, error)
+	Error() error
+}
+
+// ImageFrame
+
+type ImageFrame struct {
+	Im   image.Image
+	Meta *Metadata
+	Err  error
 }
 
 func NewErrorFrame(err error) Frame {
-	return ImageFrame{
-		Error: err,
+	return &ImageFrame{
+		Err: err,
 	}
 }
 
-type ImageFrame struct {
-	Timestamp   time.Time
-	Data        image.Image
-	JPEGQuality int
-	Error       error
+func (f *ImageFrame) AsImageFrame() (*ImageFrame, error) {
+	return f, errors.Wrap(f.Err, "stream error")
 }
 
-func (f ImageFrame) Time() time.Time {
-	return f.Timestamp
-}
-
-func (f ImageFrame) JPEG() ([]byte, error) {
-	if f.JPEGQuality < 1 || f.JPEGQuality > 100 {
-		return nil, errors.Errorf("invalid jpeg quality %d", f.JPEGQuality)
+func (f *ImageFrame) AsJPEG() ([]byte, Operation, error) {
+	quality := f.Meta.Settings.JPEGEncodeQuality
+	if quality < 1 || quality > 100 {
+		return nil, Nop, errors.Errorf("invalid jpeg quality %d", quality)
 	}
 
 	buf := new(bytes.Buffer)
-	if err := jpeg.Encode(buf, f.Data, &jpeg.Options{
-		Quality: f.JPEGQuality,
+	if err := jpeg.Encode(buf, f.Im, &jpeg.Options{
+		Quality: quality,
 	}); err != nil {
-		return nil, errors.Wrap(err, "couldn't jpeg-encode image")
+		return nil, Nop, errors.Wrap(err, "couldn't jpeg-encode image")
 	}
-	return buf.Bytes(), nil
+	return buf.Bytes(), Operationf("encode JPEG with quality %d", quality), nil
 }
 
-func (f ImageFrame) Image() (image.Image, error) {
-	return f.Data, nil
+func (f *ImageFrame) Error() error {
+	return f.Err
 }
 
-func (f ImageFrame) CopyRGBA() ImageFrame {
-	im := image.NewRGBA(f.Data.Bounds())
-	draw.Draw(im, im.Bounds(), f.Data, f.Data.Bounds().Min, draw.Src)
-	return ImageFrame{
-		Timestamp: f.Timestamp,
-		Data:      im,
+func (f *ImageFrame) WithResizeToHeight(height int) *ImageFrame {
+	return &ImageFrame{
+		Im:   ResizeToHeight(f.Im, height),
+		Meta: f.Meta.WithOp(Operationf("resize to height %d", height)),
 	}
 }
 
-func (f ImageFrame) Err() error {
-	return f.Error
+func (f *ImageFrame) WithAnnotation(annotations string, lines int) *ImageFrame {
+	output := AddAnnotationPadding(f.Im, lines, 0)
+	AnnotateTop(output, annotations, lines)
+	return &ImageFrame{
+		Im:   output,
+		Meta: f.Meta.WithOp(Operationf("annotate")),
+	}
 }

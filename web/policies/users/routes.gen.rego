@@ -101,14 +101,26 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["users", id, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /users/:id/chat/users/list"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["users", id, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_user_get(id)
+}
+
+matching_routes contains route if {
 	"MSG" == input.operation.method
-	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
-	route := "MSG /users/:id/chat/users"
+	["users", id, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /users/:id/chat/users/list"
 }
 
 allow if {
 	"MSG" == input.operation.method
-	["users", id, "chat", "users"] = split(trim_prefix(input.resource.path, "/"), "/")
+	["users", id, "chat", "users", "list"] = split(trim_prefix(input.resource.path, "/"), "/")
 }
 
 matching_routes contains route if {
