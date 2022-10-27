@@ -22,7 +22,6 @@ import (
 
 // Camera stream processing helpers
 
-// TODO: unify some code where possible
 func parseIntParam(raw, name string, defaultValue int) (parsed int, err error) {
 	parsed = defaultValue
 	if raw != "" {
