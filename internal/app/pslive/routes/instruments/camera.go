@@ -55,7 +55,7 @@ func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		const defaultHeight = 360
+		const defaultHeight = 400
 		height, err := parseIntParam(c.QueryParam("height"), "height", defaultHeight)
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse image height query parameter")

@@ -43,13 +43,13 @@
         {{$cameraFound := false}}
         {{range $camera := $instrument.Cameras}}
           {{if not $cameraFound}}
-            <turbo-frame id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/frame">
-              <img
-                class="instrument-camera-stream"
-                src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/frame.jpeg"
-                crossorigin
-              >
-            </turbo-frame>
+            <img
+              class="instrument-camera-stream"
+              src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/frame.jpeg"
+              data-controller="image-autoreload"
+              data-image-autoreload-min-interval-value="5"
+              data-image-autoreload-max-interval-value="15"
+            >
           {{end}}
           {{$cameraFound = true}}
         {{end}}
