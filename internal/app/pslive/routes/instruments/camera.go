@@ -163,7 +163,7 @@ func externalSourceFrameSender(
 			if err := handling.Except(
 				ss.SendFrame(frameError), context.Canceled, syscall.EPIPE,
 			); err != nil {
-				return false, errors.Wrap(err, "couldn't send mjpeg loading frame")
+				return false, errors.Wrap(err, "couldn't send mjpeg error frame")
 			}
 		}
 
