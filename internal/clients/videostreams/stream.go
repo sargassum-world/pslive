@@ -72,6 +72,9 @@ func (f *ImageFrame) AsImageFrame() (*ImageFrame, error) {
 }
 
 func (f *ImageFrame) AsJPEG() ([]byte, Operation, error) {
+	if f.Meta == nil {
+		return nil, Nop, errors.Errorf("unspecified jpeg quality due to missing metadata")
+	}
 	quality := f.Meta.Settings.JPEGEncodeQuality
 	if quality < 1 || quality > 100 {
 		return nil, Nop, errors.Errorf("invalid jpeg quality %d", quality)

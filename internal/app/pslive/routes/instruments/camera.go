@@ -189,9 +189,7 @@ func externalSourceFrameSender(
 		// TODO: implement image resizing
 
 		// Send output
-		if err := handling.Except(
-			ss.SendFrame(frame), context.Canceled, syscall.EPIPE,
-		); err != nil {
+		if err := handling.Except(ss.SendFrame(frame), context.Canceled, syscall.EPIPE); err != nil {
 			return false, errors.Wrap(err, "couldn't send mjpeg frame")
 		}
 		return false, nil
