@@ -45,10 +45,12 @@ func fillImage(im draw.Image, co color.Color) {
 	draw.Draw(im, im.Bounds(), &image.Uniform{co}, image.Point{}, draw.Src)
 }
 
-func newCurrentFrame(im image.Image) videostreams.ImageFrame {
-	return videostreams.ImageFrame{
-		Timestamp: time.Now(),
-		Data:      im,
+func newCurrentFrame(im image.Image) *videostreams.ImageFrame {
+	return &videostreams.ImageFrame{
+		Im: im,
+		Meta: &videostreams.Metadata{
+			ReceiveTime: time.Now(),
+		},
 	}
 }
 
@@ -95,16 +97,14 @@ func (h *Handlers) HandleRandomColorFrameGet() echo.HandlerFunc {
 
 		// Generate data
 		frame := newCurrentFrame(newUniformImage(width, height, newRandomColor()))
-		frame.JPEGQuality = quality
-		frameJPEG, err := frame.JPEG()
+		frame.Meta.Settings.JPEGEncodeQuality = quality
+		jpeg, _, err := frame.AsJPEG()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
 
 		// Produce output
-		const base = 10
-		c.Response().Header().Set("X-Timestamp", strconv.FormatInt(frame.Time().UnixMilli(), base))
-		return c.Blob(http.StatusOK, "image/jpeg", frameJPEG)
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg)
 	}
 }
 
@@ -121,7 +121,7 @@ func (h *Handlers) HandleRandomColorStreamGet() echo.HandlerFunc {
 			return errors.Wrap(err, "couldn't parse image quality query parameter")
 		}
 
-		frames := make(chan mjpeg.EncodableFrame)
+		frames := make(chan mjpeg.JPEGEncodable)
 		// TODO: also make it dependent on the server's context!
 		eg, egctx := errgroup.WithContext(c.Request().Context())
 		eg.Go(func() error {
@@ -129,7 +129,7 @@ func (h *Handlers) HandleRandomColorStreamGet() echo.HandlerFunc {
 			return handling.Repeat(egctx, interval, func() (done bool, err error) {
 				// Generate data
 				frame := newCurrentFrame(newUniformImage(width, height, newRandomColor()))
-				frame.JPEGQuality = quality
+				frame.Meta.Settings.JPEGEncodeQuality = quality
 				frames <- frame
 				return false, nil
 			})

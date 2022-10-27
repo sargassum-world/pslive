@@ -3,11 +3,9 @@ package videostreams
 import (
 	"context"
 	"fmt"
-	"image"
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -15,7 +13,6 @@ import (
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest/handling"
-	"golang.org/x/image/draw"
 
 	"github.com/sargassum-world/pslive/internal/clients/mjpeg"
 	"github.com/sargassum-world/pslive/internal/clients/videostreams"
@@ -29,35 +26,6 @@ func parseURLParam(raw string) (string, error) {
 	}
 	source, err := url.QueryUnescape(raw)
 	return source, errors.Wrapf(err, "couldn't parse source url %s", raw)
-}
-
-func annotate(
-	frame videostreams.Frame, jpegQuality int, metadata videostreams.Metadata,
-) (result videostreams.ImageFrame, err error) {
-	im, err := frame.Image()
-	if err != nil {
-		return videostreams.ImageFrame{}, errors.Wrap(err, "couldn't convert frame to image")
-	}
-	metadata.Width = im.Bounds().Max.X
-	metadata.Height = im.Bounds().Max.Y
-	metadata.Timestamp = frame.Time()
-	result = videostreams.ImageFrame{
-		Timestamp:   frame.Time(),
-		Data:        im,
-		JPEGQuality: jpegQuality,
-	}
-	output := videostreams.CopyForAnnotation(im)
-	videostreams.Annotate(output, result.Timestamp, metadata)
-	result.Data = output
-	return result, nil
-}
-
-func resize(im image.Image, height int) image.Image {
-	aspectRatio := float32(im.Bounds().Max.X) / float32(im.Bounds().Max.Y)
-	width := int(aspectRatio * float32(height))
-	output := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.ApproxBiLinear.Scale(output, output.Rect, im, im.Bounds(), draw.Over, nil)
-	return output
 }
 
 // Handlers
@@ -91,28 +59,20 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 		// Generate data
 		frame := <-frameBuffer
 		cancel()
-		if err = frame.Err(); err != nil {
-			return errors.Wrapf(err, "error with animation source")
-		}
-		im, err := frame.Image()
+		f, err := frame.AsImageFrame()
 		if err != nil {
-			return errors.Wrap(err, "couldn't convert frame to image")
+			return errors.Wrap(err, "couldn't read frame as image")
 		}
-		output := resize(im, height)
-		frame = videostreams.ImageFrame{
-			Timestamp:   frame.Time(),
-			Data:        output,
-			JPEGQuality: quality,
-		}
+		f = f.WithResizeToHeight(height)
+		f.Meta.Settings.JPEGEncodeQuality = quality
+		frame = f
 
 		// Produce output
-		frameJPEG, err := frame.JPEG()
+		jpeg, _, err := frame.AsJPEG()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
-		const base = 10
-		c.Response().Header().Set("X-Timestamp", strconv.FormatInt(frame.Time().UnixMilli(), base))
-		return c.Blob(http.StatusOK, "image/jpeg", frameJPEG)
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg)
 	}
 }
 
@@ -121,7 +81,7 @@ func externalSourceFrameSender(
 	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
-		if err = frame.Err(); err != nil {
+		if err = frame.Error(); err != nil {
 			return false, errors.Wrapf(err, "error with video source")
 		}
 
@@ -130,13 +90,19 @@ func externalSourceFrameSender(
 		// JPEG decoding/encoding in the pipeline
 		if annotated {
 			fpsCounter.Incr(1)
-			if frame, err = annotate(frame, quality, videostreams.Metadata{
+			f, err := frame.AsImageFrame()
+			if err != nil {
+				return false, errors.Wrap(err, "couldn't read frame as image")
+			}
+			f.Meta = f.Meta.WithSettings(videostreams.Settings{
+				JPEGEncodeQuality: quality,
+			})
+			metadata := videostreams.AnnotationMetadata{
 				FPSCount:  fpsCounter.Rate(),
 				FPSPeriod: fpsPeriod,
-				Quality:   quality,
-			}); err != nil {
-				return false, errors.Wrap(err, "couldn't annotate frame")
-			}
+			}.WithFrameData(f)
+			f = f.WithAnnotation(metadata.String(), 1)
+			frame = f
 		}
 		// TODO: implement image resizing
 
@@ -209,21 +175,19 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 
 		// Start reading the MJPEG stream
 		ctx := c.Context()
-		reader, closer, err := mjpeg.StartURLReader(ctx, h.hc, source)
+		r, err := mjpeg.NewReceiverFromURL(ctx, h.hc, source)
 		if err != nil {
-			err = errors.Wrapf(err, "couldn't start mjpeg reader for %s", source)
+			err = errors.Wrapf(err, "couldn't start mjpeg receiver for %s", source)
 			c.Publish(videostreams.NewErrorFrame(err))
 			return err
 		}
-		defer func() {
-			_ = closer.Close()
-		}()
+		defer r.Close()
 
 		// Read MJPEG stream parts
 		return handling.Except(
 			handling.Repeat(ctx, 0, func() (done bool, err error) {
 				// Load data
-				encodedFrame, err := mjpeg.ReadFrame(reader)
+				encodedFrame, err := r.Receive()
 				if errors.Is(err, io.EOF) {
 					return true, nil
 				}
