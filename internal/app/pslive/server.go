@@ -90,6 +90,23 @@ func (s *Server) configureLogging(e *echo.Echo) {
 	e.Logger.SetLevel(log.INFO) // TODO: set level via env var
 }
 
+// turboDriveStyle is the stylesheet which Turbo Drive tries to install for its progress bar,
+// assuming ProgressBar.animationDuration == 300, for computing a CSP hash for inline styles.
+const turboDriveStyle = `.turbo-progress-bar {
+  position: fixed;
+  display: block;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #0076ff;
+  z-index: 2147483647;
+  transition:
+    width 300ms ease-out,
+    opacity 150ms 150ms ease-in;
+  transform: translate3d(0, 0, 0);
+}
+`
+
 func (s *Server) configureHeaders(e *echo.Echo) error {
 	cspBuilder := cspbuilder.Builder{
 		Directives: map[string][]string{
@@ -106,9 +123,7 @@ func (s *Server) configureHeaders(e *echo.Echo) error {
 				[]string{
 					"'self'",
 					"'unsafe-inline'",
-					// Note: Turbo Drive tries to install a style tag for its progress bar, which leads to a CSP
-					// error. We add a hash for it here, assuming ProgressBar.animationDuration == 300:
-					"'sha512-rVca7GmrbBAUUoTnu9V9a6ZR4WAZdxFUnrsg3B+1zEsES4K6q7EW02LIXdYmE5aofGOwLySKKtOafC0hq892BA=='",
+					godest.ComputeCSPHash([]byte(turboDriveStyle)),
 				},
 				s.Inlines.ComputeCSSHashesForCSP()...,
 			),
