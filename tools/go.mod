@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/goreleaser/goreleaser v1.12.3
 	github.com/hairyhenderson/gomplate/v3 v3.11.3
-	github.com/open-policy-agent/opa v0.45.0
+	github.com/open-policy-agent/opa v0.46.1
 	mvdan.cc/gofumpt v0.4.0
 )
 
@@ -107,7 +107,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.6.1-0.20220911181249-6304a734e792 // indirect
 	github.com/chavacava/garif v0.0.0-20220630083739-93517212f375 // indirect
 	github.com/cloudflare/circl v1.2.0 // indirect
-	github.com/containerd/containerd v1.6.8 // indirect
+	github.com/containerd/containerd v1.6.9 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/daixiang0/gci v0.8.1 // indirect
@@ -299,7 +299,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.0.5 // indirect
-	github.com/prometheus/client_golang v1.13.0 // indirect
+	github.com/prometheus/client_golang v1.13.1 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
