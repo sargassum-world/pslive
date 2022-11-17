@@ -39,4 +39,10 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
 
+// Prevent noscript elements from being processed. Refer to
+// https://discuss.hotwired.dev/t/turbo-processes-noscript-children-when-merging-head/2552
+document.addEventListener('turbo:before-render', function (event) {
+  event.detail.newBody.querySelectorAll('noscript').forEach((e) => e.remove());
+});
+
 export {};
