@@ -4,7 +4,6 @@ package mjpeg
 import (
 	"bytes"
 	"context"
-	"image"
 	"image/jpeg"
 	"io"
 	"mime"
@@ -21,47 +20,35 @@ import (
 // JPEG Frame
 
 type JPEGFrame struct {
-	jpeg     []byte
-	metadata *videostreams.Metadata
-	err      error
+	Im   []byte
+	Meta *videostreams.Metadata
+	Err  error
 }
 
 func NewErrorFrame(err error) *JPEGFrame {
 	return &JPEGFrame{
-		err: err,
+		Err: err,
 	}
-}
-
-func (f *JPEGFrame) AsImage() (image.Image, videostreams.Operation, error) {
-	im, err := jpeg.Decode(bytes.NewReader(f.jpeg))
-	if err != nil {
-		return nil, videostreams.Nop, err
-	}
-	return im, "decode JPEG", nil
 }
 
 func (f *JPEGFrame) AsImageFrame() (*videostreams.ImageFrame, error) {
-	im, op, err := f.AsImage()
+	im, err := jpeg.Decode(bytes.NewReader(f.Im))
 	if err != nil {
 		return nil, err
 	}
 	return &videostreams.ImageFrame{
 		Im:   im,
-		Meta: f.Metadata().WithOp(op),
-		Err:  f.err,
+		Meta: f.Meta.WithOp("decode JPEG"),
+		Err:  f.Err,
 	}, nil
 }
 
-func (f *JPEGFrame) AsJPEG() ([]byte, videostreams.Operation, error) {
-	return f.jpeg, videostreams.Nop, f.err
-}
-
-func (f *JPEGFrame) Metadata() *videostreams.Metadata {
-	return f.metadata
+func (f *JPEGFrame) AsJPEG() ([]byte, *videostreams.Metadata, error) {
+	return f.Im, f.Meta.WithOp(videostreams.Nop), f.Err
 }
 
 func (f *JPEGFrame) Error() error {
-	return f.err
+	return f.Err
 }
 
 // Receiver
@@ -136,8 +123,8 @@ func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
 		return nil, errors.Wrap(err, "couldn't jpeg-decode stream part")
 	}
 	frame = &JPEGFrame{
-		jpeg: buffer.Bytes(),
-		metadata: &videostreams.Metadata{
+		Im: buffer.Bytes(),
+		Meta: &videostreams.Metadata{
 			FromSource:  make(map[string][]string),
 			ReceiveTime: time.Now(),
 			Operations: &videostreams.OpChain{
@@ -151,7 +138,7 @@ func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
 		if key == "Content-Type" {
 			continue
 		}
-		frame.metadata.FromSource[key] = values
+		frame.Meta.FromSource[key] = values
 	}
 	return frame, err
 }

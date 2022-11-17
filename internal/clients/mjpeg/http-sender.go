@@ -16,7 +16,7 @@ import (
 // JPEGEncodable
 
 type JPEGEncodable interface {
-	AsJPEG() ([]byte, videostreams.Operation, error)
+	AsJPEG() ([]byte, *videostreams.Metadata, error)
 }
 
 // Sender

@@ -49,7 +49,7 @@ func (m *Metadata) WithSettings(settings Settings) *Metadata {
 
 type Frame interface {
 	AsImageFrame() (*ImageFrame, error)
-	AsJPEG() ([]byte, Operation, error)
+	AsJPEG() ([]byte, *Metadata, error)
 	Error() error
 }
 
@@ -71,22 +71,22 @@ func (f *ImageFrame) AsImageFrame() (*ImageFrame, error) {
 	return f, errors.Wrap(f.Err, "stream error")
 }
 
-func (f *ImageFrame) AsJPEG() ([]byte, Operation, error) {
+func (f *ImageFrame) AsJPEG() ([]byte, *Metadata, error) {
 	if f.Meta == nil {
-		return nil, Nop, errors.Errorf("unspecified jpeg quality due to missing metadata")
+		return nil, nil, errors.Errorf("unspecified jpeg quality due to missing metadata")
 	}
 	quality := f.Meta.Settings.JPEGEncodeQuality
 	if quality < 1 || quality > 100 {
-		return nil, Nop, errors.Errorf("invalid jpeg quality %d", quality)
+		return nil, nil, errors.Errorf("invalid jpeg quality %d", quality)
 	}
 
 	buf := new(bytes.Buffer)
 	if err := jpeg.Encode(buf, f.Im, &jpeg.Options{
 		Quality: quality,
 	}); err != nil {
-		return nil, Nop, errors.Wrap(err, "couldn't jpeg-encode image")
+		return nil, nil, errors.Wrap(err, "couldn't jpeg-encode image")
 	}
-	return buf.Bytes(), Operationf("encode JPEG with quality %d", quality), nil
+	return buf.Bytes(), f.Meta.WithOp(Operationf("encode JPEG with quality %d", quality)), nil
 }
 
 func (f *ImageFrame) Error() error {
