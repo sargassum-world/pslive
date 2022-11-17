@@ -16,14 +16,12 @@
     as="style"
     rel="preload"
     href="{{appHashed "theme-light.min.css"}}"
-    turbo-data-track="reload"
   >
   <link
     id="dark-theme"
     as="style"
     rel="preload"
     href="{{appHashed "theme-dark.min.css"}}"
-    turbo-data-track="reload"
   >
   <script>{{.Inlines.JS.BundleEager}}</script>
   {{block "nav/navbar.assets" .}}{{end}}
