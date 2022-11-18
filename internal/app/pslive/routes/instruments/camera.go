@@ -248,3 +248,50 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 		return nil
 	}
 }
+
+func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
+	frameLoading := newErrorFrame(errorWidth, errorHeight, "loading stream...")
+	return func(c *videostreams.Context) error {
+		// Parse params
+		id, err := parseID(c.Param("cameraID"), "camera")
+		if err != nil {
+			return err
+		}
+		// TODO: implement a max framerate
+
+		// Run queries
+		ctx := c.Context()
+		camera, err := h.is.GetCamera(ctx, id)
+		if err != nil {
+			return errors.Wrapf(err, "camera %d not found", id)
+		}
+		sourceURL := camera.URL
+
+		// Set up output stream
+		c.Publish(frameLoading)
+
+		// Subscribe to source stream
+		source := fmt.Sprintf(
+			"/video-streams/external-stream/source.mjpeg?url=%s", url.QueryEscape(sourceURL),
+		)
+		frameBuffer := h.vsb.Subscribe(ctx, source)
+
+		// Post-process and deliver stream
+		if err := handling.Except(
+			handling.Consume(ctx, frameBuffer, func(frame videostreams.Frame) (done bool, err error) {
+				// TODO: just publish the consumed frame without base64 encoding (requires msgpack-based
+				// implementation of Action Cable)
+				base64, err := frame.AsBase64Frame()
+				if err != nil {
+					return false, errors.Wrap(err, "couldn't convert frame to base64 for action cable")
+				}
+				c.Publish(base64)
+				return false, nil
+			}),
+			context.Canceled,
+		); err != nil {
+			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))
+		}
+		return nil
+	}
+}

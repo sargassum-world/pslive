@@ -3,6 +3,7 @@ import {
   DefaultScrollableController,
   FormSubmissionController,
   HideableController,
+  ImageAutoreloadController,
   LoadFocusController,
   LoadScrollController,
   NavigationLinkController,
@@ -10,10 +11,10 @@ import {
   ThemeController,
   TurboCableStreamSourceElement,
   TurboCacheController,
-  ImageAutoreloadController,
   Turbo,
 } from '@sargassum-world/stimulated';
 import { Application } from '@hotwired/stimulus';
+import { VideoCablePlayerElement } from './sprinkles';
 
 Turbo.session.drive = true;
 
@@ -21,6 +22,9 @@ customElements.define(
   'turbo-cable-stream-source',
   TurboCableStreamSourceElement,
 );
+customElements.define('video-cable-player', VideoCablePlayerElement, {
+  extends: 'canvas',
+});
 
 const Stimulus = Application.start();
 Stimulus.register('csrf', CSRFController);

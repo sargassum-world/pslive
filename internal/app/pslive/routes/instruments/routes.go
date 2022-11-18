@@ -50,7 +50,7 @@ func New(
 }
 
 func (h *Handlers) Register(
-	er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store,
+	er godest.EchoRouter, tsr turbostreams.Router, vsr videostreams.Router, ss *session.Store,
 ) {
 	hr := auth.NewHTTPRouter(er, ss)
 	hr.GET("/instruments", h.HandleInstrumentsGet())
@@ -69,6 +69,8 @@ func (h *Handlers) Register(
 	hr.POST("/instruments/:id/cameras/:cameraID", h.HandleInstrumentCameraPost())
 	er.GET("/instruments/:id/cameras/:cameraID/frame.jpeg", h.HandleInstrumentCameraFrameGet())
 	er.GET("/instruments/:id/cameras/:cameraID/stream.mjpeg", h.HandleInstrumentCameraStreamGet())
+	vsr.SUB("/instruments/:id/cameras/:cameraID/stream.mjpeg", videostreams.EmptyHandler)
+	vsr.PUB("/instruments/:id/cameras/:cameraID/stream.mjpeg", h.HandleInstrumentCameraStreamPub())
 	hr.POST("/instruments/:id/controllers", h.HandleInstrumentControllersPost())
 	hr.POST("/instruments/:id/controllers/:controllerID", h.HandleInstrumentControllerPost())
 	tsr.SUB("/instruments/:id/controllers/:controllerID/pump", turbostreams.EmptyHandler)

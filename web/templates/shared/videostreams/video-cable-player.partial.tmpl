@@ -1,0 +1,16 @@
+<turbo-frame id="{{.}}">
+  <noscript>
+    <img class="instrument-camera-stream" src="{{.}}.mjpeg">
+  </noscript>
+  <canvas is="video-cable-player"
+    cable-route="/video-cable"
+    channel="Video::StreamsChannel"
+    name="{{.}}.mjpeg"
+    integrity="{{signVideoStream (print . ".mjpeg")}}"
+    csrf-token=""
+    data-csrf-route="/csrf"
+    class="instrument-camera-stream"
+    data-turbo-cache="false"
+  >
+  </canvas>
+</turbo-frame>

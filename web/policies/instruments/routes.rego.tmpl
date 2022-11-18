@@ -53,6 +53,13 @@ in_scope if {
 		coll.Slice "GET" "/instruments/:id/cameras/:camera_id/stream.mjpeg"
 		"allow_camera_get(id, camera_id)"
 	)
+	(
+		coll.Slice "SUB" "/instruments/:id/cameras/:camera_id/stream.mjpeg"
+		"allow_camera_get(id, camera_id)"
+	)
+	(
+		coll.Slice "UNSUB" "/instruments/:id/cameras/:camera_id/stream.mjpeg"
+	)
 	(coll.Slice "POST" "/instruments/:id/controllers" "allow_instrument_post(input.subject, id)")
 	(
 		coll.Slice "POST" "/instruments/:id/controllers/:controller_id"

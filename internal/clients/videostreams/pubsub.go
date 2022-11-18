@@ -51,6 +51,10 @@ func NewBroker(logger pubsub.Logger) *Broker {
 	}
 }
 
+func (b *Broker) Hub() *Hub {
+	return b.broker.Hub()
+}
+
 func (b *Broker) PUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return b.broker.Add(pubsub.MethodPub, topic, h, m...)
 }
