@@ -98,13 +98,13 @@ func (h *Handlers) HandleRandomColorFrameGet() echo.HandlerFunc {
 		// Generate data
 		frame := newCurrentFrame(newUniformImage(width, height, newRandomColor()))
 		frame.Meta.Settings.JPEGEncodeQuality = quality
-		jpeg, _, err := frame.AsJPEG()
+		jpeg, err := frame.AsJPEGFrame()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
 
 		// Produce output
-		return c.Blob(http.StatusOK, "image/jpeg", jpeg)
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg.Im)
 	}
 }
 
@@ -121,7 +121,7 @@ func (h *Handlers) HandleRandomColorStreamGet() echo.HandlerFunc {
 			return errors.Wrap(err, "couldn't parse image quality query parameter")
 		}
 
-		frames := make(chan mjpeg.JPEGEncodable)
+		frames := make(chan videostreams.Frame)
 		// TODO: also make it dependent on the server's context!
 		eg, egctx := errgroup.WithContext(c.Request().Context())
 		eg.Go(func() error {
@@ -136,7 +136,7 @@ func (h *Handlers) HandleRandomColorStreamGet() echo.HandlerFunc {
 		})
 		eg.Go(func() error {
 			// Produce output
-			return mjpeg.SendStream(egctx, c.Response().Writer, frames)
+			return mjpeg.SendFrameStream(egctx, c.Response().Writer, frames)
 		})
 		if err := handling.Except(eg.Wait(), context.Canceled, syscall.EPIPE); err != nil {
 			return err

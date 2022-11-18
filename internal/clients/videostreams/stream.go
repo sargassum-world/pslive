@@ -49,7 +49,7 @@ func (m *Metadata) WithSettings(settings Settings) *Metadata {
 
 type Frame interface {
 	AsImageFrame() (*ImageFrame, error)
-	AsJPEG() ([]byte, *Metadata, error)
+	AsJPEGFrame() (*JPEGFrame, error)
 	Error() error
 }
 
@@ -71,22 +71,25 @@ func (f *ImageFrame) AsImageFrame() (*ImageFrame, error) {
 	return f, errors.Wrap(f.Err, "stream error")
 }
 
-func (f *ImageFrame) AsJPEG() ([]byte, *Metadata, error) {
+func (f *ImageFrame) AsJPEGFrame() (*JPEGFrame, error) {
 	if f.Meta == nil {
-		return nil, nil, errors.Errorf("unspecified jpeg quality due to missing metadata")
+		return nil, errors.Errorf("unspecified jpeg quality due to missing metadata")
 	}
 	quality := f.Meta.Settings.JPEGEncodeQuality
 	if quality < 1 || quality > 100 {
-		return nil, nil, errors.Errorf("invalid jpeg quality %d", quality)
+		return nil, errors.Errorf("invalid jpeg quality %d", quality)
 	}
 
 	buf := new(bytes.Buffer)
 	if err := jpeg.Encode(buf, f.Im, &jpeg.Options{
 		Quality: quality,
 	}); err != nil {
-		return nil, nil, errors.Wrap(err, "couldn't jpeg-encode image")
+		return nil, errors.Wrap(err, "couldn't jpeg-encode image")
 	}
-	return buf.Bytes(), f.Meta.WithOp(Operationf("encode JPEG with quality %d", quality)), nil
+	return &JPEGFrame{
+		Im:   buf.Bytes(),
+		Meta: f.Meta.WithOp(Operationf("encode as JPEG with quality %d", quality)),
+	}, nil
 }
 
 func (f *ImageFrame) Error() error {
@@ -107,4 +110,39 @@ func (f *ImageFrame) WithAnnotation(annotations string, lines int) *ImageFrame {
 		Im:   output,
 		Meta: f.Meta.WithOp(Operationf("annotate")),
 	}
+}
+
+// JPEG Frame
+
+type JPEGFrame struct {
+	Im   []byte
+	Meta *Metadata
+	Err  error
+}
+
+func (f *JPEGFrame) AsImageFrame() (*ImageFrame, error) {
+	im, err := jpeg.Decode(bytes.NewReader(f.Im))
+	if err != nil {
+		return nil, err
+	}
+	return &ImageFrame{
+		Im:   im,
+		Meta: f.Meta.WithOp("decode JPEG"),
+		Err:  f.Err,
+	}, nil
+}
+
+func (f *JPEGFrame) AsJPEGFrame() (*JPEGFrame, error) {
+	return f, f.Err
+}
+
+func (f *JPEGFrame) AsBase64Frame() (*Base64Frame, error) {
+	return &Base64Frame{
+		Im:   base64.StdEncoding.EncodeToString(f.Im),
+		Meta: f.Meta.WithOp("encode as base64"),
+	}, nil
+}
+
+func (f *JPEGFrame) Error() error {
+	return f.Err
 }

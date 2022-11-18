@@ -1,10 +1,9 @@
-// Package mjpeg provides receiving and sending of MJPEG streams over HTTP
+// Package mjpeg provides functionality for receiving and sending MJPEG streams over HTTP
 package mjpeg
 
 import (
 	"bytes"
 	"context"
-	"image/jpeg"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -16,40 +15,6 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
-
-// JPEG Frame
-
-type JPEGFrame struct {
-	Im   []byte
-	Meta *videostreams.Metadata
-	Err  error
-}
-
-func NewErrorFrame(err error) *JPEGFrame {
-	return &JPEGFrame{
-		Err: err,
-	}
-}
-
-func (f *JPEGFrame) AsImageFrame() (*videostreams.ImageFrame, error) {
-	im, err := jpeg.Decode(bytes.NewReader(f.Im))
-	if err != nil {
-		return nil, err
-	}
-	return &videostreams.ImageFrame{
-		Im:   im,
-		Meta: f.Meta.WithOp("decode JPEG"),
-		Err:  f.Err,
-	}, nil
-}
-
-func (f *JPEGFrame) AsJPEG() ([]byte, *videostreams.Metadata, error) {
-	return f.Im, f.Meta.WithOp(videostreams.Nop), f.Err
-}
-
-func (f *JPEGFrame) Error() error {
-	return f.Err
-}
 
 // Receiver
 
@@ -105,7 +70,7 @@ func (r *Receiver) Close() {
 	}
 }
 
-func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
+func (r *Receiver) Receive() (frame *videostreams.JPEGFrame, err error) {
 	part, err := r.reader.NextPart()
 	if err == io.EOF {
 		return nil, err
@@ -122,7 +87,7 @@ func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
 	if _, err = io.Copy(buffer, part); err != nil {
 		return nil, errors.Wrap(err, "couldn't jpeg-decode stream part")
 	}
-	frame = &JPEGFrame{
+	frame = &videostreams.JPEGFrame{
 		Im: buffer.Bytes(),
 		Meta: &videostreams.Metadata{
 			FromSource:  make(map[string][]string),
