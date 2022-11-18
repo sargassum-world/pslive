@@ -6,15 +6,13 @@ import {
   fetchCSRFToken,
 } from '@sargassum-world/stimulated';
 
-// FIXME: we should key the consumer by the provided URL, so that we have different consumers for
-// different values of cable-route!
-let consumer;
+let consumers = {};
 
 function getConsumer(url) {
-  if (consumer === undefined) {
-    consumer = createConsumer(url === null ? undefined : url);
+  if (consumers[url] === undefined) {
+    consumers[url] = createConsumer(url === null ? undefined : url);
   }
-  return consumer;
+  return consumers[url];
 }
 
 export default class VideoCablePlayerElement extends HTMLCanvasElement {

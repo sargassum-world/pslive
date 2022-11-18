@@ -3,7 +3,7 @@
     <img class="instrument-camera-stream" src="{{.}}.mjpeg">
   </noscript>
   <canvas is="video-cable-player"
-    cable-route="/video-cable"
+    cable-route="/video-cable?cid={{queryEscape (print . ".mjpeg")}}"
     channel="Video::StreamsChannel"
     name="{{.}}.mjpeg"
     integrity="{{signVideoStream (print . ".mjpeg")}}"
