@@ -37,7 +37,7 @@ func NewReceiverFromResponse(res *http.Response) (*Receiver, error) {
 	if !strings.HasPrefix(contentType, "multipart/") {
 		return nil, errors.Errorf("unexpected stream content type %s", contentType)
 	}
-	receiver := NewReceiver(res.Body, param["boundary"])
+	receiver := NewReceiver(res.Body, strings.TrimPrefix(param["boundary"], "--"))
 	receiver.closer = res.Body.Close
 	return receiver, nil
 }
