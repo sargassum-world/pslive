@@ -282,6 +282,9 @@ func (s *Server) Run(e *echo.Echo) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
+	// FIXME: e.Shutdown calls e.Server.Shutdown, which doesn't wait for WebSocket connections. When
+	// starting Echo, we need to call e.Server.RegisterOnShutdown with a function to gracefully close
+	// WebSocket connections!
 	if errEcho := e.Shutdown(ctx); errEcho != nil {
 		s.Globals.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
 		err = errEcho

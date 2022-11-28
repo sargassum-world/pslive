@@ -44,7 +44,7 @@ func New(
 		tsb: tsb,
 		vsb: vsb,
 		wsu: websocket.Upgrader{
-			Subprotocols: []string{actioncable.ActionCableV1MsgpackSubprotocol},
+			Subprotocols: actioncable.SupportedSubprotocols(),
 			// TODO: add parameters to the upgrader as needed
 		},
 		l: l,

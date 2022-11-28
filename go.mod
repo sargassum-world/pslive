@@ -17,7 +17,7 @@ require (
 	github.com/ory/client-go v0.2.0-alpha.60
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.4.3
+	github.com/sargassum-world/godest v0.5.0
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/image v0.1.0
 	golang.org/x/sync v0.1.0
@@ -59,7 +59,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.1.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect

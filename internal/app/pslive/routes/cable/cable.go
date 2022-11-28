@@ -21,7 +21,8 @@ import (
 func serveWSConn(
 	r *http.Request, wsc *websocket.Conn, sess *sessions.Session,
 	channelFactories map[string]actioncable.ChannelFactory,
-	cc *session.CSRFTokenChecker, acc *actioncable.Cancellers, l godest.Logger,
+	cc *session.CSRFTokenChecker, acc *actioncable.Cancellers, wsu websocket.Upgrader,
+	l godest.Logger,
 ) {
 	conn, err := actioncable.Upgrade(wsc, actioncable.NewChannelDispatcher(
 		channelFactories, make(map[string]actioncable.Channel),
@@ -31,17 +32,26 @@ func serveWSConn(
 	))
 	// We can't return errors after the HTTP request is upgraded to a websocket, so we just log them
 	if err != nil {
-		l.Error(errors.Wrap(err, "couldn't upgrade websocket connection to action cable connection"))
+		l.Error(errors.Wrapf(
+			err,
+			"couldn't upgrade websocket connection to action cable connection "+
+				"(client requested subprotocols %v, upgrader supports subprotocols %v)",
+			websocket.Subprotocols(r),
+			wsu.Subprotocols,
+		))
+		wsc.Close()
 		return
 	}
+
 	ctx, cancel := context.WithCancel(r.Context())
 	acc.Add(sess.ID, cancel)
 	serr := handling.Except(conn.Serve(ctx), context.Canceled)
-	// We can't return errors after the HTTP request is upgraded to a websocket, so we just log them
 	if serr != nil {
+		// We can't return errors after the HTTP request is upgraded to a websocket, so we just log them
 		l.Error(serr)
 	}
 	if cerr := conn.Close(serr); err != nil {
+		// We can't return errors after the HTTP request is upgraded to a websocket, so we just log them
 		l.Error(cerr)
 	}
 }
@@ -60,7 +70,7 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 			map[string]actioncable.ChannelFactory{
 				turbostreams.ChannelName: turbostreams.NewChannelFactory(h.tsb, sess.ID, h.acs.Check),
 			},
-			h.cc, h.acc, h.l,
+			h.cc, h.acc, h.wsu, h.l,
 		)
 		return nil
 	}
@@ -81,7 +91,7 @@ func (h *Handlers) HandleVideoCableGet() auth.HTTPHandlerFuncWithSession {
 			map[string]actioncable.ChannelFactory{
 				videostreams.ChannelName: videostreams.NewChannelFactory(h.vsb, sess.ID, h.l, h.acs.Check),
 			},
-			h.cc, h.acc, h.l,
+			h.cc, h.acc, h.wsu, h.l,
 		)
 		return nil
 	}
