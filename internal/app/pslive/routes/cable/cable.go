@@ -39,7 +39,9 @@ func serveWSConn(
 			websocket.Subprotocols(r),
 			wsu.Subprotocols,
 		))
-		wsc.Close()
+		if cerr := wsc.Close(); cerr != nil {
+			l.Error(errors.Wrapf(cerr, "couldn't close websocket"))
+		}
 		return
 	}
 

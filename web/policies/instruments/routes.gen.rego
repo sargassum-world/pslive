@@ -227,6 +227,29 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /instruments/:id/cameras/:camera_id/stream.mjpeg"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_camera_get(id, camera_id)
+}
+
+matching_routes contains route if {
+	"UNSUB" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "UNSUB /instruments/:id/cameras/:camera_id/stream.mjpeg"
+}
+
+allow if {
+	"UNSUB" == input.operation.method
+	["instruments", id, "cameras", camera_id, "stream.mjpeg"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
 	"POST" == input.operation.method
 	["instruments", id, "controllers"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "POST /instruments/:id/controllers"
