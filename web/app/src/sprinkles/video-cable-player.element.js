@@ -1,30 +1,17 @@
-// This is adapted from the MIT-licensed library @hotwired/turbo-rails.
-import { createConsumer, logger } from '@rails/actioncable';
 import {
-  getCSRFToken,
-  setCSRFToken,
-  fetchCSRFToken,
+  getActionCableConsumer,
+  attachCSRFToken,
+  makeWebSocketURL,
 } from '@sargassum-world/stimulated';
-
-let consumers = {};
-
-function getConsumer(url) {
-  if (consumers[url] === undefined) {
-    consumers[url] = createConsumer(url === null ? undefined : url);
-  }
-  return consumers[url];
-}
 
 export default class VideoCablePlayerElement extends HTMLCanvasElement {
   async connectedCallback() {
-    if (this.hasValidCSRFToken()) {
-      setCSRFToken(this.getAttribute('csrf-token'));
-    } else if (
-      this.hasAttribute('csrf-token') &&
-      this.hasAttribute('data-csrf-route')
-    ) {
-      await this.addCSRFToken();
+    if (document.documentElement.hasAttribute('data-turbo-preview')) {
+      return;
     }
+    await attachCSRFToken(this);
+
+    // Initialize channel
     const channel = {
       channel: this.getAttribute('channel'),
       name: this.getAttribute('name'),
@@ -33,14 +20,17 @@ export default class VideoCablePlayerElement extends HTMLCanvasElement {
     if (this.hasAttribute('csrf-token')) {
       channel.csrfToken = this.getAttribute('csrf-token');
     }
-    this.subscription = getConsumer(
-      this.getAttribute('cable-route'),
-    ).subscriptions.create(channel, {
+
+    // Subscribe
+    const consumer = getActionCableConsumer(
+      makeWebSocketURL(this.getAttribute('cable-route')),
+      // Warning: VideoCablePlayerElement assumes the use of a format which can serialize byte
+      // arrays, such as MessagePack - but not JSON!
+      this.getAttribute('websocket-subprotocol'),
+    );
+    this.subscription = consumer.subscriptions.create(channel, {
       received: this.dispatchMessageEvent.bind(this),
     });
-    if (this.hasAttribute('logging')) {
-      logger.enabled = true;
-    }
   }
 
   disconnectedCallback() {
@@ -48,36 +38,11 @@ export default class VideoCablePlayerElement extends HTMLCanvasElement {
   }
 
   async dispatchMessageEvent(data) {
-    const decoded = atob(data);
-    const array = new Uint8Array(decoded.length);
-    for (var i = 0; i < decoded.length; i++) {
-      array[i] = decoded.charCodeAt(i);
-    }
     const bitmap = await createImageBitmap(
-      new Blob([array], { type: 'image/jpeg' }),
+      new Blob([data], { type: 'image/jpeg' }),
     );
     this.width = bitmap.width;
     this.height = bitmap.height;
     this.getContext('2d').drawImage(bitmap, 0, 0);
-  }
-
-  async addCSRFToken() {
-    if (this.hasValidCSRFToken() || this.setCSRFToken()) {
-      return;
-    }
-    await fetchCSRFToken(this.getAttribute('data-csrf-route'));
-    this.setCSRFToken();
-  }
-
-  setCSRFToken() {
-    if (getCSRFToken() === null) {
-      return false;
-    }
-    this.setAttribute('csrf-token', getCSRFToken());
-    return this.hasValidCSRFToken();
-  }
-
-  hasValidCSRFToken() {
-    return this.getAttribute('csrf-token').length > 0;
   }
 }

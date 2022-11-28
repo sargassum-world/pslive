@@ -8,7 +8,8 @@
     name="{{.}}.mjpeg"
     integrity="{{signVideoStream (print . ".mjpeg")}}"
     csrf-token=""
-    data-csrf-route="/csrf"
+    csrf-route="/csrf"
+    websocket-subprotocol="actioncable-v1-msgpack"
     class="instrument-camera-stream"
     data-turbo-cache="false"
   >

@@ -71,11 +71,11 @@ func (b *Broker) Use(middleware ...MiddlewareFunc) {
 	b.broker.Use(middleware...)
 }
 
-type BroadcastReceiver func(ctx context.Context, frames []Frame) (ok bool)
+type BroadcastReceiver func(ctx context.Context, frames []Frame) error
 
 func (b *Broker) subscribe(
 	ctx context.Context, topic string, broadcastHandler BroadcastReceiver,
-) (unsubscriber func(), finished <-chan struct{}) {
+) (finished <-chan struct{}) {
 	// we keep this private because we're handling frames and we don't want a slow consumer to block
 	// every other consumer; the public Subscribe method drops frames for busy consumers
 	return b.broker.Subscribe(
@@ -91,8 +91,8 @@ func (b *Broker) subscribe(
 func (b *Broker) Subscribe(ctx context.Context, topic string) <-chan Frame {
 	buffer := make(chan Frame, 1)
 	wg := sync.WaitGroup{}
-	unsubscribe, finished := b.subscribe(
-		ctx, topic, func(ctx context.Context, frames []Frame) (ok bool) {
+	finished := b.subscribe(
+		ctx, topic, func(ctx context.Context, frames []Frame) error {
 			wg.Add(1)
 			select {
 			case buffer <- frames[len(frames)-1]:
@@ -101,15 +101,11 @@ func (b *Broker) Subscribe(ctx context.Context, topic string) <-chan Frame {
 				// TODO: update a frames-dropped-per-sec counter
 			}
 			wg.Done()
-			return true
+			return nil
 		},
 	)
 	go func() {
-		select {
-		case <-ctx.Done():
-		case <-finished:
-		}
-		unsubscribe()
+		<-finished
 		wg.Wait() // prevent closing channel with pending sends, which is a data race
 		close(buffer)
 	}()

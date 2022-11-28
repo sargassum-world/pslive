@@ -34,7 +34,7 @@ type Globals struct {
 	AuthzChecker    *auth.AuthzChecker
 
 	ACCancellers *actioncable.Cancellers
-	TSSigner     turbostreams.Signer
+	ACSigner     actioncable.Signer
 	TSBroker     *turbostreams.Broker
 
 	Instruments   *instruments.Store
@@ -85,11 +85,11 @@ func NewGlobals(
 	g.AuthzChecker = auth.NewAuthzChecker(g.DB, opc)
 
 	g.ACCancellers = actioncable.NewCancellers()
-	tssConfig, err := turbostreams.GetSignerConfig()
+	acsConfig, err := actioncable.GetSignerConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up turbo streams signer config")
+		return nil, errors.Wrap(err, "couldn't set up action cable signer config")
 	}
-	g.TSSigner = turbostreams.NewSigner(tssConfig)
+	g.ACSigner = actioncable.NewSigner(acsConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
 	g.Instruments = instruments.NewStore(g.DB)

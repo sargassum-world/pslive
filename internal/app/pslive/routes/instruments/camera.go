@@ -279,13 +279,15 @@ func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
 		// Post-process and deliver stream
 		if err := handling.Except(
 			handling.Consume(ctx, frameBuffer, func(frame videostreams.Frame) (done bool, err error) {
-				// TODO: just publish the consumed frame without base64 encoding (requires msgpack-based
-				// implementation of Action Cable)
-				base64, err := frame.AsBase64Frame()
+				// Since the source stream emits JPEG frames, we can safely assume that no further JPEG
+				// encoding is needed after we call c.Publish - but we check here anyways because it's
+				// cheap to check, and we can ensure that we only perform one JPEG encoding regardless of
+				// the number of Video Streams subscribers (i.e. the number of web browsers).
+				jpegFrame, err := frame.AsJPEGFrame()
 				if err != nil {
-					return false, errors.Wrap(err, "couldn't convert frame to base64 for action cable")
+					return false, errors.Wrap(err, "couldn't convert frame to JPEG for action cable")
 				}
-				c.Publish(base64)
+				c.Publish(jpegFrame)
 				return false, nil
 			}),
 			context.Canceled,

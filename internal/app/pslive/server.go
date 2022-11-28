@@ -68,7 +68,7 @@ func NewServer(logger godest.Logger) (s *Server, err error) {
 	if s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
-			s.Globals.TSSigner.Sign,
+			s.Globals.ACSigner.Sign,
 		),
 	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make template renderer")

@@ -46,7 +46,7 @@ func (h *Handlers) Register(
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
 	cable.New(
-		h.r, ss, h.globals.CSRFChecker, acc, h.globals.TSSigner, h.globals.TSBroker, vsb, l,
+		h.r, ss, h.globals.CSRFChecker, acc, h.globals.ACSigner, h.globals.TSBroker, vsb, l,
 	).Register(er)
 	home.New(h.r, oc, is, ps).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)

@@ -164,7 +164,7 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 	return func(c *videostreams.Context) error {
 		// Parse params from topic
-		query, err := c.Query()
+		query, err := c.QueryParams()
 		if err != nil {
 			err = errors.Wrap(err, "couldn't parse topic query params")
 			c.Publish(videostreams.NewErrorFrame(err))

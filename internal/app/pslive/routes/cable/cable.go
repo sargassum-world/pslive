@@ -23,12 +23,17 @@ func serveWSConn(
 	channelFactories map[string]actioncable.ChannelFactory,
 	cc *session.CSRFTokenChecker, acc *actioncable.Cancellers, l godest.Logger,
 ) {
-	conn := actioncable.Upgrade(wsc, actioncable.WithChannels(
+	conn, err := actioncable.Upgrade(wsc, actioncable.NewChannelDispatcher(
 		channelFactories, make(map[string]actioncable.Channel),
 		actioncable.WithCSRFTokenChecker(func(token string) error {
 			return cc.Check(r, token)
 		}),
 	))
+	// We can't return errors after the HTTP request is upgraded to a websocket, so we just log them
+	if err != nil {
+		l.Error(errors.Wrap(err, "couldn't upgrade websocket connection to action cable connection"))
+		return
+	}
 	ctx, cancel := context.WithCancel(r.Context())
 	acc.Add(sess.ID, cancel)
 	serr := handling.Except(conn.Serve(ctx), context.Canceled)
@@ -36,8 +41,8 @@ func serveWSConn(
 	if serr != nil {
 		l.Error(serr)
 	}
-	if err := conn.Close(serr); err != nil {
-		l.Error(err)
+	if cerr := conn.Close(serr); err != nil {
+		l.Error(cerr)
 	}
 }
 
@@ -53,7 +58,7 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 		serveWSConn(
 			c.Request(), wsc, sess,
 			map[string]actioncable.ChannelFactory{
-				turbostreams.ChannelName: turbostreams.NewChannelFactory(h.tsb, sess.ID, h.tss.Check),
+				turbostreams.ChannelName: turbostreams.NewChannelFactory(h.tsb, sess.ID, h.acs.Check),
 			},
 			h.cc, h.acc, h.l,
 		)
@@ -74,7 +79,7 @@ func (h *Handlers) HandleVideoCableGet() auth.HTTPHandlerFuncWithSession {
 		serveWSConn(
 			c.Request(), wsc, sess,
 			map[string]actioncable.ChannelFactory{
-				videostreams.ChannelName: videostreams.NewChannelFactory(h.vsb, sess.ID, h.l, h.tss.Check),
+				videostreams.ChannelName: videostreams.NewChannelFactory(h.vsb, sess.ID, h.l, h.acs.Check),
 			},
 			h.cc, h.acc, h.l,
 		)

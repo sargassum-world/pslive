@@ -51,7 +51,6 @@ func (m *Metadata) WithSettings(settings Settings) *Metadata {
 type Frame interface {
 	AsImageFrame() (*ImageFrame, error)
 	AsJPEGFrame() (*JPEGFrame, error)
-	AsBase64Frame() (*Base64Frame, error)
 	Error() error
 }
 
