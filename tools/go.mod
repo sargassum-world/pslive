@@ -3,7 +3,7 @@ module github.com/sargassum-world/pslive/build
 go 1.19
 
 require (
-	github.com/deepmap/oapi-codegen v1.12.2
+	github.com/deepmap/oapi-codegen v1.12.3
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/goreleaser/goreleaser v1.13.0
 	github.com/hairyhenderson/gomplate/v3 v3.11.3
