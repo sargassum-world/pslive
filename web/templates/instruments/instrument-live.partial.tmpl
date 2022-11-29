@@ -11,11 +11,10 @@
   {{range $camera := $instrument.Cameras}}
     <div class="section-card wide-card">
       {{if eq $camera.Protocol "mjpeg"}}
-        <img
-          id="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/stream"
-          class="instrument-camera-stream"
-          src="/instruments/{{$instrument.ID}}/cameras/{{$camera.ID}}/stream.mjpeg"
-        >
+        {{
+          template "shared/videostreams/video-cable-player.partial.tmpl"
+          (print "/instruments/" $instrument.ID "/cameras/" $camera.ID "/stream")
+        }}
       {{else}}
         <article class="message is-danger">
           <div class="message-header">

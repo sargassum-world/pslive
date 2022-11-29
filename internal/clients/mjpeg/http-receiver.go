@@ -1,11 +1,9 @@
-// Package mjpeg provides receiving and sending of MJPEG streams over HTTP
+// Package mjpeg provides functionality for receiving and sending MJPEG streams over HTTP
 package mjpeg
 
 import (
 	"bytes"
 	"context"
-	"image"
-	"image/jpeg"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -17,52 +15,6 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
-
-// JPEG Frame
-
-type JPEGFrame struct {
-	jpeg     []byte
-	metadata *videostreams.Metadata
-	err      error
-}
-
-func NewErrorFrame(err error) *JPEGFrame {
-	return &JPEGFrame{
-		err: err,
-	}
-}
-
-func (f *JPEGFrame) AsImage() (image.Image, videostreams.Operation, error) {
-	im, err := jpeg.Decode(bytes.NewReader(f.jpeg))
-	if err != nil {
-		return nil, videostreams.Nop, err
-	}
-	return im, "decode JPEG", nil
-}
-
-func (f *JPEGFrame) AsImageFrame() (*videostreams.ImageFrame, error) {
-	im, op, err := f.AsImage()
-	if err != nil {
-		return nil, err
-	}
-	return &videostreams.ImageFrame{
-		Im:   im,
-		Meta: f.Metadata().WithOp(op),
-		Err:  f.err,
-	}, nil
-}
-
-func (f *JPEGFrame) AsJPEG() ([]byte, videostreams.Operation, error) {
-	return f.jpeg, videostreams.Nop, f.err
-}
-
-func (f *JPEGFrame) Metadata() *videostreams.Metadata {
-	return f.metadata
-}
-
-func (f *JPEGFrame) Error() error {
-	return f.err
-}
 
 // Receiver
 
@@ -85,7 +37,7 @@ func NewReceiverFromResponse(res *http.Response) (*Receiver, error) {
 	if !strings.HasPrefix(contentType, "multipart/") {
 		return nil, errors.Errorf("unexpected stream content type %s", contentType)
 	}
-	receiver := NewReceiver(res.Body, param["boundary"])
+	receiver := NewReceiver(res.Body, strings.TrimPrefix(param["boundary"], "--"))
 	receiver.closer = res.Body.Close
 	return receiver, nil
 }
@@ -118,7 +70,7 @@ func (r *Receiver) Close() {
 	}
 }
 
-func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
+func (r *Receiver) Receive() (frame *videostreams.JPEGFrame, err error) {
 	part, err := r.reader.NextPart()
 	if err == io.EOF {
 		return nil, err
@@ -135,9 +87,9 @@ func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
 	if _, err = io.Copy(buffer, part); err != nil {
 		return nil, errors.Wrap(err, "couldn't jpeg-decode stream part")
 	}
-	frame = &JPEGFrame{
-		jpeg: buffer.Bytes(),
-		metadata: &videostreams.Metadata{
+	frame = &videostreams.JPEGFrame{
+		Im: buffer.Bytes(),
+		Meta: &videostreams.Metadata{
 			FromSource:  make(map[string][]string),
 			ReceiveTime: time.Now(),
 			Operations: &videostreams.OpChain{
@@ -151,7 +103,7 @@ func (r *Receiver) Receive() (frame *JPEGFrame, err error) {
 		if key == "Content-Type" {
 			continue
 		}
-		frame.metadata.FromSource[key] = values
+		frame.Meta.FromSource[key] = values
 	}
 	return frame, err
 }

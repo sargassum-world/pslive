@@ -68,7 +68,7 @@ func NewServer(logger godest.Logger) (s *Server, err error) {
 	if s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
-			s.Globals.TSSigner.Sign,
+			s.Globals.ACSigner.Sign,
 		),
 	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make template renderer")
@@ -282,6 +282,9 @@ func (s *Server) Run(e *echo.Echo) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
+	// FIXME: e.Shutdown calls e.Server.Shutdown, which doesn't wait for WebSocket connections. When
+	// starting Echo, we need to call e.Server.RegisterOnShutdown with a function to gracefully close
+	// WebSocket connections!
 	if errEcho := e.Shutdown(ctx); errEcho != nil {
 		s.Globals.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
 		err = errEcho

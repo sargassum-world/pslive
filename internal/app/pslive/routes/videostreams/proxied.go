@@ -71,11 +71,11 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 		frame = f
 
 		// Produce output
-		jpeg, _, err := frame.AsJPEG()
+		jpeg, err := frame.AsJPEGFrame()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
-		return c.Blob(http.StatusOK, "image/jpeg", jpeg)
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg.Im)
 	}
 }
 
@@ -164,15 +164,15 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 	return func(c *videostreams.Context) error {
 		// Parse params from topic
-		query, err := c.Query()
+		query, err := c.QueryParams()
 		if err != nil {
 			err = errors.Wrap(err, "couldn't parse topic query params")
-			c.Publish(mjpeg.NewErrorFrame(err))
+			c.Publish(videostreams.NewErrorFrame(err))
 			return err
 		}
 		source, err := parseURLParam(query.Get("url"))
 		if err != nil {
-			c.Publish(mjpeg.NewErrorFrame(err))
+			c.Publish(videostreams.NewErrorFrame(err))
 			return err
 		}
 
@@ -181,7 +181,7 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 		r, err := mjpeg.NewReceiverFromURL(ctx, h.hc, source)
 		if err != nil {
 			err = errors.Wrapf(err, "couldn't start mjpeg receiver for %s", source)
-			c.Publish(mjpeg.NewErrorFrame(err))
+			c.Publish(videostreams.NewErrorFrame(err))
 			return err
 		}
 		defer r.Close()

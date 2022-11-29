@@ -68,20 +68,61 @@ const (
 )
 
 func newErrorJPEG(width, height int, message string) []byte {
-	output, _, err := newErrorFrame(
+	frame, err := newErrorFrame(
 		width, height, message,
-	).AsJPEG()
+	).AsJPEGFrame()
 	if err != nil {
 		panic(err)
 	}
-	return output
+	return frame.Im
 }
 
-var (
-	jpegError    = newErrorJPEG(errorWidth, errorHeight, "stream failed")
-	frameError   = newErrorFrame(errorWidth, errorHeight, "stream failed")
-	frameLoading = newErrorFrame(errorWidth, errorHeight, "loading stream...")
-)
+var jpegError = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+
+// Sending helpers
+
+func externalSourceFrameSender(
+	ss *mjpeg.StreamSender, annotated bool, quality int,
+	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
+) handling.Consumer[videostreams.Frame] {
+	return func(frame videostreams.Frame) (done bool, err error) {
+		if err = frame.Error(); err != nil {
+			if herr := handling.Except(
+				ss.Send(jpegError), context.Canceled, syscall.EPIPE,
+			); herr != nil {
+				return false, errors.Wrap(err, "couldn't send mjpeg error frame")
+			}
+			return false, err
+		}
+
+		// Generate output
+		// Note: without annotation the frame passes through directly, potentially without any
+		// JPEG decoding/encoding in the pipeline
+		if annotated {
+			fpsCounter.Incr(1)
+			f, err := frame.AsImageFrame()
+			if err != nil {
+				return false, errors.Wrap(err, "couldn't read frame as image")
+			}
+			f.Meta = f.Meta.WithSettings(videostreams.Settings{
+				JPEGEncodeQuality: quality,
+			})
+			metadata := videostreams.AnnotationMetadata{
+				FPSCount:  fpsCounter.Rate(),
+				FPSPeriod: fpsPeriod,
+			}.WithFrameData(f)
+			f = f.WithAnnotation(metadata.String(), 1)
+			frame = f
+		}
+		// TODO: implement image resizing
+
+		// Send output
+		if err := handling.Except(ss.SendFrame(frame), context.Canceled, syscall.EPIPE); err != nil {
+			return false, errors.Wrap(err, "couldn't send mjpeg frame")
+		}
+		return false, nil
+	}
+}
 
 // Handlers
 
@@ -146,58 +187,16 @@ func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 		frame = f
 
 		// Produce output
-		jpeg, _, err := frame.AsJPEG()
+		jpeg, err := frame.AsJPEGFrame()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
-		return c.Blob(http.StatusOK, "image/jpeg", jpeg)
-	}
-}
-
-func externalSourceFrameSender(
-	ss *mjpeg.StreamSender, annotated bool, quality int,
-	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
-) handling.Consumer[videostreams.Frame] {
-	return func(frame videostreams.Frame) (done bool, err error) {
-		if err = frame.Error(); err != nil {
-			if herr := handling.Except(
-				ss.SendFrame(frameError), context.Canceled, syscall.EPIPE,
-			); herr != nil {
-				return false, errors.Wrap(err, "couldn't send mjpeg error frame")
-			}
-			return false, err
-		}
-
-		// Generate output
-		// Note: without annotation the frame passes through directly, potentially without any
-		// JPEG decoding/encoding in the pipeline
-		if annotated {
-			fpsCounter.Incr(1)
-			f, err := frame.AsImageFrame()
-			if err != nil {
-				return false, errors.Wrap(err, "couldn't read frame as image")
-			}
-			f.Meta = f.Meta.WithSettings(videostreams.Settings{
-				JPEGEncodeQuality: quality,
-			})
-			metadata := videostreams.AnnotationMetadata{
-				FPSCount:  fpsCounter.Rate(),
-				FPSPeriod: fpsPeriod,
-			}.WithFrameData(f)
-			f = f.WithAnnotation(metadata.String(), 1)
-			frame = f
-		}
-		// TODO: implement image resizing
-
-		// Send output
-		if err := handling.Except(ss.SendFrame(frame), context.Canceled, syscall.EPIPE); err != nil {
-			return false, errors.Wrap(err, "couldn't send mjpeg frame")
-		}
-		return false, nil
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg.Im)
 	}
 }
 
 func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
+	jpegLoading := newErrorJPEG(errorWidth, errorHeight, "loading stream...")
 	return func(c echo.Context) error {
 		// Parse params
 		id, err := parseID(c.Param("cameraID"), "camera")
@@ -222,7 +221,7 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 			}
 		}()
 		if err := handling.Except(
-			ss.SendFrame(frameLoading), context.Canceled, syscall.EPIPE,
+			ss.Send(jpegLoading), context.Canceled, syscall.EPIPE,
 		); err != nil {
 			return errors.Wrap(err, "couldn't send mjpeg loading frame")
 		}
@@ -242,6 +241,55 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 			handling.Consume(ctx, frameBuffer, externalSourceFrameSender(
 				ss, annotated, quality, fpsCounter, fpsPeriod,
 			)),
+			context.Canceled,
+		); err != nil {
+			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))
+		}
+		return nil
+	}
+}
+
+func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
+	frameLoading := newErrorFrame(errorWidth, errorHeight, "loading stream...")
+	return func(c *videostreams.Context) error {
+		// Parse params
+		id, err := parseID(c.Param("cameraID"), "camera")
+		if err != nil {
+			return err
+		}
+		// TODO: implement a max framerate
+
+		// Run queries
+		ctx := c.Context()
+		camera, err := h.is.GetCamera(ctx, id)
+		if err != nil {
+			return errors.Wrapf(err, "camera %d not found", id)
+		}
+		sourceURL := camera.URL
+
+		// Set up output stream
+		c.Publish(frameLoading)
+
+		// Subscribe to source stream
+		source := fmt.Sprintf(
+			"/video-streams/external-stream/source.mjpeg?url=%s", url.QueryEscape(sourceURL),
+		)
+		frameBuffer := h.vsb.Subscribe(ctx, source)
+
+		// Post-process and deliver stream
+		if err := handling.Except(
+			handling.Consume(ctx, frameBuffer, func(frame videostreams.Frame) (done bool, err error) {
+				// Since the source stream emits JPEG frames, we can safely assume that no further JPEG
+				// encoding is needed after we call c.Publish - but we check here anyways because it's
+				// cheap to check, and we can ensure that we only perform one JPEG encoding regardless of
+				// the number of Video Streams subscribers (i.e. the number of web browsers).
+				jpegFrame, err := frame.AsJPEGFrame()
+				if err != nil {
+					return false, errors.Wrap(err, "couldn't convert frame to JPEG for action cable")
+				}
+				c.Publish(jpegFrame)
+				return false, nil
+			}),
 			context.Canceled,
 		); err != nil {
 			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))

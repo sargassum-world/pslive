@@ -18,5 +18,6 @@ func FuncMap(h HashedNamers, tss TurboStreamSigner) template.FuncMap {
 		"appHashed":       h.AppHashed,
 		"staticHashed":    h.StaticHashed,
 		"signTurboStream": tss,
+		"signVideoStream": tss,
 	}
 }

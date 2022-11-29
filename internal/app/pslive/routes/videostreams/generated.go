@@ -151,11 +151,11 @@ func (h *Handlers) HandleAnimatedColorFrameGet() echo.HandlerFunc {
 		f.Meta.Settings.JPEGEncodeQuality = quality
 
 		// Produce output
-		frameJPEG, _, err := f.AsJPEG()
+		jpeg, err := f.AsJPEGFrame()
 		if err != nil {
 			return errors.Wrap(err, "couldn't jpeg-encode image")
 		}
-		return c.Blob(http.StatusOK, "image/jpeg", frameJPEG)
+		return c.Blob(http.StatusOK, "image/jpeg", jpeg.Im)
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
+	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
 type Handlers struct {
@@ -20,33 +21,37 @@ type Handlers struct {
 	cc *session.CSRFTokenChecker
 
 	acc *actioncable.Cancellers
-	tss turbostreams.Signer
+	acs actioncable.Signer
 	tsb *turbostreams.Broker
-
-	l godest.Logger
+	vsb *videostreams.Broker
 
 	wsu websocket.Upgrader
+
+	l godest.Logger
 }
 
 func New(
 	r godest.TemplateRenderer, ss *session.Store, cc *session.CSRFTokenChecker,
-	acc *actioncable.Cancellers, tss turbostreams.Signer, tsb *turbostreams.Broker, l godest.Logger,
+	acc *actioncable.Cancellers, acs actioncable.Signer, tsb *turbostreams.Broker,
+	vsb *videostreams.Broker, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		ss:  ss,
 		cc:  cc,
 		acc: acc,
-		tss: tss,
+		acs: acs,
 		tsb: tsb,
-		l:   l,
+		vsb: vsb,
 		wsu: websocket.Upgrader{
-			Subprotocols: actioncable.Subprotocols(),
+			Subprotocols: actioncable.SupportedSubprotocols(),
 			// TODO: add parameters to the upgrader as needed
 		},
+		l: l,
 	}
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
 	er.GET("/cable", auth.HandleHTTPWithSession(h.HandleCableGet(), h.ss))
+	er.GET("/video-cable", auth.HandleHTTPWithSession(h.HandleVideoCableGet(), h.ss))
 }

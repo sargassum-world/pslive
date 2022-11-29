@@ -16,14 +16,12 @@
     as="style"
     rel="preload"
     href="{{appHashed "theme-light.min.css"}}"
-    turbo-data-track="reload"
   >
   <link
     id="dark-theme"
     as="style"
     rel="preload"
     href="{{appHashed "theme-dark.min.css"}}"
-    turbo-data-track="reload"
   >
   <script>{{.Inlines.JS.BundleEager}}</script>
   {{block "nav/navbar.assets" .}}{{end}}
@@ -48,7 +46,7 @@
   <link rel="apple-touch-icon" href="{{staticHashed "apple-touch-icon.png"}}">
   <!-- TODO: add shortcuts to the web application manifest -->
   <link rel="manifest" href="/app/app.webmanifest">
-  <script defer src="{{appHashed "bundle-deferred.js"}}" turbo-data-track="reload"></script>
+  <script defer src="{{appHashed "bundle-deferred.js"}}" data-turbo-track="reload"></script>
 </head>
 
 <body>

@@ -10,6 +10,10 @@ in_scope if {
 	"/cable" == input.resource.path
 }
 
+in_scope if {
+	"/video-cable" == input.resource.path
+}
+
 # Policy Result & Error
 
 allow if {
