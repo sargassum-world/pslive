@@ -21,7 +21,7 @@ require (
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/image v0.1.0
 	golang.org/x/sync v0.1.0
-	zombiezen.com/go/sqlite v0.10.1
+	zombiezen.com/go/sqlite v0.11.0
 )
 
 require (
@@ -70,8 +70,8 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	modernc.org/libc v1.16.14 // indirect
-	modernc.org/mathutil v1.4.1 // indirect
-	modernc.org/memory v1.1.1 // indirect
-	modernc.org/sqlite v1.17.3 // indirect
+	modernc.org/libc v1.21.5 // indirect
+	modernc.org/mathutil v1.5.0 // indirect
+	modernc.org/memory v1.4.0 // indirect
+	modernc.org/sqlite v1.20.0 // indirect
 )
