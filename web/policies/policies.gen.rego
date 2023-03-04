@@ -26,7 +26,7 @@ allow if {
 	assets.allow
 }
 
-policy_errors.assets := error if {
+policy_errors["assets"] := error if {
 	some error in assets.errors
 }
 
@@ -41,7 +41,7 @@ allow if {
 	auth.allow
 }
 
-policy_errors.auth := error if {
+policy_errors["auth"] := error if {
 	some error in auth.errors
 }
 
@@ -56,7 +56,7 @@ allow if {
 	cable.allow
 }
 
-policy_errors.cable := error if {
+policy_errors["cable"] := error if {
 	some error in cable.errors
 }
 
@@ -71,7 +71,7 @@ allow if {
 	home.allow
 }
 
-policy_errors.home := error if {
+policy_errors["home"] := error if {
 	some error in home.errors
 }
 
@@ -86,7 +86,7 @@ allow if {
 	instruments.allow
 }
 
-policy_errors.instruments := error if {
+policy_errors["instruments"] := error if {
 	some error in instruments.errors
 }
 
@@ -101,7 +101,7 @@ allow if {
 	privatechat.allow
 }
 
-policy_errors.privatechat := error if {
+policy_errors["privatechat"] := error if {
 	some error in privatechat.errors
 }
 
@@ -116,7 +116,7 @@ allow if {
 	users.allow
 }
 
-policy_errors.users := error if {
+policy_errors["users"] := error if {
 	some error in users.errors
 }
 
@@ -131,7 +131,7 @@ allow if {
 	videostreams.allow
 }
 
-policy_errors.videostreams := error if {
+policy_errors["videostreams"] := error if {
 	some error in videostreams.errors
 }
 

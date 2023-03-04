@@ -212,8 +212,9 @@ func (s *Server) openDB(ctx context.Context) error {
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error {
+		const interval = 10 * time.Minute
 		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
-			ctx, time.Hour,
+			ctx, interval,
 		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
 		}

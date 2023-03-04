@@ -11,7 +11,7 @@ allow if {
 	{{$policy}}.allow
 }
 
-policy_errors.{{$policy}} := error if {
+policy_errors["{{$policy}}"] := error if {
 	some error in {{$policy}}.errors
 }
 {{- /* This comment is just here to delete whitespace */ -}}

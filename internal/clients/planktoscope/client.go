@@ -21,7 +21,6 @@ type Client struct {
 	Config               Config
 	Logger               godest.Logger
 	MQTT                 mqtt.Client
-	mqttConnMu           *sync.Mutex
 	firstConnSuccess     chan struct{}
 	firstConnSuccessOnce *sync.Once
 	logReconnectOnce     *sync.Once
@@ -37,7 +36,6 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client = &Client{}
 	client.Config = c
 	client.Logger = l
-	client.mqttConnMu = &sync.Mutex{}
 	client.firstConnSuccess = make(chan struct{})
 	client.firstConnSuccessOnce = &sync.Once{}
 	client.logReconnectOnce = &sync.Once{}
@@ -137,9 +135,6 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 }
 
 func (c *Client) Connect() error {
-	c.mqttConnMu.Lock()
-	defer c.mqttConnMu.Unlock()
-
 	token := c.MQTT.Connect()
 	_ = token.Wait()
 	return errors.Wrapf(token.Error(), "couldn't connect to %s", c.Config.URL)
@@ -158,22 +153,23 @@ func (c *Client) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	// If the connection never opens, the Connect() method will never release mqttConnMu, but there
-	// also (as far as I can tell) won't be any data race between MQTT.Connect() and MQTT.Disconnect()
-	// which would otherwise require mqttConnMu. The paho.mqtt.golang package should really try to
-	// avoid data races between its Connect and Disconnect methods...
+	const defaultTimeout = 5000 // ms
+	var timeout uint
 	select {
 	default:
+		// As of v1.4.2 of paho.mqtt.golang, c.MQTT.Disconnect seems hang beyond our close timeout if
+		// the client never successfully connected - this implies that c.MQTT.IsConnected returns true
+		// even for such clients.
+		timeout = 0
 		break
 	case <-c.firstConnSuccess:
-		c.mqttConnMu.Lock()
-		defer c.mqttConnMu.Unlock()
+		timeout = defaultTimeout
+		break
 	}
 
 	closedNormally := make(chan struct{})
 	go func() {
-		const closeTimeout = 5000 // ms
-		c.MQTT.Disconnect(closeTimeout)
+		c.MQTT.Disconnect(timeout)
 		close(closedNormally)
 	}()
 	select {
@@ -188,8 +184,6 @@ func (c *Client) Close() {
 	if !c.MQTT.IsConnected() {
 		return
 	}
-	c.mqttConnMu.Lock()
-	defer c.mqttConnMu.Unlock()
 
 	c.MQTT.Disconnect(0)
 }
