@@ -6,7 +6,7 @@ require (
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/goreleaser/goreleaser v1.15.2
-	github.com/hairyhenderson/gomplate/v3 v3.11.3
+	github.com/hairyhenderson/gomplate/v3 v3.11.4
 	github.com/open-policy-agent/opa v0.49.2
 	mvdan.cc/gofumpt v0.4.0
 )
@@ -66,7 +66,7 @@ require (
 	github.com/ashanbrown/forbidigo v1.4.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/atc0005/go-teams-notify/v2 v2.7.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.151 // indirect
+	github.com/aws/aws-sdk-go v1.44.206 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.3 // indirect
