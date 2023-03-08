@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/handling"
 
 	"github.com/sargassum-world/pslive/internal/clients/mjpeg"
@@ -82,8 +83,10 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 func externalSourceFrameSender(
 	ss *mjpeg.StreamSender, annotated bool, quality int,
 	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
+	l godest.Logger,
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
+		l.Debug("received frame from external source")
 		if err = frame.Error(); err != nil {
 			return false, errors.Wrapf(err, "error with video source")
 		}
@@ -110,6 +113,7 @@ func externalSourceFrameSender(
 		// TODO: implement image resizing
 
 		// Send output
+		l.Debug("sending frame from external source")
 		if err := handling.Except(
 			ss.SendFrame(frame), context.Canceled, syscall.EPIPE,
 		); err != nil {
@@ -143,6 +147,7 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 		source := fmt.Sprintf(
 			"/video-streams/external-stream/source.mjpeg?url=%s", url.QueryEscape(sourceURL),
 		)
+		c.Logger().Debugf("subscribing to external stream source %s", sourceURL)
 		frameBuffer := h.vsb.Subscribe(ctx, source)
 
 		// Post-process and deliver stream
@@ -151,7 +156,7 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 		const quality = 50 // TODO: implement adaptive quality for min FPS
 		if err := handling.Except(
 			handling.Consume(ctx, frameBuffer, externalSourceFrameSender(
-				ss, annotated, quality, fpsCounter, fpsPeriod,
+				ss, annotated, quality, fpsCounter, fpsPeriod, c.Logger(),
 			)),
 			context.Canceled,
 		); err != nil {
@@ -187,18 +192,23 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 		defer r.Close()
 
 		// Read MJPEG stream parts
+		c.Logger().Debugf("receiving mjpeg frames from %s", source)
 		return handling.Except(
 			handling.Repeat(ctx, 0, func() (done bool, err error) {
 				// Load data
+				c.Logger().Debugf("receiving mjpeg frame from %s", source)
 				encodedFrame, err := r.Receive()
 				if errors.Is(err, io.EOF) {
+					c.Logger().Debugf("received eof from %s", source)
 					return true, nil
 				}
 				if err != nil {
+					c.Logger().Errorf("couldn't receive mjpeg frame from %s: %s", source, err)
 					return false, errors.Wrap(err, "couldn't read mjpeg frame")
 				}
 
 				// Publish data
+				c.Logger().Debugf("received and publishing frame from %s", source)
 				c.Publish(encodedFrame)
 				return false, nil
 			}),
