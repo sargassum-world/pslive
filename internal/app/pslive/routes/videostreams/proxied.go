@@ -83,7 +83,6 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 func externalSourceFrameSender(
 	ss *mjpeg.StreamSender, annotated bool, quality int,
 	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
-	l godest.Logger,
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
 		if err = frame.Error(); err != nil {
@@ -154,7 +153,7 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 		const quality = 50 // TODO: implement adaptive quality for min FPS
 		if err := handling.Except(
 			handling.Consume(ctx, frameBuffer, externalSourceFrameSender(
-				ss, annotated, quality, fpsCounter, fpsPeriod, c.Logger(),
+				ss, annotated, quality, fpsCounter, fpsPeriod,
 			)),
 			context.Canceled,
 		); err != nil {
