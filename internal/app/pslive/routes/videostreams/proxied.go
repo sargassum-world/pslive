@@ -12,7 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/handling"
 
 	"github.com/sargassum-world/pslive/internal/clients/mjpeg"
