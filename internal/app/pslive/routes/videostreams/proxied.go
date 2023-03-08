@@ -12,7 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
-	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/handling"
 
 	"github.com/sargassum-world/pslive/internal/clients/mjpeg"
@@ -83,10 +82,8 @@ func (h *Handlers) HandleExternalSourceFrameGet() echo.HandlerFunc {
 func externalSourceFrameSender(
 	ss *mjpeg.StreamSender, annotated bool, quality int,
 	fpsCounter *ratecounter.RateCounter, fpsPeriod float32,
-	l godest.Logger,
 ) handling.Consumer[videostreams.Frame] {
 	return func(frame videostreams.Frame) (done bool, err error) {
-		l.Debug("received frame from external source")
 		if err = frame.Error(); err != nil {
 			return false, errors.Wrapf(err, "error with video source")
 		}
@@ -113,7 +110,6 @@ func externalSourceFrameSender(
 		// TODO: implement image resizing
 
 		// Send output
-		l.Debug("sending frame from external source")
 		if err := handling.Except(
 			ss.SendFrame(frame), context.Canceled, syscall.EPIPE,
 		); err != nil {
@@ -156,7 +152,7 @@ func (h *Handlers) HandleExternalSourceStreamGet() echo.HandlerFunc {
 		const quality = 50 // TODO: implement adaptive quality for min FPS
 		if err := handling.Except(
 			handling.Consume(ctx, frameBuffer, externalSourceFrameSender(
-				ss, annotated, quality, fpsCounter, fpsPeriod, c.Logger(),
+				ss, annotated, quality, fpsCounter, fpsPeriod,
 			)),
 			context.Canceled,
 		); err != nil {
@@ -196,7 +192,6 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 		return handling.Except(
 			handling.Repeat(ctx, 0, func() (done bool, err error) {
 				// Load data
-				c.Logger().Debugf("receiving mjpeg frame from %s", source)
 				encodedFrame, err := r.Receive()
 				if errors.Is(err, io.EOF) {
 					c.Logger().Debugf("received eof from %s", source)
@@ -208,7 +203,6 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 				}
 
 				// Publish data
-				c.Logger().Debugf("received and publishing frame from %s", source)
 				c.Publish(encodedFrame)
 				return false, nil
 			}),

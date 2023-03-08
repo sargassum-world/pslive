@@ -87,7 +87,7 @@ func (s *Server) configureLogging(e *echo.Echo) {
 	}))
 	e.HideBanner = true
 	e.HidePort = true
-	e.Logger.SetLevel(log.DEBUG) // TODO: set level via env var
+	e.Logger.SetLevel(log.INFO) // TODO: set level via env var
 }
 
 // turboDriveStyle is the stylesheet which Turbo Drive tries to install for its progress bar,
