@@ -26,10 +26,12 @@ type Client struct {
 	logReconnectOnce     *sync.Once
 	logReconnectOnceMu   *sync.Mutex
 
-	stateL       *sync.RWMutex
-	pump         Pump
-	pumpB        *Broadcaster
-	pumpSettings PumpSettings
+	stateL         *sync.RWMutex
+	pump           Pump
+	pumpB          *Broadcaster
+	pumpSettings   PumpSettings
+	cameraB        *Broadcaster
+	cameraSettings CameraSettings
 }
 
 func NewClient(c Config, l godest.Logger) (client *Client, err error) {
@@ -42,13 +44,9 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client.logReconnectOnceMu = &sync.Mutex{}
 	client.stateL = &sync.RWMutex{}
 	client.pumpB = NewBroadcaster()
-	const defaultVolume = 1
-	const defaultFlowrate = 0.1
-	client.pumpSettings = PumpSettings{
-		Forward:  true,
-		Volume:   defaultVolume,
-		Flowrate: defaultFlowrate,
-	}
+	client.pumpSettings = DefaultPumpSettings()
+	client.cameraB = NewBroadcaster()
+	client.cameraSettings = DefaultCameraSettings()
 
 	c.MQTT.SetOnConnectHandler(client.handleConnected)
 	c.MQTT.SetConnectionLostHandler(client.handleConnectionLost)
@@ -62,8 +60,9 @@ func (c *Client) GetState() Planktoscope {
 	defer c.stateL.RUnlock()
 
 	return Planktoscope{
-		Pump:         c.pump,
-		PumpSettings: c.pumpSettings,
+		Pump:           c.pump,
+		PumpSettings:   c.pumpSettings,
+		CameraSettings: c.cameraSettings,
 	}
 }
 
@@ -92,6 +91,7 @@ func (c *Client) handleConnectionLost(_ mqtt.Client, err error) {
 	defer c.stateL.Unlock()
 
 	c.pump.StateKnown = false
+	c.cameraSettings.StateKnown = false
 	c.Logger.Warn(errors.Wrap(err, "connection lost"))
 	// TODO: notify clients that control has been lost
 }
@@ -127,6 +127,14 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 		}
 	case "actuator/pump":
 		if err := c.handlePumpActuatorUpdate(topic, m.Payload()); err != nil {
+			c.Logger.Errorf(errors.Wrapf(
+				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
+			).Error())
+		}
+	case "imager/image":
+		// Because the PlanktoScope API never doesn't report the camera settings in a status message,
+		// we must instead listen for imager camera settings update commands
+		if err := c.handleCameraSettingsUpdate(topic, m.Payload()); err != nil {
 			c.Logger.Errorf(errors.Wrapf(
 				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
 			).Error())

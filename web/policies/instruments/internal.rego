@@ -37,10 +37,18 @@ allow_controller_post(subject, instrument_id, controller_id) if {
 	is_instrument_admin(subject, instrument_id)
 }
 
-allow_controller_pump_post(subject, instrument_id, controller_id) if {
+allow_controller_module_post(subject, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
 	is_valid_controller(instrument_id, controller_id)
 	is_instrument_operator(subject, instrument_id)
+}
+
+allow_controller_pump_post(subject, instrument_id, controller_id) if {
+	allow_controller_module_post(subject, instrument_id, controller_id)
+}
+
+allow_controller_camera_post(subject, instrument_id, controller_id) if {
+	allow_controller_module_post(subject, instrument_id, controller_id)
 }
 
 allow_instrument_chat_post(subject, instrument_id) if {

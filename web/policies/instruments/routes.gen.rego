@@ -320,6 +320,52 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /instruments/:id/controllers/:controller_id/camera"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_controller_get(id, id, controller_id)
+}
+
+matching_routes contains route if {
+	"PUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "PUB /instruments/:id/controllers/:controller_id/camera"
+}
+
+allow if {
+	"PUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"MSG" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /instruments/:id/controllers/:controller_id/camera"
+}
+
+allow if {
+	"MSG" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"POST" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "POST /instruments/:id/controllers/:controller_id/camera"
+}
+
+allow if {
+	"POST" == input.operation.method
+	["instruments", id, "controllers", controller_id, "camera"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_controller_camera_post(input.subject, id, controller_id)
+}
+
+matching_routes contains route if {
 	"GET" == input.operation.method
 	["instruments", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "GET /instruments/:id/chat/messages"

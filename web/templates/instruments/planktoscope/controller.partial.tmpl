@@ -15,4 +15,13 @@
     "Auth" $auth
     "WithTurboStreamSource" true
   }}
+  {{
+    template "instruments/planktoscope/camera.partial.tmpl" dict
+    "InstrumentID" $instrument.ID
+    "ControllerID" $controllerID
+    "CameraSettings" $controller.CameraSettings
+    "Authorizations" $authorizations.Camera
+    "Auth" $auth
+    "WithTurboStreamSource" true
+  }}
 </turbo-frame>
