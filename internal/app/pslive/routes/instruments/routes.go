@@ -79,6 +79,12 @@ func (h *Handlers) Register(
 		h.r, ss, h.ModifyPumpMsgData(),
 	))
 	hr.POST("/instruments/:id/controllers/:controllerID/pump", h.HandlePumpPost())
+	tsr.SUB("/instruments/:id/controllers/:controllerID/camera", turbostreams.EmptyHandler)
+	tsr.PUB("/instruments/:id/controllers/:controllerID/camera", h.HandleCameraPub())
+	tsr.MSG("/instruments/:id/controllers/:controllerID/camera", handling.HandleTSMsg(
+		h.r, ss, h.ModifyCameraMsgData(),
+	))
+	hr.POST("/instruments/:id/controllers/:controllerID/camera", h.HandleCameraPost())
 	tsr.SUB("/instruments/:id/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/instruments/:id/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll

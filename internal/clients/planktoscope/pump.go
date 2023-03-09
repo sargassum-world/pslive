@@ -65,10 +65,10 @@ func (c *Client) updatePumpSettings(newSettings PumpSettings) {
 	c.pumpB.BroadcastNext()
 }
 
-func parseNumber(n interface{}) (float64, error) {
+func parseFloat(n interface{}) (float64, error) {
 	switch number := n.(type) {
 	default:
-		return 0, errors.Errorf("unknown number type %T", number)
+		return 0, errors.Errorf("unknown float type %T", number)
 	case float64:
 		return number, nil
 	case string:
@@ -109,14 +109,14 @@ func (c *Client) handlePumpActuatorUpdate(_ string, rawPayload []byte) error {
 		}
 
 		// Parse volume
-		volume, err := parseNumber(payload.Volume)
+		volume, err := parseFloat(payload.Volume)
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse new pump volume setting")
 		}
 		newSettings.Volume = volume
 
 		// Parse flowrate
-		flowrate, err := parseNumber(payload.Flowrate)
+		flowrate, err := parseFloat(payload.Flowrate)
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse new pump flowrate setting")
 		}
@@ -172,7 +172,6 @@ func (c *Client) StartPump(forward bool, volume, flowrate float64) (mqtt.Token, 
 	c.pumpSettings.Forward = forward
 	c.pumpSettings.Volume = volume
 	c.pumpSettings.Flowrate = flowrate
-	// TODO: push updated settings to clients
 
 	token := c.MQTT.Publish("actuator/pump", mqttExactlyOnce, false, marshaled)
 	return token, nil

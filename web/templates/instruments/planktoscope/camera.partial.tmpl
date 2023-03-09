@@ -1,0 +1,166 @@
+{{$instrumentID := (get . "InstrumentID")}}
+{{$controllerID := (get . "ControllerID")}}
+{{$cameraSettings := (get . "CameraSettings")}}
+{{$authorizations := (get . "Authorizations")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+{{$auth := (get . "Auth")}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (print "/instruments/" $instrumentID "/controllers/" $controllerID "/camera")
+  }}
+{{end}}
+<turbo-frame id="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/camera">
+  <div class="card section-card wide-card">
+    <div class="card-content">
+      <h3>
+        Camera
+        {{if not $cameraSettings.StateKnown}}
+          <span class="tag is-warning">Unknown</span>
+        {{end}}
+      </h3>
+      <form
+        action="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/camera"
+        method="POST"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">ISO</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <div class="select">
+                  <select
+                    name="iso"
+                    {{if not $authorizations.Set}}disabled{{end}}
+                  >
+                    {{$values := list 100 200 320 400 500 640 800}}
+                    {{range $value := $values}}
+                      <option
+                        value="{{$value}}"
+                        {{if eq $cameraSettings.ISO $value}}selected{{end}}
+                      >{{$value}}</option>
+                    {{end}}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Shutter Speed</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="field has-addons">
+                <div class="control">
+                  <input
+                    type="number"
+                    class="input"
+                    name="shutter-speed"
+                    min="125"
+                    max="1000"
+                    step="5"
+                    {{if not $authorizations.Set}}disabled{{end}}
+                    value="{{$cameraSettings.ShutterSpeed}}"
+                  />
+                </div>
+                <div class="control">
+                  <span class="button is-static">μs</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label">
+            <label class="label">White Balance</label>
+          </div>
+          <div class="field-body">
+            <div class="field is-normal">
+              <div class="control">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    name="awb"
+                    value="true"
+                    {{if $cameraSettings.AutoWhiteBalance}}checked{{end}}
+                    {{if not $authorizations.Set}}disabled{{end}}
+                  />
+                  Automatic
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label"></label>
+          </div>
+          <div class="field-body">
+            <div class="field has-addons is-narrow">
+              <div class="control">
+                <span class="button is-static">Red</span>
+              </div>
+              <div class="control">
+                <input
+                  type="number"
+                  class="input"
+                  name="wb-red"
+                  min="1"
+                  max="8"
+                  step="0.01"
+                  {{if not $authorizations.Set}}disabled{{end}}
+                  value="{{$cameraSettings.WhiteBalanceRedGain}}"
+                />
+              </div>
+            </div>
+            <div class="field has-addons is-narrow">
+              <div class="control">
+                <span class="button is-static">Blue</span>
+              </div>
+              <div class="control">
+                <input
+                  type="number"
+                  class="input"
+                  name="wb-blue"
+                  min="1"
+                  max="8"
+                  step="0.01"
+                  {{if not $authorizations.Set}}disabled{{end}}
+                  value="{{$cameraSettings.WhiteBalanceBlueGain}}"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal"><!--Left empty for spacing--></div>
+          <div class="field-body" >
+            <div class="field">
+              <div class="control" data-form-submission-target="submitter">
+                <input
+                  class="button"
+                  type="submit"
+                  value="Update"
+                  data-form-submission-target="submit"
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</turbo-frame>

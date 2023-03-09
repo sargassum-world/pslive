@@ -75,6 +75,16 @@ in_scope if {
 		coll.Slice "POST" "/instruments/:id/controllers/:controller_id/pump"
 		"allow_controller_pump_post(input.subject, id, controller_id)"
 	)
+	(
+		coll.Slice "SUB" "/instruments/:id/controllers/:controller_id/camera"
+		"allow_controller_get(id, id, controller_id)"
+	)
+	(coll.Slice "PUB" "/instruments/:id/controllers/:controller_id/camera")
+	(coll.Slice "MSG" "/instruments/:id/controllers/:controller_id/camera")
+	(
+		coll.Slice "POST" "/instruments/:id/controllers/:controller_id/camera"
+		"allow_controller_camera_post(input.subject, id, controller_id)"
+	)
 	(coll.Slice "GET" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
 	(coll.Slice "SUB" "/instruments/:id/chat/messages" "allow_instrument_get(id)")
 	(coll.Slice "MSG" "/instruments/:id/chat/messages")
