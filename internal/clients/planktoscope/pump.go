@@ -172,7 +172,6 @@ func (c *Client) StartPump(forward bool, volume, flowrate float64) (mqtt.Token, 
 	c.pumpSettings.Forward = forward
 	c.pumpSettings.Volume = volume
 	c.pumpSettings.Flowrate = flowrate
-	// TODO: push updated settings to clients
 
 	token := c.MQTT.Publish("actuator/pump", mqttExactlyOnce, false, marshaled)
 	return token, nil

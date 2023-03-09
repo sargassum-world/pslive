@@ -203,7 +203,11 @@ func replaceCameraStream(
 	}
 }
 
-func handleCameraSettings(isoRaw, shutterSpeedRaw string, pc *planktoscope.Client) (err error) {
+func handleCameraSettings(
+	isoRaw, shutterSpeedRaw,
+	autoWhiteBalanceRaw, whiteBalanceRedGainRaw, whiteBalanceBlueGainRaw string,
+	pc *planktoscope.Client,
+) (err error) {
 	var token mqtt.Token
 	// TODO: use echo's request binding functionality instead of strconv.ParseFloat
 	// TODO: perform input validation and handle invalid inputs
@@ -217,7 +221,25 @@ func handleCameraSettings(isoRaw, shutterSpeedRaw string, pc *planktoscope.Clien
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse shutter speed"))
 	}
-	if token, err = pc.SetCamera(iso, shutterSpeed); err != nil {
+
+	const floatWidth = 64
+	autoWhiteBalance := strings.ToLower(autoWhiteBalanceRaw) == "true"
+	whiteBalanceRedGain, err := strconv.ParseFloat(whiteBalanceRedGainRaw, floatWidth)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(
+			err, "couldn't parse white balance red gain",
+		))
+	}
+	whiteBalanceBlueGain, err := strconv.ParseFloat(whiteBalanceBlueGainRaw, floatWidth)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(
+			err, "couldn't parse white balance blue gain",
+		))
+	}
+
+	if token, err = pc.SetCamera(
+		iso, shutterSpeed, autoWhiteBalance, whiteBalanceRedGain, whiteBalanceBlueGain,
+	); err != nil {
 		return err
 	}
 
@@ -319,7 +341,8 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 			)
 		}
 		if err = handleCameraSettings(
-			c.FormValue("iso"), c.FormValue("shutter-speed"), pc,
+			c.FormValue("iso"), c.FormValue("shutter-speed"),
+			c.FormValue("awb"), c.FormValue("wb-red"), c.FormValue("wb-blue"), pc,
 		); err != nil {
 			return err
 		}
