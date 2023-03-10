@@ -22,15 +22,15 @@ import (
 const pumpPartial = "instruments/planktoscope/pump.partial.tmpl"
 
 func replacePumpStream(
-	id, controllerID int64, a auth.Auth, pc *planktoscope.Client,
+	instrumentID, controllerID int64, a auth.Auth, pc *planktoscope.Client,
 ) turbostreams.Message {
 	state := pc.GetState()
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/pump", id, controllerID),
+		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/pump", instrumentID, controllerID),
 		Template: pumpPartial,
 		Data: map[string]interface{}{
-			"InstrumentID": id,
+			"InstrumentID": instrumentID,
 			"ControllerID": controllerID,
 			"PumpSettings": state.PumpSettings,
 			"Pump":         state.Pump,
@@ -111,9 +111,9 @@ type PlanktoscopePumpViewAuthz struct {
 }
 
 func getPlanktoscopePumpViewAuthz(
-	ctx context.Context, id, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopePumpViewAuthz, err error) {
-	path := fmt.Sprintf("/instruments/%d/controllers/%d/pump", id, controllerID)
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/pump", instrumentID, controllerID)
 	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
 		return PlanktoscopePumpViewAuthz{}, errors.Wrap(err, "couldn't check authz for setting pump")
 	}
@@ -124,16 +124,17 @@ func (h *Handlers) ModifyPumpMsgData() handling.DataModifier {
 	return func(
 		ctx context.Context, a auth.Auth, data map[string]interface{},
 	) (modifications map[string]interface{}, err error) {
-		id, cid, err := getIDsForModificationMiddleware(data)
+		instrumentID, controllerID, err := getIDsForModificationMiddleware(data)
 		if err != nil {
 			return nil, err
 		}
 		modifications = make(map[string]interface{})
 		if modifications["Authorizations"], err = getPlanktoscopePumpViewAuthz(
-			ctx, id, cid, a, h.azc,
+			ctx, instrumentID, controllerID, a, h.azc,
 		); err != nil {
 			return nil, errors.Wrapf(
-				err, "couldn't check authz for pump of controller %d of instrument %d", cid, id,
+				err, "couldn't check authz for pump of controller %d of instrument %d",
+				controllerID, instrumentID,
 			)
 		}
 		return modifications, nil
@@ -145,7 +146,7 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		instrumentID, err := parseID(c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -155,10 +156,11 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 		}
 
 		// Run queries
-		pc, ok := h.pco.Get(id)
+		pc, ok := h.pco.Get(controllerID)
 		if !ok {
 			return errors.Errorf(
-				"planktoscope client for controller %d on instrument %d not found", id, controllerID,
+				"planktoscope client for controller %d on instrument %d not found for pump post",
+				controllerID, instrumentID,
 			)
 		}
 		if err = handlePumpSettings(
@@ -178,7 +180,7 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", instrumentID))
 	}
 }
 
@@ -187,15 +189,15 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 const cameraPartial = "instruments/planktoscope/camera.partial.tmpl"
 
 func replaceCameraStream(
-	id, controllerID int64, a auth.Auth, pc *planktoscope.Client,
+	instrumentID, controllerID int64, a auth.Auth, pc *planktoscope.Client,
 ) turbostreams.Message {
 	state := pc.GetState()
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/camera", id, controllerID),
+		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/camera", instrumentID, controllerID),
 		Template: cameraPartial,
 		Data: map[string]interface{}{
-			"InstrumentID":   id,
+			"InstrumentID":   instrumentID,
 			"ControllerID":   controllerID,
 			"CameraSettings": state.CameraSettings,
 			"Auth":           a,
@@ -288,9 +290,9 @@ type PlanktoscopeCameraViewAuthz struct {
 }
 
 func getPlanktoscopeCameraViewAuthz(
-	ctx context.Context, id, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopeCameraViewAuthz, err error) {
-	path := fmt.Sprintf("/instruments/%d/controllers/%d/camera", id, controllerID)
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/camera", instrumentID, controllerID)
 	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
 		return PlanktoscopeCameraViewAuthz{}, errors.Wrap(
 			err, "couldn't check authz for setting camera",
@@ -303,16 +305,17 @@ func (h *Handlers) ModifyCameraMsgData() handling.DataModifier {
 	return func(
 		ctx context.Context, a auth.Auth, data map[string]interface{},
 	) (modifications map[string]interface{}, err error) {
-		id, cid, err := getIDsForModificationMiddleware(data)
+		instrumentID, controllerID, err := getIDsForModificationMiddleware(data)
 		if err != nil {
 			return nil, err
 		}
 		modifications = make(map[string]interface{})
 		if modifications["Authorizations"], err = getPlanktoscopeCameraViewAuthz(
-			ctx, id, cid, a, h.azc,
+			ctx, instrumentID, controllerID, a, h.azc,
 		); err != nil {
 			return nil, errors.Wrapf(
-				err, "couldn't check authz for camera of controller %d of instrument %d", cid, id,
+				err, "couldn't check authz for camera of controller %d of instrument %d",
+				controllerID, instrumentID,
 			)
 		}
 		return modifications, nil
@@ -324,7 +327,7 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		instrumentID, err := parseID(c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -334,10 +337,11 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 		}
 
 		// Run queries
-		pc, ok := h.pco.Get(id)
+		pc, ok := h.pco.Get(controllerID)
 		if !ok {
 			return errors.Errorf(
-				"planktoscope client for controller %d on instrument %d not found", id, controllerID,
+				"planktoscope client for controller %d on instrument %d not found for camera post",
+				controllerID, instrumentID,
 			)
 		}
 		if err = handleCameraSettings(
@@ -357,7 +361,7 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", instrumentID))
 	}
 }
 
@@ -369,12 +373,16 @@ type PlanktoscopeControllerViewAuthz struct {
 }
 
 func getPlanktoscopeControllerViewAuthz(
-	ctx context.Context, id, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopeControllerViewAuthz, err error) {
-	if authz.Pump, err = getPlanktoscopePumpViewAuthz(ctx, id, controllerID, a, azc); err != nil {
+	if authz.Pump, err = getPlanktoscopePumpViewAuthz(
+		ctx, instrumentID, controllerID, a, azc,
+	); err != nil {
 		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for pump")
 	}
-	if authz.Camera, err = getPlanktoscopeCameraViewAuthz(ctx, id, controllerID, a, azc); err != nil {
+	if authz.Camera, err = getPlanktoscopeCameraViewAuthz(
+		ctx, instrumentID, controllerID, a, azc,
+	); err != nil {
 		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for camera")
 	}
 	return authz, nil
@@ -430,7 +438,7 @@ func getPlanktoscopeClientForPub(
 	pc, ok := pco.Get(controllerID)
 	if !ok {
 		return 0, 0, nil, errors.Errorf(
-			"planktoscope client for controller %d on instrument %d not found",
+			"planktoscope client for controller %d on instrument %d not found for pub",
 			controllerID, instrumentID,
 		)
 	}
