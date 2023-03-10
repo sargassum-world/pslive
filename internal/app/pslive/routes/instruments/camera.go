@@ -77,7 +77,10 @@ func newErrorJPEG(width, height int, message string) []byte {
 	return frame.Im
 }
 
-var jpegError = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+var (
+	frameError = newErrorFrame(errorWidth, errorHeight, "stream failed")
+	jpegError  = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+)
 
 // Sending helpers
 
@@ -295,6 +298,7 @@ func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
 			}),
 			context.Canceled,
 		); err != nil {
+			c.Publish(frameError)
 			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))
 		}
 		return nil
