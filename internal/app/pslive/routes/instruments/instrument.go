@@ -19,47 +19,47 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-func parseID(raw string, typeName string) (int64, error) {
+func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 	const intBase = 10
 	const intWidth = 64
 	id, err := strconv.ParseInt(raw, intBase, intWidth)
 	if err != nil {
 		return 0, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid %s id", typeName))
 	}
-	return id, err
+	return ID(id), err
 }
 
 // Instrument
 
 type InstrumentViewData struct {
 	Instrument       instruments.Instrument
-	ControllerIDs    []int64
-	Controllers      map[int64]planktoscope.Planktoscope
-	AdminIdentifier  string
+	ControllerIDs    []instruments.ControllerID
+	Controllers      map[instruments.ControllerID]planktoscope.Planktoscope
+	AdminIdentifier  ory.IdentityIdentifier
 	KnownViewers     []presence.User
-	AnonymousViewers []string
+	AnonymousViewers []presence.SessionID
 	ChatMessages     []handling.ChatMessageViewData
 }
 
 func getInstrumentViewData(
-	ctx context.Context, id int64,
+	ctx context.Context, iid instruments.InstrumentID,
 	oc *ory.Client, is *instruments.Store, pco *planktoscope.Orchestrator,
 	ps *presence.Store, cs *chat.Store,
 ) (vd InstrumentViewData, err error) {
-	if vd.Instrument, err = is.GetInstrument(ctx, id); err != nil {
+	if vd.Instrument, err = is.GetInstrument(ctx, iid); err != nil {
 		// TODO: is this the best way to handle errors from is.GetInstrumentByID?
 		return InstrumentViewData{}, echo.NewHTTPError(
-			http.StatusNotFound, fmt.Sprintf("instrument %d not found", id),
+			http.StatusNotFound, fmt.Sprintf("instrument %d not found", iid),
 		)
 	}
 
-	vd.ControllerIDs = make([]int64, 0, len(vd.Instrument.Controllers))
-	vd.Controllers = make(map[int64]planktoscope.Planktoscope)
+	vd.ControllerIDs = make([]instruments.ControllerID, 0, len(vd.Instrument.Controllers))
+	vd.Controllers = make(map[instruments.ControllerID]planktoscope.Planktoscope)
 	for _, controller := range vd.Instrument.Controllers {
-		pc, ok := pco.Get(controller.ID)
+		pc, ok := pco.Get(planktoscope.ClientID(controller.ID))
 		if !ok {
 			return InstrumentViewData{}, errors.Errorf(
-				"planktoscope client for instrument %d not found", id,
+				"planktoscope client for instrument %d not found", iid,
 			)
 		}
 		if pc.HasConnection() {
@@ -70,26 +70,30 @@ func getInstrumentViewData(
 		}
 	}
 
-	if vd.AdminIdentifier, err = oc.GetIdentifier(ctx, vd.Instrument.AdminID); err != nil {
+	if vd.AdminIdentifier, err = oc.GetIdentifier(
+		ctx, ory.IdentityID(vd.Instrument.AdminID),
+	); err != nil {
 		return InstrumentViewData{}, errors.Wrapf(
-			err, "couldn't look up admin identifier for instrument %d", id,
+			err, "couldn't look up admin identifier for instrument %d", iid,
 		)
 	}
 
 	// Chat
-	vd.KnownViewers, vd.AnonymousViewers = ps.List(fmt.Sprintf("/instruments/%d/users", id))
+	vd.KnownViewers, vd.AnonymousViewers = ps.List(presence.Topic(
+		fmt.Sprintf("/instruments/%d/users", iid)))
 	messages, err := cs.GetMessagesByTopic(
-		ctx, fmt.Sprintf("/instruments/%d/chat/messages", id), chat.DefaultMessagesLimit,
+		ctx, chat.Topic(fmt.Sprintf("/instruments/%d/chat/messages", iid)),
+		chat.DefaultMessagesLimit,
 	)
 	if err != nil {
 		return InstrumentViewData{}, errors.Wrapf(
-			err, "couldn't get chat messages for instrument %d", id,
+			err, "couldn't get chat messages for instrument %d", iid,
 		)
 	}
 	vd.ChatMessages, err = handling.AdaptChatMessages(ctx, messages, oc)
 	if err != nil {
 		return InstrumentViewData{}, errors.Wrapf(
-			err, "couldn't adapt chat messages for instrument %d into view data", id,
+			err, "couldn't adapt chat messages for instrument %d into view data", iid,
 		)
 	}
 
@@ -98,22 +102,23 @@ func getInstrumentViewData(
 
 type InstrumentViewAuthz struct {
 	SendChat    bool
-	Controllers map[int64]interface{}
+	Controllers map[instruments.ControllerID]interface{}
 }
 
 func getInstrumentViewAuthz(
-	ctx context.Context, id int64, controllerIDs []int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, iid instruments.InstrumentID, controllerIDs []instruments.ControllerID,
+	a auth.Auth, azc *auth.AuthzChecker,
 ) (authz InstrumentViewAuthz, err error) {
 	eg, egctx := errgroup.WithContext(ctx)
 	controllerAuthorizations := make([]interface{}, len(controllerIDs))
 	for i, controllerID := range controllerIDs {
-		eg.Go(func(i int, cid int64) func() error {
+		eg.Go(func(i int, cid instruments.ControllerID) func() error {
 			return func() (err error) {
 				if controllerAuthorizations[i], err = getPlanktoscopeControllerViewAuthz(
-					egctx, id, cid, a, azc,
+					egctx, iid, cid, a, azc,
 				); err != nil {
 					return errors.Wrapf(
-						err, "couldn't check authz for controller %d for instrument %d", cid, id,
+						err, "couldn't check authz for controller %d for instrument %d", cid, iid,
 					)
 				}
 				return nil
@@ -121,16 +126,18 @@ func getInstrumentViewAuthz(
 		}(i, controllerID))
 	}
 	eg.Go(func() (err error) {
-		path := fmt.Sprintf("/instruments/%d/chat/messages", id)
+		path := fmt.Sprintf("/instruments/%d/chat/messages", iid)
 		if authz.SendChat, err = azc.Allow(egctx, a, path, http.MethodPost, nil); err != nil {
-			return errors.Wrapf(err, "couldn't check authz for sending to chat for instrument %d", id)
+			return errors.Wrapf(
+				err, "couldn't check authz for sending to chat for instrument %d", iid,
+			)
 		}
 		return nil
 	})
 	if err := eg.Wait(); err != nil {
 		return InstrumentViewAuthz{}, err
 	}
-	authz.Controllers = make(map[int64]interface{})
+	authz.Controllers = make(map[instruments.ControllerID]interface{})
 	for i, controllerID := range controllerIDs {
 		authz.Controllers[controllerID] = controllerAuthorizations[i]
 	}
@@ -142,19 +149,19 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
 
 		// Run queries
 		ctx := c.Request().Context()
-		instrumentViewData, err := getInstrumentViewData(ctx, id, h.oc, h.is, h.pco, h.ps, h.cs)
+		instrumentViewData, err := getInstrumentViewData(ctx, iid, h.oc, h.is, h.pco, h.ps, h.cs)
 		if err != nil {
 			return err
 		}
 		if a.Authorizations, err = getInstrumentViewAuthz(
-			ctx, id, instrumentViewData.ControllerIDs, a, h.azc,
+			ctx, iid, instrumentViewData.ControllerIDs, a, h.azc,
 		); err != nil {
 			return err
 		}
@@ -167,7 +174,7 @@ func (h *Handlers) HandleInstrumentGet() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentPost() auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -184,7 +191,7 @@ func (h *Handlers) HandleInstrumentPost() auth.HTTPHandlerFunc {
 			// FIXME: there needs to be an authorization check to ensure that the user attempting to
 			// delete the instrument is an administrator of the instrument!
 
-			if err = h.is.DeleteInstrument(ctx, id); err != nil {
+			if err = h.is.DeleteInstrument(ctx, iid); err != nil {
 				return err
 			}
 			// TODO: cancel any relevant turbo streams topics
@@ -198,7 +205,7 @@ func (h *Handlers) HandleInstrumentPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentNamePost() auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -207,21 +214,21 @@ func (h *Handlers) HandleInstrumentNamePost() auth.HTTPHandlerFunc {
 		// Run queries
 		// FIXME: there needs to be an authorization check to ensure that the user attempting to
 		// delete the instrument is an administrator of the instrument!
-		if err := h.is.UpdateInstrumentName(c.Request().Context(), id, name); err != nil {
+		if err := h.is.UpdateInstrumentName(c.Request().Context(), iid, name); err != nil {
 			return err
 		}
 
 		// TODO: return turbo stream, broadcast updates
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
 func (h *Handlers) HandleInstrumentDescriptionPost() auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -230,25 +237,27 @@ func (h *Handlers) HandleInstrumentDescriptionPost() auth.HTTPHandlerFunc {
 		// Run queries
 		// FIXME: there needs to be an authorization check to ensure that the user attempting to
 		// delete the instrument is an administrator of the instrument!
-		if err := h.is.UpdateInstrumentDescription(c.Request().Context(), id, description); err != nil {
+		if err := h.is.UpdateInstrumentDescription(
+			c.Request().Context(), iid, description,
+		); err != nil {
 			return err
 		}
 
 		// TODO: return turbo stream, broadcast updates
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
 // Components
 
 func handleInstrumentComponentsPost(
-	storeAdder func(ctx context.Context, id int64, url, protocol string) error,
+	storeAdder func(ctx context.Context, iid instruments.InstrumentID, url, protocol string) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
@@ -258,29 +267,29 @@ func handleInstrumentComponentsPost(
 		// Run queries
 		// FIXME: there needs to be an authorization check to ensure that the user attempting to
 		// delete the instrument is an administrator of the instrument!
-		if err := storeAdder(c.Request().Context(), id, url, protocol); err != nil {
+		if err := storeAdder(c.Request().Context(), iid, url, protocol); err != nil {
 			return err
 		}
 
 		// TODO: return turbo stream, broadcast updates
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
-func handleInstrumentComponentPost(
+func handleInstrumentComponentPost[ComponentID ~int64](
 	typeName string,
-	componentUpdater func(ctx context.Context, componentID int64, url, protocol string) error,
-	componentDeleter func(ctx context.Context, componentID int64) error,
+	componentUpdater func(ctx context.Context, componentID ComponentID, url, protocol string) error,
+	componentDeleter func(ctx context.Context, componentID ComponentID) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
-		componentID, err := parseID(c.Param(typeName+"ID"), typeName)
+		componentID, err := parseID[ComponentID](c.Param(typeName+"ID"), typeName)
 		if err != nil {
 			return err
 		}
@@ -310,7 +319,7 @@ func handleInstrumentComponentPost(
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
@@ -318,16 +327,16 @@ func handleInstrumentComponentPost(
 
 func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
-		func(ctx context.Context, id int64, url, protocol string) error {
+		func(ctx context.Context, iid instruments.InstrumentID, url, protocol string) error {
 			controllerID, err := h.is.AddController(ctx, instruments.Controller{
-				InstrumentID: id,
+				InstrumentID: iid,
 				URL:          url,
 				Protocol:     protocol,
 			})
 			if err != nil {
 				return err
 			}
-			if err := h.pco.Add(controllerID, url); err != nil {
+			if err := h.pco.Add(planktoscope.ClientID(controllerID), url); err != nil {
 				return err
 			}
 			return nil
@@ -338,24 +347,25 @@ func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"controller",
-		func(ctx context.Context, componentID int64, url, protocol string) error {
+		func(ctx context.Context, controllerID instruments.ControllerID, url, protocol string) error {
 			if err := h.is.UpdateController(ctx, instruments.Controller{
-				ID:       componentID,
+				ID:       controllerID,
 				URL:      url,
 				Protocol: protocol,
 			}); err != nil {
 				return err
 			}
-			if err := h.pco.Update(ctx, componentID, url); err != nil {
+			// Note: when we have other controllers, we'll need to generalize this
+			if err := h.pco.Update(ctx, planktoscope.ClientID(controllerID), url); err != nil {
 				return err
 			}
 			return nil
 		},
-		func(ctx context.Context, componentID int64) error {
-			if err := h.is.DeleteController(ctx, componentID); err != nil {
+		func(ctx context.Context, controllerID instruments.ControllerID) error {
+			if err := h.is.DeleteController(ctx, controllerID); err != nil {
 				return err
 			}
-			if err := h.pco.Remove(ctx, componentID); err != nil {
+			if err := h.pco.Remove(ctx, planktoscope.ClientID(controllerID)); err != nil {
 				return err
 			}
 			return nil

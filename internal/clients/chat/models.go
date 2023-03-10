@@ -6,13 +6,19 @@ import (
 	"zombiezen.com/go/sqlite"
 )
 
+type (
+	MessageID int64
+	SenderID  string
+	Topic     string
+)
+
 // Message
 
 type Message struct {
-	ID       int64
-	Topic    string
+	ID       MessageID
+	Topic    Topic
 	SendTime time.Time
-	SenderID string
+	SenderID SenderID
 	Body     string
 }
 
@@ -27,7 +33,7 @@ func (m Message) newInsertion() map[string]interface{} {
 
 // Messages
 
-func newMessagesByTopicSelection(topic string, messagesLimit int64) map[string]interface{} {
+func newMessagesByTopicSelection(topic Topic, messagesLimit int64) map[string]interface{} {
 	return map[string]interface{}{
 		"$topic":      topic,
 		"$rows_limit": messagesLimit,
@@ -46,10 +52,10 @@ func newMessagesSelector() *messagesSelector {
 
 func (sel *messagesSelector) Step(s *sqlite.Stmt) error {
 	m := Message{
-		ID:       s.GetInt64("id"),
-		Topic:    s.GetText("topic"),
+		ID:       MessageID(s.GetInt64("id")),
+		Topic:    Topic(s.GetText("topic")),
 		SendTime: time.UnixMilli(s.GetInt64("send_time")),
-		SenderID: s.GetText("sender_id"),
+		SenderID: SenderID(s.GetText("sender_id")),
 		Body:     s.GetText("body"),
 	}
 	sel.messages = append(sel.messages, m)

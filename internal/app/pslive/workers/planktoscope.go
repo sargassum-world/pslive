@@ -18,7 +18,7 @@ func EstablishPlanktoscopeControllerConnections(
 		return errors.Wrap(err, "couldn't determine which planktoscope controllers to connect to")
 	}
 	for _, client := range initialClients {
-		if err := pco.Add(client.ID, client.URL); err != nil {
+		if err := pco.Add(planktoscope.ClientID(client.ID), client.URL); err != nil {
 			return err
 		}
 	}

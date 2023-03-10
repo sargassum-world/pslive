@@ -42,8 +42,8 @@ func (h *Handlers) Register(er godest.EchoRouter, ss *session.Store) {
 
 type HomeViewData struct {
 	CameraInstruments []instruments.Instrument
-	AdminIdentifiers  map[string]string
-	PresenceCounts    map[int64]int
+	AdminIdentifiers  map[instruments.AdminID]ory.IdentityIdentifier
+	PresenceCounts    map[instruments.InstrumentID]int
 }
 
 func getHomeViewData(
@@ -60,19 +60,19 @@ func getHomeViewData(
 		}
 	}
 
-	vd.AdminIdentifiers = make(map[string]string)
+	vd.AdminIdentifiers = make(map[instruments.AdminID]ory.IdentityIdentifier)
 	for _, instrument := range vd.CameraInstruments {
 		if vd.AdminIdentifiers[instrument.AdminID], err = oc.GetIdentifier(
-			ctx, instrument.AdminID,
+			ctx, ory.IdentityID(instrument.AdminID),
 		); err != nil {
 			// TODO: log the error
 			continue
 		}
 	}
 
-	vd.PresenceCounts = make(map[int64]int)
+	vd.PresenceCounts = make(map[instruments.InstrumentID]int)
 	for _, instrument := range vd.CameraInstruments {
-		topic := fmt.Sprintf("/instruments/%d/users", instrument.ID)
+		topic := presence.Topic(fmt.Sprintf("/instruments/%d/users", instrument.ID))
 		vd.PresenceCounts[instrument.ID] = ps.Count(topic)
 	}
 

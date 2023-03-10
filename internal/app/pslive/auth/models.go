@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest/opa"
 	"github.com/sargassum-world/godest/session"
+
+	"github.com/sargassum-world/pslive/internal/clients/ory"
 )
 
 type Auth struct {
@@ -28,19 +30,18 @@ func RegisterGobTypes() {
 
 type Identity struct {
 	Authenticated bool
-	User          string
+	User          ory.IdentityID
 }
 
 func (i Identity) NewSubject() opa.Subject {
-	return opa.NewSubject(i.User, i.Authenticated)
+	return opa.NewSubject(string(i.User), i.Authenticated)
 }
 
-func SetIdentity(s *sessions.Session, username string) {
-	identity := Identity{
-		Authenticated: username != "",
-		User:          username,
+func SetIdentity(s *sessions.Session, id ory.IdentityID) {
+	s.Values["identity"] = Identity{
+		Authenticated: id != "",
+		User:          id,
 	}
-	s.Values["identity"] = identity
 }
 
 func GetIdentity(s sessions.Session) (identity Identity, err error) {

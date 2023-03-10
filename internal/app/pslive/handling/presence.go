@@ -13,11 +13,13 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
-func replacePresenceListStream(topic, partial string, ps *presence.Store) turbostreams.Message {
+func replacePresenceListStream(
+	topic presence.Topic, partial string, ps *presence.Store,
+) turbostreams.Message {
 	known, anonymous := ps.List(topic)
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   topic + "/list",
+		Target:   string(topic) + "/list",
 		Template: partial,
 		Data: map[string]interface{}{
 			"Topic":     topic,
@@ -27,11 +29,13 @@ func replacePresenceListStream(topic, partial string, ps *presence.Store) turbos
 	}
 }
 
-func replacePresenceCountStream(topic, partial string, ps *presence.Store) turbostreams.Message {
+func replacePresenceCountStream(
+	topic presence.Topic, partial string, ps *presence.Store,
+) turbostreams.Message {
 	count := ps.Count(topic)
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   topic + "/count",
+		Target:   string(topic) + "/count",
 		Template: partial,
 		Data: map[string]interface{}{
 			"Topic": topic,
@@ -55,18 +59,22 @@ func HandlePresenceSub(
 	r.MustHave(tCount)
 	return auth.HandleTSWithSession(
 		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) (err error) {
-			if a.Identity.User != "" && !ps.IsKnown(sess.ID) {
-				user, err := oc.GetIdentifier(c.Context(), a.Identity.User)
+			if a.Identity.User != "" && !ps.IsKnown(presence.SessionID(sess.ID)) {
+				identifier, err := oc.GetIdentifier(c.Context(), a.Identity.User)
 				if err != nil {
 					return err
 				}
-				ps.Remember(sess.ID, a.Identity.User, user)
+				ps.Remember(
+					presence.SessionID(sess.ID), presence.UserID(a.Identity.User),
+					presence.UserIdentifier(identifier),
+				)
 			}
-			if ps.Add(c.Topic(), sess.ID) {
+			topic := presence.Topic(c.Topic())
+			if ps.Add(topic, presence.SessionID(sess.ID)) {
 				go func() {
 					time.Sleep(subPubDelay * time.Millisecond)
-					c.Broadcast(c.Topic()+"/list", replacePresenceListStream(c.Topic(), tList, ps))
-					c.Broadcast(c.Topic()+"/count", replacePresenceCountStream(c.Topic(), tCount, ps))
+					c.Broadcast(string(topic)+"/list", replacePresenceListStream(topic, tList, ps))
+					c.Broadcast(string(topic)+"/count", replacePresenceCountStream(topic, tCount, ps))
 				}()
 			}
 			return nil
@@ -84,9 +92,10 @@ func HandlePresenceUnsub(
 	r.MustHave(tCount)
 	return auth.HandleTSWithSession(
 		func(c *turbostreams.Context, a auth.Auth, sess *sessions.Session) error {
-			if ps.Remove(c.Topic(), sess.ID) {
-				c.Broadcast(c.Topic()+"/list", replacePresenceListStream(c.Topic(), tList, ps))
-				c.Broadcast(c.Topic()+"/count", replacePresenceCountStream(c.Topic(), tCount, ps))
+			topic := presence.Topic(c.Topic())
+			if ps.Remove(topic, presence.SessionID(sess.ID)) {
+				c.Broadcast(string(topic)+"/list", replacePresenceListStream(topic, tList, ps))
+				c.Broadcast(string(topic)+"/count", replacePresenceCountStream(topic, tCount, ps))
 			}
 			return nil
 		},
