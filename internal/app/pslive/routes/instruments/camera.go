@@ -206,7 +206,7 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		annotated := c.QueryParam("annotated") == "true"
+		annotated := c.QueryParam("annotated") == flagChecked
 		// TODO: implement a max framerate
 
 		// Run queries

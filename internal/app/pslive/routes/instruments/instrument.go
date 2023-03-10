@@ -20,6 +20,8 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
+const flagChecked = "true"
+
 func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 	const intBase = 10
 	const intWidth = 64
@@ -45,7 +47,7 @@ func handleInstrumentComponentsPost(
 		}
 		url := c.FormValue("url")
 		protocol := c.FormValue("protocol")
-		enabled := strings.ToLower(c.FormValue("enabled")) == "true"
+		enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
 
 		// Run queries
 		// FIXME: there needs to be an authorization check to ensure that the user attempting to
@@ -90,7 +92,7 @@ func handleInstrumentComponentPost[ComponentID ~int64](
 		case "updated":
 			protocol := c.FormValue("protocol")
 			url := c.FormValue("url")
-			enabled := strings.ToLower(c.FormValue("enabled")) == "true"
+			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
 			// FIXME: needs authorization check!
 			if err = componentUpdater(ctx, componentID, url, protocol, enabled); err != nil {
 				return err
