@@ -66,6 +66,7 @@
             </div>
           </div>
         </div>
+
         <div class="field is-horizontal">
           <div class="field-label is-normal">
             <label class="label" for="url">URL</label>
@@ -88,6 +89,30 @@
             </div>
           </div>
         </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal"><!--Left empty for spacing--></div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    name="enabled"
+                    value="true"
+                    {{if not $controller}}
+                      checked
+                    {{else if $controller.Enabled}}
+                      checked
+                    {{end}}
+                  >
+                  Enabled
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="field is-horizontal">
           <div class="field-label is-normal"><!--Left empty for spacing--></div>
           <div class="field-body" >

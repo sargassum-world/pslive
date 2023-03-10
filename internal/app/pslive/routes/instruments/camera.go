@@ -77,7 +77,10 @@ func newErrorJPEG(width, height int, message string) []byte {
 	return frame.Im
 }
 
-var jpegError = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+var (
+	frameError = newErrorFrame(errorWidth, errorHeight, "stream failed")
+	jpegError  = newErrorJPEG(errorWidth, errorHeight, "stream failed")
+)
 
 // Sending helpers
 
@@ -129,11 +132,14 @@ func externalSourceFrameSender(
 func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"camera",
-		func(ctx context.Context, componentID instruments.CameraID, url, protocol string) error {
+		func(
+			ctx context.Context, componentID instruments.CameraID, url, protocol string, enabled bool,
+		) error {
 			return h.is.UpdateCamera(ctx, instruments.Camera{
 				ID:       componentID,
 				URL:      url,
 				Protocol: protocol,
+				Enabled:  enabled,
 			})
 		},
 		h.is.DeleteCamera,
@@ -203,7 +209,7 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		annotated := c.QueryParam("annotated") == "true"
+		annotated := c.QueryParam("annotated") == flagChecked
 		// TODO: implement a max framerate
 
 		// Run queries
@@ -292,6 +298,7 @@ func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
 			}),
 			context.Canceled,
 		); err != nil {
+			c.Publish(frameError)
 			c.Logger().Error(errors.Wrapf(err, "failed to proxy stream %s", sourceURL))
 		}
 		return nil

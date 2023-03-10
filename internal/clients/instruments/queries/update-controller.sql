@@ -1,5 +1,6 @@
 update instruments_controller
 set
   url = $url,
-  protocol = $protocol
+  protocol = $protocol,
+  enabled = $enabled
 where instruments_controller.id = $id

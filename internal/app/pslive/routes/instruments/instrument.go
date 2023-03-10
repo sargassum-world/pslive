@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -19,6 +20,8 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/presence"
 )
 
+const flagChecked = "true"
+
 func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 	const intBase = 10
 	const intWidth = 64
@@ -27,6 +30,85 @@ func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 		return 0, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid %s id", typeName))
 	}
 	return ID(id), err
+}
+
+// Components (common across cameras & controllers)
+
+func handleInstrumentComponentsPost(
+	storeAdder func(
+		ctx context.Context, iid instruments.InstrumentID, url, protocol string, enabled bool,
+	) error,
+) auth.HTTPHandlerFunc {
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
+		if err != nil {
+			return err
+		}
+		url := c.FormValue("url")
+		protocol := c.FormValue("protocol")
+		enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
+
+		// Run queries
+		// FIXME: there needs to be an authorization check to ensure that the user attempting to
+		// delete the instrument is an administrator of the instrument!
+		if err := storeAdder(c.Request().Context(), iid, url, protocol, enabled); err != nil {
+			return err
+		}
+
+		// TODO: return turbo stream, broadcast updates
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
+	}
+}
+
+func handleInstrumentComponentPost[ComponentID ~int64](
+	typeName string,
+	componentUpdater func(
+		ctx context.Context, componentID ComponentID, url, protocol string, enabled bool,
+	) error,
+	componentDeleter func(ctx context.Context, componentID ComponentID) error,
+) auth.HTTPHandlerFunc {
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
+		if err != nil {
+			return err
+		}
+		componentID, err := parseID[ComponentID](c.Param(typeName+"ID"), typeName)
+		if err != nil {
+			return err
+		}
+		state := c.FormValue("state")
+
+		// Run queries
+		ctx := c.Request().Context()
+		switch state {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid %s state %s", typeName, state,
+			))
+		case "updated":
+			protocol := c.FormValue("protocol")
+			url := c.FormValue("url")
+			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
+			// FIXME: needs authorization check!
+			if err = componentUpdater(ctx, componentID, url, protocol, enabled); err != nil {
+				return err
+			}
+			// TODO: deal with turbo streams
+		case "deleted":
+			// FIXME: needs authorization check!
+			if err = componentDeleter(ctx, componentID); err != nil {
+				return err
+			}
+			// TODO: deal with turbo streams
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
+	}
 }
 
 // Instrument
@@ -56,6 +138,9 @@ func getInstrumentViewData(
 	vd.ControllerIDs = make([]instruments.ControllerID, 0, len(vd.Instrument.Controllers))
 	vd.Controllers = make(map[instruments.ControllerID]planktoscope.Planktoscope)
 	for _, controller := range vd.Instrument.Controllers {
+		if !controller.Enabled {
+			continue
+		}
 		pc, ok := pco.Get(planktoscope.ClientID(controller.ID))
 		if !ok {
 			return InstrumentViewData{}, errors.Errorf(
@@ -248,127 +333,4 @@ func (h *Handlers) HandleInstrumentDescriptionPost() auth.HTTPHandlerFunc {
 		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
-}
-
-// Components
-
-func handleInstrumentComponentsPost(
-	storeAdder func(ctx context.Context, iid instruments.InstrumentID, url, protocol string) error,
-) auth.HTTPHandlerFunc {
-	return func(c echo.Context, a auth.Auth) error {
-		// Parse params
-		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
-		if err != nil {
-			return err
-		}
-		url := c.FormValue("url")
-		protocol := c.FormValue("protocol")
-
-		// Run queries
-		// FIXME: there needs to be an authorization check to ensure that the user attempting to
-		// delete the instrument is an administrator of the instrument!
-		if err := storeAdder(c.Request().Context(), iid, url, protocol); err != nil {
-			return err
-		}
-
-		// TODO: return turbo stream, broadcast updates
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
-	}
-}
-
-func handleInstrumentComponentPost[ComponentID ~int64](
-	typeName string,
-	componentUpdater func(ctx context.Context, componentID ComponentID, url, protocol string) error,
-	componentDeleter func(ctx context.Context, componentID ComponentID) error,
-) auth.HTTPHandlerFunc {
-	return func(c echo.Context, a auth.Auth) error {
-		// Parse params
-		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
-		if err != nil {
-			return err
-		}
-		componentID, err := parseID[ComponentID](c.Param(typeName+"ID"), typeName)
-		if err != nil {
-			return err
-		}
-		state := c.FormValue("state")
-
-		// Run queries
-		ctx := c.Request().Context()
-		switch state {
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid %s state %s", typeName, state,
-			))
-		case "updated":
-			protocol := c.FormValue("protocol")
-			url := c.FormValue("url")
-			// FIXME: needs authorization check!
-			if err = componentUpdater(ctx, componentID, url, protocol); err != nil {
-				return err
-			}
-			// TODO: deal with turbo streams
-		case "deleted":
-			// FIXME: needs authorization check!
-			if err = componentDeleter(ctx, componentID); err != nil {
-				return err
-			}
-			// TODO: deal with turbo streams
-		}
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
-	}
-}
-
-// Controllers
-
-func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
-	return handleInstrumentComponentsPost(
-		func(ctx context.Context, iid instruments.InstrumentID, url, protocol string) error {
-			controllerID, err := h.is.AddController(ctx, instruments.Controller{
-				InstrumentID: iid,
-				URL:          url,
-				Protocol:     protocol,
-			})
-			if err != nil {
-				return err
-			}
-			if err := h.pco.Add(planktoscope.ClientID(controllerID), url); err != nil {
-				return err
-			}
-			return nil
-		},
-	)
-}
-
-func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
-	return handleInstrumentComponentPost(
-		"controller",
-		func(ctx context.Context, controllerID instruments.ControllerID, url, protocol string) error {
-			if err := h.is.UpdateController(ctx, instruments.Controller{
-				ID:       controllerID,
-				URL:      url,
-				Protocol: protocol,
-			}); err != nil {
-				return err
-			}
-			// Note: when we have other controllers, we'll need to generalize this
-			if err := h.pco.Update(ctx, planktoscope.ClientID(controllerID), url); err != nil {
-				return err
-			}
-			return nil
-		},
-		func(ctx context.Context, controllerID instruments.ControllerID) error {
-			if err := h.is.DeleteController(ctx, controllerID); err != nil {
-				return err
-			}
-			if err := h.pco.Remove(ctx, planktoscope.ClientID(controllerID)); err != nil {
-				return err
-			}
-			return nil
-		},
-	)
 }

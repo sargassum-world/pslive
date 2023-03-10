@@ -227,7 +227,7 @@ func handleCameraSettings(
 	}
 
 	const floatWidth = 64
-	autoWhiteBalance := strings.ToLower(autoWhiteBalanceRaw) == "true"
+	autoWhiteBalance := strings.ToLower(autoWhiteBalanceRaw) == flagChecked
 	whiteBalanceRedGain, err := strconv.ParseFloat(whiteBalanceRedGainRaw, floatWidth)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(

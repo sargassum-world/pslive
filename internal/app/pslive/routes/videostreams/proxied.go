@@ -197,6 +197,9 @@ func (h *Handlers) HandleExternalSourcePub() videostreams.HandlerFunc {
 					c.Logger().Debugf("received eof from %s", source)
 					return true, nil
 				}
+				if errors.Is(err, context.Canceled) {
+					return true, nil
+				}
 				if err != nil {
 					c.Logger().Errorf("couldn't receive mjpeg frame from %s: %s", source, err)
 					return false, errors.Wrap(err, "couldn't read mjpeg frame")

@@ -9,6 +9,9 @@
 
 <turbo-frame id="/instruments/{{$instrument.ID}}/live">
   {{range $camera := $instrument.Cameras}}
+    {{if not $camera.Enabled}}
+      {{continue}}
+    {{end}}
     <div class="section-card wide-card">
       {{if eq $camera.Protocol "mjpeg"}}
         {{
@@ -55,6 +58,9 @@
     </div>
   </div>
   {{range $controllerID := $controllerIDs}}
+    {{if not (index $instrument.Controllers $controllerID).Enabled}}
+      {{continue}}
+    {{end}}
     {{
       template "instruments/planktoscope/controller.partial.tmpl" dict
       "Instrument" $instrument
