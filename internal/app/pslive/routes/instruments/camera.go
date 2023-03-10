@@ -129,11 +129,14 @@ func externalSourceFrameSender(
 func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"camera",
-		func(ctx context.Context, componentID instruments.CameraID, url, protocol string) error {
+		func(
+			ctx context.Context, componentID instruments.CameraID, url, protocol string, enabled bool,
+		) error {
 			return h.is.UpdateCamera(ctx, instruments.Camera{
 				ID:       componentID,
 				URL:      url,
 				Protocol: protocol,
+				Enabled:  enabled,
 			})
 		},
 		h.is.DeleteCamera,

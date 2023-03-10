@@ -18,6 +18,7 @@ type Camera struct {
 	InstrumentID InstrumentID
 	URL          string
 	Protocol     string
+	Enabled      bool
 }
 
 func (c Camera) newInsertion() map[string]interface{} {
@@ -25,6 +26,7 @@ func (c Camera) newInsertion() map[string]interface{} {
 		"$instrument_id": c.InstrumentID,
 		"$url":           c.URL,
 		"$protocol":      c.Protocol,
+		"$enabled":       c.Enabled,
 	}
 }
 
@@ -33,6 +35,7 @@ func (c Camera) newUpdate() map[string]interface{} {
 		"$id":       c.ID,
 		"$url":      c.URL,
 		"$protocol": c.Protocol,
+		"$enabled":  c.Enabled,
 	}
 }
 
@@ -70,6 +73,7 @@ func (sel *camerasSelector) Step(s *sqlite.Stmt) error {
 			InstrumentID: InstrumentID(s.GetInt64("instrument_id")),
 			URL:          s.GetText("url"),
 			Protocol:     s.GetText("protocol"),
+			Enabled:      s.GetBool("enabled"),
 		}
 		if id != 0 {
 			sel.ids = append(sel.ids, id)
@@ -93,6 +97,7 @@ type Controller struct {
 	InstrumentID InstrumentID
 	URL          string
 	Protocol     string
+	Enabled      bool
 }
 
 func (c Controller) newInsertion() map[string]interface{} {
@@ -100,6 +105,7 @@ func (c Controller) newInsertion() map[string]interface{} {
 		"$instrument_id": c.InstrumentID,
 		"$url":           c.URL,
 		"$protocol":      c.Protocol,
+		"$enabled":       c.Enabled,
 	}
 }
 
@@ -108,6 +114,7 @@ func (c Controller) newUpdate() map[string]interface{} {
 		"$id":       c.ID,
 		"$url":      c.URL,
 		"$protocol": c.Protocol,
+		"$enabled":  c.Enabled,
 	}
 }
 
@@ -145,6 +152,7 @@ func (sel *controllersSelector) Step(s *sqlite.Stmt) error {
 			InstrumentID: InstrumentID(s.GetInt64("instrument_id")),
 			URL:          s.GetText("url"),
 			Protocol:     s.GetText("protocol"),
+			Enabled:      s.GetBool("enabled"),
 		}
 		if id != 0 {
 			sel.ids = append(sel.ids, id)
@@ -253,6 +261,7 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 		InstrumentID: instrumentID,
 		URL:          s.GetText("camera_url"),
 		Protocol:     s.GetText("camera_protocol"),
+		Enabled:      s.GetBool("camera_enabled"),
 	}
 	if camera != (Camera{
 		ID:           cameraID,
@@ -267,6 +276,7 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 		InstrumentID: instrumentID,
 		URL:          s.GetText("controller_url"),
 		Protocol:     s.GetText("controller_protocol"),
+		Enabled:      s.GetBool("controller_enabled"),
 	}
 	if controller != (Controller{
 		ID:           controllerID,
