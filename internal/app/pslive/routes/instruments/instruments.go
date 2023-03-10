@@ -16,7 +16,7 @@ import (
 
 type InstrumentsViewData struct {
 	Instruments      []instruments.Instrument
-	AdminIdentifiers map[string]string
+	AdminIdentifiers map[instruments.AdminID]ory.IdentityIdentifier
 }
 
 func getInstrumentsViewData(
@@ -26,10 +26,10 @@ func getInstrumentsViewData(
 		return InstrumentsViewData{}, err
 	}
 
-	vd.AdminIdentifiers = make(map[string]string)
+	vd.AdminIdentifiers = make(map[instruments.AdminID]ory.IdentityIdentifier)
 	for _, instrument := range vd.Instruments {
 		if vd.AdminIdentifiers[instrument.AdminID], err = oc.GetIdentifier(
-			ctx, instrument.AdminID,
+			ctx, ory.IdentityID(instrument.AdminID),
 		); err != nil {
 			// TODO: log the error
 			continue
@@ -78,7 +78,7 @@ func (h *Handlers) HandleInstrumentsPost() auth.HTTPHandlerFunc {
 		i := instruments.Instrument{
 			Name:        haikunator.New().Haikunate(),
 			Description: "An unknown instrument!",
-			AdminID:     a.Identity.User,
+			AdminID:     instruments.AdminID(a.Identity.User),
 		}
 		id, err := h.is.AddInstrument(c.Request().Context(), i)
 		if err != nil {

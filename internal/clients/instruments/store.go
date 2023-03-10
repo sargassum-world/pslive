@@ -52,7 +52,7 @@ func (s *Store) UpdateCamera(ctx context.Context, c Camera) (err error) {
 var rawDeleteCameraQuery string
 var deleteCameraQuery string = strings.TrimSpace(rawDeleteCameraQuery)
 
-func (s *Store) DeleteCamera(ctx context.Context, id int64) (err error) {
+func (s *Store) DeleteCamera(ctx context.Context, id CameraID) (err error) {
 	return errors.Wrapf(
 		s.db.ExecuteDelete(ctx, deleteCameraQuery, Camera{ID: id}.newDelete()),
 		"couldn't delete camera %d", id,
@@ -63,7 +63,7 @@ func (s *Store) DeleteCamera(ctx context.Context, id int64) (err error) {
 var rawSelectCameraQuery string
 var selectCameraQuery string = strings.TrimSpace(rawSelectCameraQuery)
 
-func (s *Store) GetCamera(ctx context.Context, id int64) (i Camera, err error) {
+func (s *Store) GetCamera(ctx context.Context, id CameraID) (i Camera, err error) {
 	sel := newCamerasSelector()
 	if err = s.db.ExecuteSelection(
 		ctx, selectCameraQuery, newCameraSelection(id), sel.Step,
@@ -109,7 +109,7 @@ func (s *Store) UpdateController(ctx context.Context, c Controller) (err error) 
 var rawDeleteControllerQuery string
 var deleteControllerQuery string = strings.TrimSpace(rawDeleteControllerQuery)
 
-func (s *Store) DeleteController(ctx context.Context, id int64) (err error) {
+func (s *Store) DeleteController(ctx context.Context, id ControllerID) (err error) {
 	return errors.Wrapf(
 		s.db.ExecuteDelete(ctx, deleteControllerQuery, Controller{ID: id}.newDelete()),
 		"couldn't delete controller %d", id,
@@ -156,7 +156,9 @@ func (s *Store) AddInstrument(ctx context.Context, i Instrument) (instrumentID i
 var rawUpdateInstrumentNameQuery string
 var updateInstrumentNameQuery string = strings.TrimSpace(rawUpdateInstrumentNameQuery)
 
-func (s *Store) UpdateInstrumentName(ctx context.Context, id int64, name string) (err error) {
+func (s *Store) UpdateInstrumentName(
+	ctx context.Context, id InstrumentID, name string,
+) (err error) {
 	return errors.Wrapf(
 		s.db.ExecuteUpdate(ctx, updateInstrumentNameQuery, Instrument{
 			ID:   id,
@@ -171,7 +173,7 @@ var rawUpdateInstrumentDescriptionQuery string
 var updateInstrumentDescriptionQuery string = strings.TrimSpace(rawUpdateInstrumentDescriptionQuery)
 
 func (s *Store) UpdateInstrumentDescription(
-	ctx context.Context, id int64, description string,
+	ctx context.Context, id InstrumentID, description string,
 ) (err error) {
 	return errors.Wrapf(
 		s.db.ExecuteUpdate(ctx, updateInstrumentDescriptionQuery, Instrument{
@@ -186,7 +188,7 @@ func (s *Store) UpdateInstrumentDescription(
 var rawDeleteInstrumentQuery string
 var deleteInstrumentQuery string = strings.TrimSpace(rawDeleteInstrumentQuery)
 
-func (s *Store) DeleteInstrument(ctx context.Context, id int64) (err error) {
+func (s *Store) DeleteInstrument(ctx context.Context, id InstrumentID) (err error) {
 	return errors.Wrapf(
 		s.db.ExecuteDelete(ctx, deleteInstrumentQuery, Instrument{ID: id}.newDelete()),
 		"couldn't delete instrument %d", id,
@@ -197,7 +199,7 @@ func (s *Store) DeleteInstrument(ctx context.Context, id int64) (err error) {
 var rawSelectInstrumentQuery string
 var selectInstrumentQuery string = strings.TrimSpace(rawSelectInstrumentQuery)
 
-func (s *Store) GetInstrument(ctx context.Context, id int64) (i Instrument, err error) {
+func (s *Store) GetInstrument(ctx context.Context, id InstrumentID) (i Instrument, err error) {
 	sel := newInstrumentsSelector()
 	if err = s.db.ExecuteSelection(
 		ctx, selectInstrumentQuery, newInstrumentSelection(id), sel.Step,
@@ -232,7 +234,7 @@ var rawSelectInstrumentsByAdminIDQuery string
 var selectInstrumentsByAdminIDQuery string = strings.TrimSpace(rawSelectInstrumentsByAdminIDQuery)
 
 func (s *Store) GetInstrumentsByAdminID(
-	ctx context.Context, adminID string,
+	ctx context.Context, adminID AdminID,
 ) (instruments []Instrument, err error) {
 	sel := newInstrumentsSelector()
 	if err = s.db.ExecuteSelection(

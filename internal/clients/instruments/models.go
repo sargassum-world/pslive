@@ -4,11 +4,18 @@ import (
 	"zombiezen.com/go/sqlite"
 )
 
+type (
+	CameraID     int64
+	ControllerID int64
+	InstrumentID int64
+	AdminID      string
+)
+
 // Camera
 
 type Camera struct {
-	ID           int64
-	InstrumentID int64
+	ID           CameraID
+	InstrumentID InstrumentID
 	URL          string
 	Protocol     string
 }
@@ -35,7 +42,7 @@ func (c Camera) newDelete() map[string]interface{} {
 	}
 }
 
-func newCameraSelection(id int64) map[string]interface{} {
+func newCameraSelection(id CameraID) map[string]interface{} {
 	return map[string]interface{}{
 		"$id": id,
 	}
@@ -44,23 +51,23 @@ func newCameraSelection(id int64) map[string]interface{} {
 // Cameras
 
 type camerasSelector struct {
-	ids     []int64
-	cameras map[int64]Camera
+	ids     []CameraID
+	cameras map[CameraID]Camera
 }
 
 func newCamerasSelector() *camerasSelector {
 	return &camerasSelector{
-		ids:     make([]int64, 0),
-		cameras: make(map[int64]Camera),
+		ids:     make([]CameraID, 0),
+		cameras: make(map[CameraID]Camera),
 	}
 }
 
 func (sel *camerasSelector) Step(s *sqlite.Stmt) error {
-	id := s.GetInt64("id")
+	id := CameraID(s.GetInt64("id"))
 	if _, ok := sel.cameras[id]; !ok {
 		sel.cameras[id] = Camera{
-			ID:           s.GetInt64("id"),
-			InstrumentID: s.GetInt64("instrument_id"),
+			ID:           id,
+			InstrumentID: InstrumentID(s.GetInt64("instrument_id")),
 			URL:          s.GetText("url"),
 			Protocol:     s.GetText("protocol"),
 		}
@@ -82,8 +89,8 @@ func (sel *camerasSelector) Cameras() []Camera {
 // Controller
 
 type Controller struct {
-	ID           int64
-	InstrumentID int64
+	ID           ControllerID
+	InstrumentID InstrumentID
 	URL          string
 	Protocol     string
 }
@@ -119,23 +126,23 @@ func (c Controller) newProtocolSelection() map[string]interface{} {
 // Controllers
 
 type controllersSelector struct {
-	ids         []int64
-	controllers map[int64]Controller
+	ids         []ControllerID
+	controllers map[ControllerID]Controller
 }
 
 func newControllersSelector() *controllersSelector {
 	return &controllersSelector{
-		ids:         make([]int64, 0),
-		controllers: make(map[int64]Controller),
+		ids:         make([]ControllerID, 0),
+		controllers: make(map[ControllerID]Controller),
 	}
 }
 
 func (sel *controllersSelector) Step(s *sqlite.Stmt) error {
-	id := s.GetInt64("id")
+	id := ControllerID(s.GetInt64("id"))
 	if _, ok := sel.controllers[id]; !ok {
 		sel.controllers[id] = Controller{
-			ID:           s.GetInt64("id"),
-			InstrumentID: s.GetInt64("instrument_id"),
+			ID:           id,
+			InstrumentID: InstrumentID(s.GetInt64("instrument_id")),
 			URL:          s.GetText("url"),
 			Protocol:     s.GetText("protocol"),
 		}
@@ -157,12 +164,12 @@ func (sel *controllersSelector) Controllers() []Controller {
 // Instrument
 
 type Instrument struct {
-	ID          int64
+	ID          InstrumentID
 	Name        string
 	Description string
-	AdminID     string
-	Cameras     map[int64]Camera
-	Controllers map[int64]Controller
+	AdminID     AdminID
+	Cameras     map[CameraID]Camera
+	Controllers map[ControllerID]Controller
 }
 
 func (i Instrument) newInsertion() map[string]interface{} {
@@ -199,7 +206,7 @@ func (i Instrument) newAdminIDSelection() map[string]interface{} {
 	}
 }
 
-func newInstrumentSelection(id int64) map[string]interface{} {
+func newInstrumentSelection(id InstrumentID) map[string]interface{} {
 	return map[string]interface{}{
 		"$id": id,
 	}
@@ -212,63 +219,63 @@ func newInstrumentsSelection() map[string]interface{} {
 }
 
 type instrumentsSelector struct {
-	ids         []int64
-	instruments map[int64]Instrument
+	ids         []InstrumentID
+	instruments map[InstrumentID]Instrument
 }
 
 func newInstrumentsSelector() *instrumentsSelector {
 	return &instrumentsSelector{
-		ids:         make([]int64, 0),
-		instruments: make(map[int64]Instrument),
+		ids:         make([]InstrumentID, 0),
+		instruments: make(map[InstrumentID]Instrument),
 	}
 }
 
 func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
-	id := s.GetInt64("id")
-	if _, ok := sel.instruments[id]; !ok {
-		sel.instruments[id] = Instrument{
-			ID:          s.GetInt64("id"),
+	instrumentID := InstrumentID(s.GetInt64("id"))
+	if _, ok := sel.instruments[instrumentID]; !ok {
+		sel.instruments[instrumentID] = Instrument{
+			ID:          instrumentID,
 			Name:        s.GetText("name"),
 			Description: s.GetText("description"),
-			AdminID:     s.GetText("admin_id"),
-			Cameras:     make(map[int64]Camera),
-			Controllers: make(map[int64]Controller),
+			AdminID:     AdminID(s.GetText("admin_id")),
+			Cameras:     make(map[CameraID]Camera),
+			Controllers: make(map[ControllerID]Controller),
 		}
-		if id != 0 {
-			sel.ids = append(sel.ids, id)
+		if instrumentID != 0 {
+			sel.ids = append(sel.ids, instrumentID)
 		}
 	}
-	instrument := sel.instruments[id]
+	instrument := sel.instruments[instrumentID]
 
-	cameraID := s.GetInt64("camera_id")
+	cameraID := CameraID(s.GetInt64("camera_id"))
 	camera := Camera{
 		ID:           cameraID,
-		InstrumentID: s.GetInt64("id"),
+		InstrumentID: instrumentID,
 		URL:          s.GetText("camera_url"),
 		Protocol:     s.GetText("camera_protocol"),
 	}
 	if camera != (Camera{
 		ID:           cameraID,
-		InstrumentID: id,
+		InstrumentID: instrumentID,
 	}) {
 		instrument.Cameras[cameraID] = camera
 	}
 
-	controllerID := s.GetInt64("controller_id")
+	controllerID := ControllerID(s.GetInt64("controller_id"))
 	controller := Controller{
 		ID:           controllerID,
-		InstrumentID: s.GetInt64("id"),
+		InstrumentID: instrumentID,
 		URL:          s.GetText("controller_url"),
 		Protocol:     s.GetText("controller_protocol"),
 	}
 	if controller != (Controller{
 		ID:           controllerID,
-		InstrumentID: id,
+		InstrumentID: instrumentID,
 	}) {
 		instrument.Controllers[controllerID] = controller
 	}
 
-	sel.instruments[id] = instrument
+	sel.instruments[instrumentID] = instrument
 	return nil
 }
 

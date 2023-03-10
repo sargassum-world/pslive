@@ -6,32 +6,39 @@ import (
 	"sync"
 )
 
+type (
+	UserID         string
+	UserIdentifier string
+	SessionID      string
+	Topic          string
+)
+
 type User struct {
-	ID         string
-	Identifier string
+	ID         UserID
+	Identifier UserIdentifier
 }
 
 type Store struct {
-	users     map[string]User
+	users     map[SessionID]User
 	umu       sync.RWMutex
-	presences map[string]map[string]uint
+	presences map[Topic]map[SessionID]uint
 	pmu       sync.RWMutex // we could use more granular locking, but we don't need that yet
 }
 
 func NewStore() *Store {
 	return &Store{
-		users:     make(map[string]User),
-		presences: make(map[string]map[string]uint),
+		users:     make(map[SessionID]User),
+		presences: make(map[Topic]map[SessionID]uint),
 	}
 }
 
-func (s *Store) Add(topic, sessionID string) (changed bool) {
+func (s *Store) Add(topic Topic, sessionID SessionID) (changed bool) {
 	s.pmu.Lock()
 	defer s.pmu.Unlock()
 
 	counts, ok := s.presences[topic]
 	if !ok {
-		counts = make(map[string]uint)
+		counts = make(map[SessionID]uint)
 		s.presences[topic] = counts
 	}
 	if counts[sessionID] == 0 {
@@ -41,7 +48,7 @@ func (s *Store) Add(topic, sessionID string) (changed bool) {
 	return changed
 }
 
-func (s *Store) Remove(topic, sessionID string) (changed bool) {
+func (s *Store) Remove(topic Topic, sessionID SessionID) (changed bool) {
 	s.pmu.Lock()
 	defer s.pmu.Unlock()
 
@@ -64,20 +71,20 @@ func (s *Store) Remove(topic, sessionID string) (changed bool) {
 	return changed
 }
 
-func (s *Store) List(topic string) (users []User, anonymousSessions []string) {
+func (s *Store) List(topic Topic) (users []User, anonymousSessions []SessionID) {
 	s.pmu.RLock()
 	defer s.pmu.RUnlock()
 
 	counts, ok := s.presences[topic]
 	if !ok {
-		return []User{}, []string{}
+		return []User{}, []SessionID{}
 	}
 
 	s.umu.RLock()
 	defer s.umu.RUnlock()
 
-	anonymousSessions = make([]string, 0, len(counts))
-	knownUsers := make(map[string]User)
+	anonymousSessions = make([]SessionID, 0, len(counts))
+	knownUsers := make(map[UserID]User)
 	for sessionID, count := range counts {
 		if count == 0 {
 			// We don't attempt to delete the session ID here because we only have a read lock
@@ -100,14 +107,14 @@ func (s *Store) List(topic string) (users []User, anonymousSessions []string) {
 	return users, anonymousSessions
 }
 
-func (s *Store) Count(topic string) (count int) {
+func (s *Store) Count(topic Topic) (count int) {
 	s.pmu.RLock()
 	defer s.pmu.RUnlock()
 
 	return len(s.presences[topic])
 }
 
-func (s *Store) IsKnown(sessionID string) bool {
+func (s *Store) IsKnown(sessionID SessionID) bool {
 	s.umu.RLock()
 	defer s.umu.RUnlock()
 
@@ -115,7 +122,7 @@ func (s *Store) IsKnown(sessionID string) bool {
 	return ok
 }
 
-func (s *Store) Remember(sessionID, userID, userIdentifier string) {
+func (s *Store) Remember(sessionID SessionID, userID UserID, userIdentifier UserIdentifier) {
 	s.umu.Lock()
 	defer s.umu.Unlock()
 
@@ -130,7 +137,7 @@ func (s *Store) Remember(sessionID, userID, userIdentifier string) {
 	}
 }
 
-func (s *Store) Forget(sessionID string) {
+func (s *Store) Forget(sessionID SessionID) {
 	s.umu.Lock()
 	defer s.umu.Unlock()
 

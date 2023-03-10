@@ -12,23 +12,23 @@ type Cache struct {
 
 // /ory/identities/:id/identifier
 
-func keyIdentifierByID(id string) string {
+func keyIdentifierByID(id IdentityID) string {
 	return fmt.Sprintf("/ory/identities/s:[%s]/identifier", id)
 }
 
 func (c *Cache) SetIdentifierByID(
-	id string, identifier string, costWeight float32,
+	id IdentityID, identifier IdentityIdentifier, costWeight float32,
 ) error {
 	key := keyIdentifierByID(id)
 	return c.Cache.SetEntry(key, identifier, costWeight, -1)
 }
 
-func (c *Cache) UnsetIdentifierByID(id string) {
+func (c *Cache) UnsetIdentifierByID(id IdentityID) {
 	key := keyIdentifierByID(id)
 	c.Cache.UnsetEntry(key)
 }
 
-func (c *Cache) GetIdentifierByID(id string) (string, bool, error) {
+func (c *Cache) GetIdentifierByID(id IdentityID) (IdentityIdentifier, bool, error) {
 	key := keyIdentifierByID(id)
 	var value string
 	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
@@ -36,5 +36,5 @@ func (c *Cache) GetIdentifierByID(id string) (string, bool, error) {
 		return "", keyExists, err
 	}
 
-	return value, true, nil
+	return IdentityIdentifier(value), true, nil
 }

@@ -129,7 +129,7 @@ func externalSourceFrameSender(
 func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"camera",
-		func(ctx context.Context, componentID int64, url, protocol string) error {
+		func(ctx context.Context, componentID instruments.CameraID, url, protocol string) error {
 			return h.is.UpdateCamera(ctx, instruments.Camera{
 				ID:       componentID,
 				URL:      url,
@@ -143,7 +143,7 @@ func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 	return func(c echo.Context) (err error) {
 		// Parse params
-		id, err := parseID(c.Param("cameraID"), "camera")
+		cameraID, err := parseID[instruments.CameraID](c.Param("cameraID"), "camera")
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse camera ID path parameter")
 		}
@@ -159,9 +159,9 @@ func (h *Handlers) HandleInstrumentCameraFrameGet() echo.HandlerFunc {
 		}
 
 		// Run queries
-		camera, err := h.is.GetCamera(c.Request().Context(), id)
+		camera, err := h.is.GetCamera(c.Request().Context(), cameraID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", cameraID))
 		}
 		sourceURL := camera.URL
 
@@ -199,7 +199,7 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 	jpegLoading := newErrorJPEG(errorWidth, errorHeight, "loading stream...")
 	return func(c echo.Context) error {
 		// Parse params
-		id, err := parseID(c.Param("cameraID"), "camera")
+		cameraID, err := parseID[instruments.CameraID](c.Param("cameraID"), "camera")
 		if err != nil {
 			return err
 		}
@@ -207,9 +207,9 @@ func (h *Handlers) HandleInstrumentCameraStreamGet() echo.HandlerFunc {
 		// TODO: implement a max framerate
 
 		// Run queries
-		camera, err := h.is.GetCamera(c.Request().Context(), id)
+		camera, err := h.is.GetCamera(c.Request().Context(), cameraID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", id))
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("camera %d not found", cameraID))
 		}
 		sourceURL := camera.URL
 
@@ -253,7 +253,7 @@ func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
 	frameLoading := newErrorFrame(errorWidth, errorHeight, "loading stream...")
 	return func(c *videostreams.Context) error {
 		// Parse params
-		id, err := parseID(c.Param("cameraID"), "camera")
+		cameraID, err := parseID[instruments.CameraID](c.Param("cameraID"), "camera")
 		if err != nil {
 			return err
 		}
@@ -261,9 +261,9 @@ func (h *Handlers) HandleInstrumentCameraStreamPub() videostreams.HandlerFunc {
 
 		// Run queries
 		ctx := c.Context()
-		camera, err := h.is.GetCamera(ctx, id)
+		camera, err := h.is.GetCamera(ctx, cameraID)
 		if err != nil {
-			return errors.Wrapf(err, "camera %d not found", id)
+			return errors.Wrapf(err, "camera %d not found", cameraID)
 		}
 		sourceURL := camera.URL
 

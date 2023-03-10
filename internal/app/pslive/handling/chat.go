@@ -17,11 +17,11 @@ import (
 )
 
 type ChatMessageViewData struct {
-	ID               int64
-	Topic            string
+	ID               chat.MessageID
+	Topic            chat.Topic
 	SendTime         time.Time
-	SenderID         string
-	SenderIdentifier string
+	SenderID         ory.IdentityID
+	SenderIdentifier ory.IdentityIdentifier
 	Body             string
 }
 
@@ -30,7 +30,7 @@ func NewChatMessageViewData(m chat.Message) ChatMessageViewData {
 		ID:       m.ID,
 		Topic:    m.Topic,
 		SendTime: m.SendTime,
-		SenderID: m.SenderID,
+		SenderID: ory.IdentityID(m.SenderID),
 		Body:     m.Body,
 	}
 }
@@ -41,7 +41,9 @@ func AdaptChatMessages(
 	viewData = make([]ChatMessageViewData, len(messages))
 	for i, message := range messages {
 		viewData[i] = NewChatMessageViewData(message)
-		if viewData[i].SenderIdentifier, err = oc.GetIdentifier(ctx, message.SenderID); err != nil {
+		if viewData[i].SenderIdentifier, err = oc.GetIdentifier(
+			ctx, ory.IdentityID(message.SenderID),
+		); err != nil {
 			return nil, errors.Wrapf(
 				err, "couldn't look up identifier of message sender %s", message.SenderID,
 			)
@@ -58,7 +60,7 @@ const (
 func appendChatMessageStream(m ChatMessageViewData) turbostreams.Message {
 	return turbostreams.Message{
 		Action:   turbostreams.ActionAppend,
-		Target:   m.Topic,
+		Target:   string(m.Topic),
 		Template: messagePartial,
 		Data: map[string]interface{}{
 			"Message":          m,
@@ -100,9 +102,9 @@ func HandleChatMessagesPost(
 			return err
 		}
 		m := chat.Message{
-			Topic:    topic + "/messages",
+			Topic:    chat.Topic(topic + "/messages"),
 			SendTime: time.Now(),
-			SenderID: a.Identity.User,
+			SenderID: chat.SenderID(a.Identity.User),
 			Body:     body,
 		}
 		if m.ID, err = cs.AddMessage(ctx, m); err != nil {
@@ -110,11 +112,11 @@ func HandleChatMessagesPost(
 		}
 		mvd := NewChatMessageViewData(m)
 		mvd.SenderIdentifier = user
-		tsh.Broadcast(m.Topic, []turbostreams.Message{appendChatMessageStream(mvd)})
+		tsh.Broadcast(string(m.Topic), []turbostreams.Message{appendChatMessageStream(mvd)})
 
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {
-			authorizeSend, err := azc.Allow(ctx, a, m.Topic, http.MethodPost, nil)
+			authorizeSend, err := azc.Allow(ctx, a, string(m.Topic), http.MethodPost, nil)
 			if err != nil {
 				return errors.Wrapf(err, "couldn't check authz for sending to chat for topic %s", topic)
 			}

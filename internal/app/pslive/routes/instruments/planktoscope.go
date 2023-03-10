@@ -14,6 +14,7 @@ import (
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/handling"
+	"github.com/sargassum-world/pslive/internal/clients/instruments"
 	"github.com/sargassum-world/pslive/internal/clients/planktoscope"
 )
 
@@ -22,16 +23,17 @@ import (
 const pumpPartial = "instruments/planktoscope/pump.partial.tmpl"
 
 func replacePumpStream(
-	instrumentID, controllerID int64, a auth.Auth, pc *planktoscope.Client,
+	iid instruments.InstrumentID, cid instruments.ControllerID, a auth.Auth,
+	pc *planktoscope.Client,
 ) turbostreams.Message {
 	state := pc.GetState()
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/pump", instrumentID, controllerID),
+		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/pump", iid, cid),
 		Template: pumpPartial,
 		Data: map[string]interface{}{
-			"InstrumentID": instrumentID,
-			"ControllerID": controllerID,
+			"InstrumentID": iid,
+			"ControllerID": cid,
 			"PumpSettings": state.PumpSettings,
 			"Pump":         state.Pump,
 			"Auth":         a,
@@ -81,7 +83,7 @@ func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 	h.r.MustHave(t)
 	return func(c *turbostreams.Context) error {
 		// Parse params & run queries
-		instrumentID, controllerID, pc, err := getPlanktoscopeClientForPub(c, h.pco)
+		iid, cid, pc, err := getPlanktoscopeClientForPub(c, h.pco)
 		if err != nil {
 			return err
 		}
@@ -99,7 +101,7 @@ func (h *Handlers) HandlePumpPub() turbostreams.HandlerFunc {
 				}
 				// We insert an empty Auth object because the MSG handler will add the auth object for each
 				// client
-				message := replacePumpStream(instrumentID, controllerID, auth.Auth{}, pc)
+				message := replacePumpStream(iid, cid, auth.Auth{}, pc)
 				c.Publish(message)
 			}
 		}
@@ -111,9 +113,10 @@ type PlanktoscopePumpViewAuthz struct {
 }
 
 func getPlanktoscopePumpViewAuthz(
-	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, iid instruments.InstrumentID, cid instruments.ControllerID,
+	a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopePumpViewAuthz, err error) {
-	path := fmt.Sprintf("/instruments/%d/controllers/%d/pump", instrumentID, controllerID)
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/pump", iid, cid)
 	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
 		return PlanktoscopePumpViewAuthz{}, errors.Wrap(err, "couldn't check authz for setting pump")
 	}
@@ -124,17 +127,16 @@ func (h *Handlers) ModifyPumpMsgData() handling.DataModifier {
 	return func(
 		ctx context.Context, a auth.Auth, data map[string]interface{},
 	) (modifications map[string]interface{}, err error) {
-		instrumentID, controllerID, err := getIDsForModificationMiddleware(data)
+		iid, cid, err := getIDsForModificationMiddleware(data)
 		if err != nil {
 			return nil, err
 		}
 		modifications = make(map[string]interface{})
 		if modifications["Authorizations"], err = getPlanktoscopePumpViewAuthz(
-			ctx, instrumentID, controllerID, a, h.azc,
+			ctx, iid, cid, a, h.azc,
 		); err != nil {
 			return nil, errors.Wrapf(
-				err, "couldn't check authz for pump of controller %d of instrument %d",
-				controllerID, instrumentID,
+				err, "couldn't check authz for pump of controller %d of instrument %d", cid, iid,
 			)
 		}
 		return modifications, nil
@@ -146,21 +148,20 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		instrumentID, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
-		controllerID, err := parseID(c.Param("controllerID"), "controller")
+		cid, err := parseID[instruments.ControllerID](c.Param("controllerID"), "controller")
 		if err != nil {
 			return err
 		}
 
 		// Run queries
-		pc, ok := h.pco.Get(controllerID)
+		pc, ok := h.pco.Get(planktoscope.ClientID(cid))
 		if !ok {
 			return errors.Errorf(
-				"planktoscope client for controller %d on instrument %d not found for pump post",
-				controllerID, instrumentID,
+				"planktoscope client for controller %d on instrument %d not found for pump post", cid, iid,
 			)
 		}
 		if err = handlePumpSettings(
@@ -180,7 +181,7 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", instrumentID))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
@@ -189,16 +190,17 @@ func (h *Handlers) HandlePumpPost() auth.HTTPHandlerFunc {
 const cameraPartial = "instruments/planktoscope/camera.partial.tmpl"
 
 func replaceCameraStream(
-	instrumentID, controllerID int64, a auth.Auth, pc *planktoscope.Client,
+	iid instruments.InstrumentID, cid instruments.ControllerID, a auth.Auth,
+	pc *planktoscope.Client,
 ) turbostreams.Message {
 	state := pc.GetState()
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
-		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/camera", instrumentID, controllerID),
+		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/camera", iid, cid),
 		Template: cameraPartial,
 		Data: map[string]interface{}{
-			"InstrumentID":   instrumentID,
-			"ControllerID":   controllerID,
+			"InstrumentID":   iid,
+			"ControllerID":   cid,
 			"CameraSettings": state.CameraSettings,
 			"Auth":           a,
 		},
@@ -260,7 +262,7 @@ func (h *Handlers) HandleCameraPub() turbostreams.HandlerFunc {
 	h.r.MustHave(t)
 	return func(c *turbostreams.Context) error {
 		// Parse params & run queries
-		instrumentID, controllerID, pc, err := getPlanktoscopeClientForPub(c, h.pco)
+		iid, cid, pc, err := getPlanktoscopeClientForPub(c, h.pco)
 		if err != nil {
 			return err
 		}
@@ -278,7 +280,7 @@ func (h *Handlers) HandleCameraPub() turbostreams.HandlerFunc {
 				}
 				// We insert an empty Auth object because the MSG handler will add the auth object for each
 				// client
-				message := replaceCameraStream(instrumentID, controllerID, auth.Auth{}, pc)
+				message := replaceCameraStream(iid, cid, auth.Auth{}, pc)
 				c.Publish(message)
 			}
 		}
@@ -290,9 +292,10 @@ type PlanktoscopeCameraViewAuthz struct {
 }
 
 func getPlanktoscopeCameraViewAuthz(
-	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, iid instruments.InstrumentID, cid instruments.ControllerID,
+	a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopeCameraViewAuthz, err error) {
-	path := fmt.Sprintf("/instruments/%d/controllers/%d/camera", instrumentID, controllerID)
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/camera", iid, cid)
 	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
 		return PlanktoscopeCameraViewAuthz{}, errors.Wrap(
 			err, "couldn't check authz for setting camera",
@@ -305,17 +308,16 @@ func (h *Handlers) ModifyCameraMsgData() handling.DataModifier {
 	return func(
 		ctx context.Context, a auth.Auth, data map[string]interface{},
 	) (modifications map[string]interface{}, err error) {
-		instrumentID, controllerID, err := getIDsForModificationMiddleware(data)
+		iid, cid, err := getIDsForModificationMiddleware(data)
 		if err != nil {
 			return nil, err
 		}
 		modifications = make(map[string]interface{})
 		if modifications["Authorizations"], err = getPlanktoscopeCameraViewAuthz(
-			ctx, instrumentID, controllerID, a, h.azc,
+			ctx, iid, cid, a, h.azc,
 		); err != nil {
 			return nil, errors.Wrapf(
-				err, "couldn't check authz for camera of controller %d of instrument %d",
-				controllerID, instrumentID,
+				err, "couldn't check authz for camera of controller %d of instrument %d", cid, iid,
 			)
 		}
 		return modifications, nil
@@ -327,21 +329,21 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		instrumentID, err := parseID(c.Param("id"), "instrument")
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 		if err != nil {
 			return err
 		}
-		controllerID, err := parseID(c.Param("controllerID"), "controller")
+		cid, err := parseID[instruments.ControllerID](c.Param("controllerID"), "controller")
 		if err != nil {
 			return err
 		}
 
 		// Run queries
-		pc, ok := h.pco.Get(controllerID)
+		pc, ok := h.pco.Get(planktoscope.ClientID(cid))
 		if !ok {
 			return errors.Errorf(
 				"planktoscope client for controller %d on instrument %d not found for camera post",
-				controllerID, instrumentID,
+				cid, iid,
 			)
 		}
 		if err = handleCameraSettings(
@@ -361,7 +363,7 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", instrumentID))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
 	}
 }
 
@@ -373,15 +375,16 @@ type PlanktoscopeControllerViewAuthz struct {
 }
 
 func getPlanktoscopeControllerViewAuthz(
-	ctx context.Context, instrumentID, controllerID int64, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, iid instruments.InstrumentID, cid instruments.ControllerID,
+	a auth.Auth, azc *auth.AuthzChecker,
 ) (authz PlanktoscopeControllerViewAuthz, err error) {
 	if authz.Pump, err = getPlanktoscopePumpViewAuthz(
-		ctx, instrumentID, controllerID, a, azc,
+		ctx, iid, cid, a, azc,
 	); err != nil {
 		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for pump")
 	}
 	if authz.Camera, err = getPlanktoscopeCameraViewAuthz(
-		ctx, instrumentID, controllerID, a, azc,
+		ctx, iid, cid, a, azc,
 	); err != nil {
 		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for camera")
 	}
@@ -390,57 +393,60 @@ func getPlanktoscopeControllerViewAuthz(
 
 func getIDsForModificationMiddleware(
 	data map[string]interface{},
-) (instrumentID int64, controllerID int64, err error) {
-	rawInstrumentID, ok := data["InstrumentID"]
+) (iid instruments.InstrumentID, cid instruments.ControllerID, err error) {
+	rawIID, ok := data["InstrumentID"]
 	if !ok {
 		return 0, 0, errors.New(
 			"couldn't find instrument id from turbostreams message data to check authorizations",
 		)
 	}
-	instrumentID, ok = rawInstrumentID.(int64)
+	iid, ok = rawIID.(instruments.InstrumentID)
 	if !ok {
 		return 0, 0, errors.Errorf(
 			"instrument id has unexpected type %T in turbostreams message data for checking authorization",
-			rawInstrumentID,
+			rawIID,
 		)
 	}
-	rawControllerID, ok := data["ControllerID"]
+	rawCID, ok := data["ControllerID"]
 	if !ok {
 		return 0, 0, errors.Errorf(
 			"couldn't find controller id for instrument %d from turbostreams message data to check authorizations",
-			instrumentID,
+			iid,
 		)
 	}
-	controllerID, ok = rawControllerID.(int64)
+	cid, ok = rawCID.(instruments.ControllerID)
 	if !ok {
 		return 0, 0, errors.Errorf(
 			"controller id has unexpected type %T in turbostreams message data for checking authorization",
-			rawControllerID,
+			rawCID,
 		)
 	}
-	return instrumentID, controllerID, nil
+	return iid, cid, nil
 }
 
 func getPlanktoscopeClientForPub(
 	c *turbostreams.Context, pco *planktoscope.Orchestrator,
-) (instrumentID int64, controllerID int64, client *planktoscope.Client, err error) {
+) (
+	iid instruments.InstrumentID, cid instruments.ControllerID, client *planktoscope.Client,
+	err error,
+) {
 	// Parse params
-	instrumentID, err = parseID(c.Param("id"), "instrument")
+	iid, err = parseID[instruments.InstrumentID](c.Param("id"), "instrument")
 	if err != nil {
 		return 0, 0, nil, err
 	}
-	controllerID, err = parseID(c.Param("controllerID"), "controller")
+	cid, err = parseID[instruments.ControllerID](c.Param("controllerID"), "controller")
 	if err != nil {
 		return 0, 0, nil, err
 	}
 
 	// Run queries
-	pc, ok := pco.Get(controllerID)
+	pc, ok := pco.Get(planktoscope.ClientID(cid))
 	if !ok {
 		return 0, 0, nil, errors.Errorf(
 			"planktoscope client for controller %d on instrument %d not found for pub",
-			controllerID, instrumentID,
+			cid, iid,
 		)
 	}
-	return instrumentID, controllerID, pc, nil
+	return iid, cid, pc, nil
 }

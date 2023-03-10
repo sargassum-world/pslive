@@ -21,17 +21,17 @@ type UserViewData struct {
 	Identity ory.Identity
 
 	PublicKnownViewers      []presence.User
-	PublicAnonymousViewers  []string
+	PublicAnonymousViewers  []presence.SessionID
 	PublicChatMessages      []handling.ChatMessageViewData
 	PrivateKnownViewers     []presence.User
-	PrivateAnonymousViewers []string
+	PrivateAnonymousViewers []presence.SessionID
 	PrivateChatMessages     []handling.ChatMessageViewData
 
 	Instruments []instruments.Instrument
 }
 
 func getUserViewData(
-	ctx context.Context, id string, a auth.Auth, oc *ory.Client,
+	ctx context.Context, id ory.IdentityID, a auth.Auth, oc *ory.Client,
 	is *instruments.Store, ps *presence.Store, cs *chat.Store,
 ) (vd UserViewData, err error) {
 	if vd.Identity, err = oc.GetIdentity(ctx, id); err != nil {
@@ -39,9 +39,11 @@ func getUserViewData(
 	}
 
 	// Public chat
-	vd.PublicKnownViewers, vd.PublicAnonymousViewers = ps.List("/users/" + id + "/chat/users")
+	vd.PublicKnownViewers, vd.PublicAnonymousViewers = ps.List(presence.Topic(
+		"/users/" + id + "/chat/users",
+	))
 	publicMessages, err := cs.GetMessagesByTopic(
-		ctx, "/users/"+id+"/chat/messages", chat.DefaultMessagesLimit,
+		ctx, chat.Topic("/users/"+id+"/chat/messages"), chat.DefaultMessagesLimit,
 	)
 	if err != nil {
 		return UserViewData{}, errors.Wrapf(err, "couldn't get public chat messages for user %s", id)
@@ -59,12 +61,13 @@ func getUserViewData(
 		if second < first {
 			first, second = second, first
 		}
-		vd.PrivateKnownViewers, vd.PrivateAnonymousViewers = ps.List(
+		vd.PrivateKnownViewers, vd.PrivateAnonymousViewers = ps.List(presence.Topic(
 			"/private-chats/" + first + "/" + second + "/chat/users",
-		)
+		))
 		var privateMessages []chat.Message
 		privateMessages, err = cs.GetMessagesByTopic(
-			ctx, "/private-chats/"+first+"/"+second+"/chat/messages", chat.DefaultMessagesLimit,
+			ctx, chat.Topic("/private-chats/"+first+"/"+second+"/chat/messages"),
+			chat.DefaultMessagesLimit,
 		)
 		if err != nil {
 			return UserViewData{}, errors.Wrapf(
@@ -81,7 +84,7 @@ func getUserViewData(
 	}
 
 	// Instruments
-	if vd.Instruments, err = is.GetInstrumentsByAdminID(ctx, id); err != nil {
+	if vd.Instruments, err = is.GetInstrumentsByAdminID(ctx, instruments.AdminID(id)); err != nil {
 		return UserViewData{}, err
 	}
 	// TODO: we should adapt it into a []InstrumentViewData or something
@@ -99,7 +102,7 @@ type UserViewAuthz struct {
 }
 
 func getUserViewAuthz(
-	ctx context.Context, id string, a auth.Auth, azc *auth.AuthzChecker,
+	ctx context.Context, id ory.IdentityID, a auth.Auth, azc *auth.AuthzChecker,
 ) (authz UserViewAuthz, err error) {
 	eg, egctx := errgroup.WithContext(ctx)
 	eg.Go(func() (err error) {
@@ -166,7 +169,7 @@ func (h *Handlers) HandleUserGet() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
-		id := c.Param("id")
+		id := ory.IdentityID(c.Param("id"))
 
 		// Run queries
 		ctx := c.Request().Context()

@@ -45,7 +45,7 @@ type LoginViewData struct {
 	OryCSRF        string
 	OryRegisterURL string
 	OryRecoverURL  string
-	UserIdentifier string
+	UserIdentifier ory.IdentityIdentifier
 }
 
 func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
@@ -120,7 +120,8 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, identifier, returnURL string, omitCSRFToken bool, ss *session.Store,
+	c echo.Context, id ory.IdentityID, returnURL string, omitCSRFToken bool,
+	ss *session.Store,
 ) error {
 	// Update session
 	sess, err := ss.Get(c.Request())
@@ -128,7 +129,7 @@ func handleAuthenticationSuccess(
 		return err
 	}
 	session.Regenerate(sess)
-	auth.SetIdentity(sess, identifier)
+	auth.SetIdentity(sess, id)
 	// This allows client-side Javascript to specify for server-side session data that we only need
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
 	// bodies, in order to make HTML responses cacheable.
@@ -200,7 +201,9 @@ func handleLogin(c echo.Context, oc *ory.Client, ss *session.Store, l godest.Log
 	// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
 	// the OWASP Session Management Cheat Sheet
 
-	return handleAuthenticationSuccess(c, login.Session.Identity.Id, returnURL, omitCSRFToken, ss)
+	return handleAuthenticationSuccess(
+		c, ory.IdentityID(login.Session.Identity.Id), returnURL, omitCSRFToken, ss,
+	)
 }
 
 func handleLogout(
@@ -214,7 +217,7 @@ func handleLogout(
 	if err != nil {
 		return err
 	}
-	ps.Forget(sess.ID)
+	ps.Forget(presence.SessionID(sess.ID))
 	acc.Cancel(sess.ID)
 	session.Invalidate(sess)
 	if err = sess.Save(c.Request(), c.Response()); err != nil {

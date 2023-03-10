@@ -10,8 +10,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type ClientID int64
+
 type Orchestrator struct {
-	planktoscopes   map[int64]*Client
+	planktoscopes   map[ClientID]*Client
 	planktoscopesMu *sync.RWMutex
 
 	logger godest.Logger
@@ -19,13 +21,13 @@ type Orchestrator struct {
 
 func NewOrchestrator(logger godest.Logger) *Orchestrator {
 	return &Orchestrator{
-		planktoscopes:   make(map[int64]*Client),
+		planktoscopes:   make(map[ClientID]*Client),
 		planktoscopesMu: &sync.RWMutex{},
 		logger:          logger,
 	}
 }
 
-func (o *Orchestrator) Add(id int64, url string) error {
+func (o *Orchestrator) Add(id ClientID, url string) error {
 	if _, ok := o.Get(id); ok {
 		o.logger.Warnf(
 			"skipped adding planktoscope client %d (%s) because it's already running", id, url,
@@ -34,7 +36,7 @@ func (o *Orchestrator) Add(id int64, url string) error {
 	}
 
 	const idBase = 10
-	config, err := GetConfig(url, strconv.FormatInt(id, idBase))
+	config, err := GetConfig(url, strconv.FormatInt(int64(id), idBase))
 	if err != nil {
 		return errors.Wrap(err, "couldn't set up planktoscope config")
 	}
@@ -62,7 +64,7 @@ func (o *Orchestrator) Add(id int64, url string) error {
 	return nil
 }
 
-func (o *Orchestrator) Get(id int64) (c *Client, ok bool) {
+func (o *Orchestrator) Get(id ClientID) (c *Client, ok bool) {
 	o.planktoscopesMu.RLock()
 	defer o.planktoscopesMu.RUnlock()
 
@@ -70,7 +72,7 @@ func (o *Orchestrator) Get(id int64) (c *Client, ok bool) {
 	return c, ok
 }
 
-func (o *Orchestrator) Remove(ctx context.Context, id int64) error {
+func (o *Orchestrator) Remove(ctx context.Context, id ClientID) error {
 	o.planktoscopesMu.Lock()
 	defer o.planktoscopesMu.Unlock()
 
@@ -89,7 +91,7 @@ func (o *Orchestrator) Remove(ctx context.Context, id int64) error {
 	return err
 }
 
-func (o *Orchestrator) Update(ctx context.Context, id int64, url string) error {
+func (o *Orchestrator) Update(ctx context.Context, id ClientID, url string) error {
 	o.planktoscopesMu.RLock()
 	client, ok := o.planktoscopes[id]
 	o.planktoscopesMu.RUnlock()

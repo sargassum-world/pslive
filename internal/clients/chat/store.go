@@ -24,7 +24,7 @@ func NewStore(db *database.DB) *Store {
 var rawInsertMessageQuery string
 var insertMessageQuery string = strings.TrimSpace(rawInsertMessageQuery)
 
-func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err error) {
+func (s *Store) AddMessage(ctx context.Context, m Message) (messageID MessageID, err error) {
 	rowID, err := s.db.ExecuteInsertionForID(ctx, insertMessageQuery, m.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add chat message with topic %s", m.Topic)
@@ -32,7 +32,7 @@ func (s *Store) AddMessage(ctx context.Context, m Message) (messageID int64, err
 	// TODO: instead of returning the raw ID, return the frontend-facing ID as a salted SHA-256 hash
 	// of the ID to mitigate the insecure direct object reference vulnerability and avoid leaking
 	// info about instrument creation?
-	return rowID, err
+	return MessageID(rowID), err
 }
 
 //go:embed queries/select-messages-by-topic.sql
@@ -42,7 +42,7 @@ var selectMessagesByTopicQuery string = strings.TrimSpace(rawSelectMessagesByTop
 const DefaultMessagesLimit = 50
 
 func (s *Store) GetMessagesByTopic(
-	ctx context.Context, topic string, messagesLimit int64,
+	ctx context.Context, topic Topic, messagesLimit int64,
 ) (messages []Message, err error) {
 	sel := newMessagesSelector()
 	if err = s.db.ExecuteSelection(
