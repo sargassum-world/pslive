@@ -34,6 +34,7 @@ var MigrationFiles []database.MigrationFile = []database.MigrationFile{
 	{Domain: "instruments", File: instruments.MigrationFiles[3]},
 	{Domain: "instruments", File: instruments.MigrationFiles[4]},
 	{Domain: "instruments", File: instruments.MigrationFiles[5]},
+	{Domain: "instruments", File: instruments.MigrationFiles[6]},
 }
 
 // Queries

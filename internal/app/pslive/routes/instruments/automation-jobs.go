@@ -11,13 +11,16 @@ import (
 func (h *Handlers) HandleInstrumentAutomationJobsPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(
-			ctx context.Context, iid instruments.InstrumentID, enabled bool, params url.Values,
+			ctx context.Context, iid instruments.InstrumentID,
+			enabled bool, name, description string, params url.Values,
 		) error {
 			specificationType := params.Get("type")
 			specification := params.Get("specification")
 			automationJobID, err := h.is.AddAutomationJob(ctx, instruments.AutomationJob{
 				InstrumentID:  iid,
 				Enabled:       enabled,
+				Name:          name,
+				Description:   description,
 				Type:          specificationType,
 				Specification: specification,
 			})

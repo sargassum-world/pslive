@@ -8,8 +8,8 @@ type Schedule struct {
 }
 
 type Action struct {
-	Target  ControllerID `hcl:"target"`
-	Command string       `hcl:"command"`
+	Controller string `hcl:"controller"`
+	Command    string `hcl:"command"`
 }
 
 type Specification struct {

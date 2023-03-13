@@ -11,13 +11,16 @@ import (
 func (h *Handlers) HandleInstrumentCamerasPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(
-			ctx context.Context, id instruments.InstrumentID, enabled bool, params url.Values,
+			ctx context.Context, id instruments.InstrumentID,
+			enabled bool, name, description string, params url.Values,
 		) error {
 			protocol := params.Get("protocol")
 			url := params.Get("url")
 			_, err := h.is.AddCamera(ctx, instruments.Camera{
 				InstrumentID: id,
 				Enabled:      enabled,
+				Name:         name,
+				Description:  description,
 				Protocol:     protocol,
 				URL:          url,
 			})

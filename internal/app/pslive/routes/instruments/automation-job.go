@@ -13,13 +13,15 @@ func (h *Handlers) HandleInstrumentAutomationJobPost() auth.HTTPHandlerFunc {
 		"automationJob",
 		func(
 			ctx context.Context, automationJobID instruments.AutomationJobID,
-			enabled bool, params url.Values,
+			enabled bool, name, description string, params url.Values,
 		) error {
 			specificationType := params.Get("type")
 			specification := params.Get("specification")
 			if err := h.is.UpdateAutomationJob(ctx, instruments.AutomationJob{
 				ID:            automationJobID,
 				Enabled:       enabled,
+				Name:          name,
+				Description:   description,
 				Type:          specificationType,
 				Specification: specification,
 			}); err != nil {

@@ -12,13 +12,16 @@ import (
 func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(
-			ctx context.Context, iid instruments.InstrumentID, enabled bool, params url.Values,
+			ctx context.Context, iid instruments.InstrumentID,
+			enabled bool, name, description string, params url.Values,
 		) error {
 			protocol := params.Get("protocol")
 			url := params.Get("url")
 			controllerID, err := h.is.AddController(ctx, instruments.Controller{
 				InstrumentID: iid,
 				Enabled:      enabled,
+				Name:         name,
+				Description:  description,
 				Protocol:     protocol,
 				URL:          url,
 			})

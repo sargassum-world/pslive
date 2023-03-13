@@ -18,26 +18,35 @@ type Camera struct {
 	ID           CameraID
 	InstrumentID InstrumentID
 	Enabled      bool
+	Name         string
+	Description  string
 	Protocol     string
 	URL          string
 }
 
-func (c Camera) newInsertion() map[string]interface{} {
-	return map[string]interface{}{
-		"$instrument_id": c.InstrumentID,
-		"$enabled":       c.Enabled,
-		"$protocol":      c.Protocol,
-		"$url":           c.URL,
+func (c Camera) addParams(params map[string]interface{}) (fullParams map[string]interface{}) {
+	fullParams = make(map[string]interface{})
+	for key, value := range params {
+		fullParams[key] = value
 	}
+	for key, value := range map[string]interface{}{
+		"$enabled":     c.Enabled,
+		"$name":        c.Name,
+		"$description": c.Description,
+		"$protocol":    c.Protocol,
+		"$url":         c.URL,
+	} {
+		fullParams[key] = value
+	}
+	return fullParams
+}
+
+func (c Camera) newInsertion() map[string]interface{} {
+	return c.addParams(map[string]interface{}{"$instrument_id": c.InstrumentID})
 }
 
 func (c Camera) newUpdate() map[string]interface{} {
-	return map[string]interface{}{
-		"$id":       c.ID,
-		"$enabled":  c.Enabled,
-		"$protocol": c.Protocol,
-		"$url":      c.URL,
-	}
+	return c.addParams(map[string]interface{}{"$id": c.ID})
 }
 
 func (c Camera) newDelete() map[string]interface{} {
@@ -73,6 +82,8 @@ func getCamera(
 		ID:           id,
 		InstrumentID: instrumentID,
 		Enabled:      s.GetBool(fieldPrefix + "enabled"),
+		Name:         s.GetText(fieldPrefix + "name"),
+		Description:  s.GetText(fieldPrefix + "description"),
 		Protocol:     s.GetText(fieldPrefix + "protocol"),
 		URL:          s.GetText(fieldPrefix + "url"),
 	}
@@ -103,26 +114,35 @@ type Controller struct {
 	ID           ControllerID
 	InstrumentID InstrumentID
 	Enabled      bool
+	Name         string
+	Description  string
 	Protocol     string
 	URL          string
 }
 
-func (c Controller) newInsertion() map[string]interface{} {
-	return map[string]interface{}{
-		"$instrument_id": c.InstrumentID,
-		"$enabled":       c.Enabled,
-		"$protocol":      c.Protocol,
-		"$url":           c.URL,
+func (c Controller) addParams(params map[string]interface{}) (fullParams map[string]interface{}) {
+	fullParams = make(map[string]interface{})
+	for key, value := range params {
+		fullParams[key] = value
 	}
+	for key, value := range map[string]interface{}{
+		"$enabled":     c.Enabled,
+		"$name":        c.Name,
+		"$description": c.Description,
+		"$protocol":    c.Protocol,
+		"$url":         c.URL,
+	} {
+		fullParams[key] = value
+	}
+	return fullParams
+}
+
+func (c Controller) newInsertion() map[string]interface{} {
+	return c.addParams(map[string]interface{}{"$instrument_id": c.InstrumentID})
 }
 
 func (c Controller) newUpdate() map[string]interface{} {
-	return map[string]interface{}{
-		"$id":       c.ID,
-		"$enabled":  c.Enabled,
-		"$protocol": c.Protocol,
-		"$url":      c.URL,
-	}
+	return c.addParams(map[string]interface{}{"$id": c.ID})
 }
 
 func (c Controller) newDelete() map[string]interface{} {
@@ -158,6 +178,8 @@ func getController(
 		ID:           id,
 		InstrumentID: instrumentID,
 		Enabled:      s.GetBool(fieldPrefix + "enabled"),
+		Name:         s.GetText(fieldPrefix + "name"),
+		Description:  s.GetText(fieldPrefix + "description"),
 		Protocol:     s.GetText(fieldPrefix + "protocol"),
 		URL:          s.GetText(fieldPrefix + "url"),
 	}
@@ -188,26 +210,37 @@ type AutomationJob struct {
 	ID            AutomationJobID
 	InstrumentID  InstrumentID
 	Enabled       bool
+	Name          string
+	Description   string
 	Type          string
 	Specification string
 }
 
-func (j AutomationJob) newInsertion() map[string]interface{} {
-	return map[string]interface{}{
-		"$instrument_id": j.InstrumentID,
+func (j AutomationJob) addParams(
+	params map[string]interface{},
+) (fullParams map[string]interface{}) {
+	fullParams = make(map[string]interface{})
+	for key, value := range params {
+		fullParams[key] = value
+	}
+	for key, value := range map[string]interface{}{
 		"$enabled":       j.Enabled,
+		"$name":          j.Name,
+		"$description":   j.Description,
 		"$type":          j.Type,
 		"$specification": j.Specification,
+	} {
+		fullParams[key] = value
 	}
+	return fullParams
+}
+
+func (j AutomationJob) newInsertion() map[string]interface{} {
+	return j.addParams(map[string]interface{}{"$instrument_id": j.InstrumentID})
 }
 
 func (j AutomationJob) newUpdate() map[string]interface{} {
-	return map[string]interface{}{
-		"$id":            j.ID,
-		"$enabled":       j.Enabled,
-		"$type":          j.Type,
-		"$specification": j.Specification,
-	}
+	return j.addParams(map[string]interface{}{"$id": j.ID})
 }
 
 func (j AutomationJob) newDelete() map[string]interface{} {
@@ -237,6 +270,8 @@ func getAutomationJob(
 		ID:            id,
 		InstrumentID:  instrumentID,
 		Enabled:       s.GetBool(fieldPrefix + "enabled"),
+		Name:          s.GetText(fieldPrefix + "name"),
+		Description:   s.GetText(fieldPrefix + "description"),
 		Type:          s.GetText(fieldPrefix + "type"),
 		Specification: s.GetText(fieldPrefix + "specification"),
 	}

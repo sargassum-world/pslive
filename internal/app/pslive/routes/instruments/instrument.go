@@ -39,7 +39,8 @@ func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 
 func handleInstrumentComponentsPost(
 	storeAdder func(
-		ctx context.Context, iid instruments.InstrumentID, enabled bool, params url.Values,
+		ctx context.Context, iid instruments.InstrumentID,
+		enabled bool, name, description string, params url.Values,
 	) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
@@ -49,13 +50,17 @@ func handleInstrumentComponentsPost(
 			return err
 		}
 		enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
+		name := c.FormValue("name")
+		description := c.FormValue("description")
 		params, err := c.FormParams()
 		if err != nil {
 			return errors.Wrap(err, "couldn't parse form params")
 		}
 
 		// Run queries
-		if err := storeAdder(c.Request().Context(), iid, enabled, params); err != nil {
+		if err := storeAdder(
+			c.Request().Context(), iid, enabled, name, description, params,
+		); err != nil {
 			return err
 		}
 
@@ -69,7 +74,8 @@ func handleInstrumentComponentsPost(
 func handleInstrumentComponentPost[ComponentID ~int64](
 	typeName string,
 	componentUpdater func(
-		ctx context.Context, componentID ComponentID, enabled bool, params url.Values,
+		ctx context.Context, componentID ComponentID,
+		enabled bool, name, description string, params url.Values,
 	) error,
 	componentDeleter func(ctx context.Context, componentID ComponentID) error,
 ) auth.HTTPHandlerFunc {
@@ -94,11 +100,13 @@ func handleInstrumentComponentPost[ComponentID ~int64](
 			))
 		case "updated":
 			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
-			params, err := c.FormParams()
-			if err != nil {
+			name := c.FormValue("name")
+			description := c.FormValue("description")
+			params, perr := c.FormParams()
+			if perr != nil {
 				return errors.Wrap(err, "couldn't parse form params")
 			}
-			if err = componentUpdater(ctx, componentID, enabled, params); err != nil {
+			if err = componentUpdater(ctx, componentID, enabled, name, description, params); err != nil {
 				return err
 			}
 			// TODO: deal with turbo streams

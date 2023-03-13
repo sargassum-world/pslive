@@ -8,5 +8,5 @@ select
   url           as url
 from instruments_controller as c
 where
-  c.enabled = true and
-  c.protocol = $protocol
+  c.instrument_id = $instrument_id and
+  c.name = $name
