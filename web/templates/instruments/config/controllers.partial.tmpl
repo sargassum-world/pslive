@@ -4,14 +4,14 @@
 <turbo-frame id="/instruments/{{$instrument.ID}}/config/controllers">
   {{range $controller := $instrument.Controllers}}
     {{
-      template "instruments/config/controller.tmpl" dict
+      template "instruments/config/controller.partial.tmpl" dict
       "Instrument" $instrument
       "Controller" $controller
       "Auth" $auth
     }}
   {{end}}
   {{
-    template "instruments/config/controller.tmpl" dict
+    template "instruments/config/controller.partial.tmpl" dict
     "Instrument" $instrument
     "Auth" $auth
   }}

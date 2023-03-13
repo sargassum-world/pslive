@@ -13,7 +13,7 @@ import (
 func EstablishPlanktoscopeControllerConnections(
 	ctx context.Context, is *instruments.Store, pco *planktoscope.Orchestrator,
 ) error {
-	initialClients, err := is.GetControllersByProtocol(ctx, planktoscope.Protocol)
+	initialClients, err := is.GetEnabledControllersByProtocol(ctx, planktoscope.Protocol)
 	if err != nil {
 		return errors.Wrap(err, "couldn't determine which planktoscope controllers to connect to")
 	}

@@ -4,14 +4,14 @@
 <turbo-frame id="/instruments/{{$instrument.ID}}/config/cameras">
   {{range $camera := $instrument.Cameras}}
     {{
-      template "instruments/config/camera.tmpl" dict
+      template "instruments/config/camera.partial.tmpl" dict
       "Instrument" $instrument
       "Camera" $camera
       "Auth" $auth
     }}
   {{end}}
   {{
-    template "instruments/config/camera.tmpl" dict
+    template "instruments/config/camera.partial.tmpl" dict
     "Instrument" $instrument
     "Auth" $auth
   }}

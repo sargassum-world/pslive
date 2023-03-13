@@ -1,9 +1,10 @@
 select
   id            as id,
   instrument_id as instrument_id,
-  url           as url,
+  enabled       as enabled,
   protocol      as protocol,
-  enabled       as enabled
+  url           as url
 from instruments_controller as c
 where
-  c.protocol = $protocol
+  c.protocol = $protocol and
+  c.enabled = true

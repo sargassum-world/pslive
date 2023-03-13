@@ -12,13 +12,14 @@ func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"controller",
 		func(
-			ctx context.Context, controllerID instruments.ControllerID, url, protocol string, enabled bool,
+			ctx context.Context, controllerID instruments.ControllerID,
+			enabled bool, protocol, url string,
 		) error {
 			if err := h.is.UpdateController(ctx, instruments.Controller{
 				ID:       controllerID,
-				URL:      url,
-				Protocol: protocol,
 				Enabled:  enabled,
+				Protocol: protocol,
+				URL:      url,
 			}); err != nil {
 				return err
 			}

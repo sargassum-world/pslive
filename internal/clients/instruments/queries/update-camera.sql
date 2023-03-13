@@ -1,6 +1,6 @@
 update instruments_camera
 set
-  url = $url,
+  enabled = $enabled,
   protocol = $protocol,
-  enabled = $enabled
+  url = $url
 where instruments_camera.id = $id

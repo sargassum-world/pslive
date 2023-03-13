@@ -36,7 +36,7 @@ func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 
 func handleInstrumentComponentsPost(
 	storeAdder func(
-		ctx context.Context, iid instruments.InstrumentID, url, protocol string, enabled bool,
+		ctx context.Context, iid instruments.InstrumentID, enabled bool, protocol, url string,
 	) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
@@ -45,14 +45,14 @@ func handleInstrumentComponentsPost(
 		if err != nil {
 			return err
 		}
-		url := c.FormValue("url")
-		protocol := c.FormValue("protocol")
 		enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
+		protocol := c.FormValue("protocol")
+		url := c.FormValue("url")
 
 		// Run queries
 		// FIXME: there needs to be an authorization check to ensure that the user attempting to
 		// delete the instrument is an administrator of the instrument!
-		if err := storeAdder(c.Request().Context(), iid, url, protocol, enabled); err != nil {
+		if err := storeAdder(c.Request().Context(), iid, enabled, protocol, url); err != nil {
 			return err
 		}
 
@@ -66,7 +66,7 @@ func handleInstrumentComponentsPost(
 func handleInstrumentComponentPost[ComponentID ~int64](
 	typeName string,
 	componentUpdater func(
-		ctx context.Context, componentID ComponentID, url, protocol string, enabled bool,
+		ctx context.Context, componentID ComponentID, enabled bool, protocol, url string,
 	) error,
 	componentDeleter func(ctx context.Context, componentID ComponentID) error,
 ) auth.HTTPHandlerFunc {
@@ -90,11 +90,11 @@ func handleInstrumentComponentPost[ComponentID ~int64](
 				"invalid %s state %s", typeName, state,
 			))
 		case "updated":
+			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
 			protocol := c.FormValue("protocol")
 			url := c.FormValue("url")
-			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
 			// FIXME: needs authorization check!
-			if err = componentUpdater(ctx, componentID, url, protocol, enabled); err != nil {
+			if err = componentUpdater(ctx, componentID, enabled, protocol, url); err != nil {
 				return err
 			}
 			// TODO: deal with turbo streams

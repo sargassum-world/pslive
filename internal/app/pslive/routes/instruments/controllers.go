@@ -11,13 +11,13 @@ import (
 func (h *Handlers) HandleInstrumentControllersPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(
-			ctx context.Context, iid instruments.InstrumentID, url, protocol string, enabled bool,
+			ctx context.Context, iid instruments.InstrumentID, enabled bool, url, protocol string,
 		) error {
 			controllerID, err := h.is.AddController(ctx, instruments.Controller{
 				InstrumentID: iid,
-				URL:          url,
-				Protocol:     protocol,
 				Enabled:      enabled,
+				Protocol:     protocol,
+				URL:          url,
 			})
 			if err != nil {
 				return err
