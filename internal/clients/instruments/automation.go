@@ -2,28 +2,44 @@ package instruments
 
 import (
 	"context"
+	"fmt"
 	"sync"
+	"time"
 
+	"github.com/go-co-op/gocron"
+	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
 	"golang.org/x/sync/errgroup"
 )
 
-// Automation Job
-
-type ParsedJob struct {
-	Type          string
-	Specification string
+func ParseSpecification(name, raw string) (parsed Specification, err error) {
+	output := &Specification{}
+	if err = hclsimple.Decode(name+".hcl", []byte(raw), nil, output); err != nil {
+		return Specification{}, err
+	}
+	return *output, nil
 }
 
+// Automation Job
+
 func NewParsedJob(
-	specificationType, specification string, logger godest.Logger,
+	name, specificationType, specification string, logger godest.Logger,
 ) (job *ParsedJob, err error) {
-	// TODO: actually parse the job here
-	return &ParsedJob{
-		Type:          specificationType,
-		Specification: specification,
-	}, nil
+	job = &ParsedJob{
+		Type:             specificationType,
+		RawSpecification: specification,
+	}
+	switch specificationType {
+	default:
+		return nil, errors.Errorf("unknown specification type %s", specificationType)
+	case "hcl-v0.1.0":
+		if job.Specification, err = ParseSpecification(name, specification); err != nil {
+			return nil, errors.Wrapf(err, "couldn't parse %s specification", specificationType)
+		}
+		fmt.Printf("%+v\n", job.Specification)
+	}
+	return job, nil
 }
 
 func (j *ParsedJob) Start() error {
@@ -42,17 +58,22 @@ func (j *ParsedJob) Close() {
 // Automation Job Orchestrator
 
 type AutomationJobOrchestrator struct {
-	jobs   map[AutomationJobID]*ParsedJob
-	jobsMu *sync.RWMutex
+	jobs      map[AutomationJobID]*ParsedJob
+	jobsMu    *sync.RWMutex
+	scheduler *gocron.Scheduler
 
 	logger godest.Logger
 }
 
 func NewAutomationJobOrchestrator(logger godest.Logger) *AutomationJobOrchestrator {
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.StartAsync()
+	scheduler.SingletonModeAll()
 	return &AutomationJobOrchestrator{
-		jobs:   make(map[AutomationJobID]*ParsedJob),
-		jobsMu: &sync.RWMutex{},
-		logger: logger,
+		jobs:      make(map[AutomationJobID]*ParsedJob),
+		jobsMu:    &sync.RWMutex{},
+		scheduler: scheduler,
+		logger:    logger,
 	}
 }
 
@@ -64,7 +85,7 @@ func (o *AutomationJobOrchestrator) Add(
 		return nil
 	}
 
-	job, err := NewParsedJob(specificationType, specification, o.logger)
+	job, err := NewParsedJob(fmt.Sprint(id), specificationType, specification, o.logger)
 	if err != nil {
 		return errors.Wrapf(
 			err, "couldn't create automation job %d from %s specification", id, specificationType,
@@ -146,6 +167,10 @@ func (o *AutomationJobOrchestrator) Close(ctx context.Context) error {
 			}
 		}(job))
 	}
+	eg.Go(func() error {
+		o.scheduler.Stop()
+		return nil
+	})
 	o.jobs = nil
 	return eg.Wait()
 }
