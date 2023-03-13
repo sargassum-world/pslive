@@ -50,7 +50,9 @@ func (h *Handlers) Register(
 	).Register(er)
 	home.New(h.r, oc, is, ps).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
-	instruments.New(h.r, oc, azc, tsh, is, h.globals.Planktoscopes, ps, cs, vsb).Register(er, tsr, vsr, ss)
+	instruments.New(
+		h.r, oc, azc, tsh, is, h.globals.Planktoscopes, h.globals.AutomationJobs, ps, cs, vsb,
+	).Register(er, tsr, vsr, ss)
 	privatechat.New(h.r, oc, azc, tsh, ps, cs).Register(er, tsr, ss)
 	users.New(h.r, oc, azc, tsh, is, ps, cs).Register(er, tsr, ss)
 	videostreams.New(vsb).Register(er, vsr)

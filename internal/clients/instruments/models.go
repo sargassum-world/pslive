@@ -9,6 +9,7 @@ type (
 	AdminID         string
 	CameraID        int64
 	ControllerID    int64
+	AutomationJobID int64
 )
 
 // Camera
@@ -181,15 +182,95 @@ func (sel *controllersSelector) Controllers() []Controller {
 	return controllers
 }
 
+// Automation Job
+
+type AutomationJob struct {
+	ID            AutomationJobID
+	InstrumentID  InstrumentID
+	Enabled       bool
+	Type          string
+	Specification string
+}
+
+func (j AutomationJob) newInsertion() map[string]interface{} {
+	return map[string]interface{}{
+		"$instrument_id": j.InstrumentID,
+		"$enabled":       j.Enabled,
+		"$type":          j.Type,
+		"$specification": j.Specification,
+	}
+}
+
+func (j AutomationJob) newUpdate() map[string]interface{} {
+	return map[string]interface{}{
+		"$id":            j.ID,
+		"$enabled":       j.Enabled,
+		"$type":          j.Type,
+		"$specification": j.Specification,
+	}
+}
+
+func (j AutomationJob) newDelete() map[string]interface{} {
+	return map[string]interface{}{
+		"$id": j.ID,
+	}
+}
+
+// Automation Jobs
+
+type automationJobsSelector struct {
+	ids            []AutomationJobID
+	automationJobs map[AutomationJobID]AutomationJob
+}
+
+func newAutomationJobsSelector() *automationJobsSelector {
+	return &automationJobsSelector{
+		ids:            make([]AutomationJobID, 0),
+		automationJobs: make(map[AutomationJobID]AutomationJob),
+	}
+}
+
+func getAutomationJob(
+	s *sqlite.Stmt, fieldPrefix string, id AutomationJobID, instrumentID InstrumentID,
+) AutomationJob {
+	return AutomationJob{
+		ID:            id,
+		InstrumentID:  instrumentID,
+		Enabled:       s.GetBool(fieldPrefix + "enabled"),
+		Type:          s.GetText(fieldPrefix + "type"),
+		Specification: s.GetText(fieldPrefix + "specification"),
+	}
+}
+
+func (sel *automationJobsSelector) Step(s *sqlite.Stmt) error {
+	id := AutomationJobID(s.GetInt64("id"))
+	if _, ok := sel.automationJobs[id]; !ok {
+		sel.automationJobs[id] = getAutomationJob(s, "", id, InstrumentID(s.GetInt64("instrument_id")))
+		if id != 0 {
+			sel.ids = append(sel.ids, id)
+		}
+	}
+	return nil
+}
+
+func (sel *automationJobsSelector) AutomationJobs() []AutomationJob {
+	automationJobs := make([]AutomationJob, len(sel.ids))
+	for i, id := range sel.ids {
+		automationJobs[i] = sel.automationJobs[id]
+	}
+	return automationJobs
+}
+
 // Instrument
 
 type Instrument struct {
-	ID          InstrumentID
-	Name        string
-	Description string
-	AdminID     AdminID
-	Cameras     map[CameraID]Camera
-	Controllers map[ControllerID]Controller
+	ID             InstrumentID
+	Name           string
+	Description    string
+	AdminID        AdminID
+	Cameras        map[CameraID]Camera
+	Controllers    map[ControllerID]Controller
+	AutomationJobs map[AutomationJobID]AutomationJob
 }
 
 func (i Instrument) newInsertion() map[string]interface{} {
@@ -254,12 +335,13 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 	instrumentID := InstrumentID(s.GetInt64("id"))
 	if _, ok := sel.instruments[instrumentID]; !ok {
 		sel.instruments[instrumentID] = Instrument{
-			ID:          instrumentID,
-			Name:        s.GetText("name"),
-			Description: s.GetText("description"),
-			AdminID:     AdminID(s.GetText("admin_id")),
-			Cameras:     make(map[CameraID]Camera),
-			Controllers: make(map[ControllerID]Controller),
+			ID:             instrumentID,
+			Name:           s.GetText("name"),
+			Description:    s.GetText("description"),
+			AdminID:        AdminID(s.GetText("admin_id")),
+			Cameras:        make(map[CameraID]Camera),
+			Controllers:    make(map[ControllerID]Controller),
+			AutomationJobs: make(map[AutomationJobID]AutomationJob),
 		}
 		if instrumentID != 0 {
 			sel.ids = append(sel.ids, instrumentID)
@@ -284,11 +366,15 @@ func (sel *instrumentsSelector) Step(s *sqlite.Stmt) error {
 	}) {
 		instrument.Controllers[controllerID] = controller
 	}
-	if controller != (Controller{
-		ID:           controllerID,
+
+	automationJobID := AutomationJobID(s.GetInt64("automation_job_id"))
+	if automationJob := getAutomationJob(
+		s, "automation_job_", automationJobID, instrumentID,
+	); automationJob != (AutomationJob{
+		ID:           automationJobID,
 		InstrumentID: instrumentID,
 	}) {
-		instrument.Controllers[controllerID] = controller
+		instrument.AutomationJobs[automationJobID] = automationJob
 	}
 
 	sel.instruments[instrumentID] = instrument

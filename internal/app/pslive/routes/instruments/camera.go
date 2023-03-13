@@ -133,8 +133,10 @@ func (h *Handlers) HandleInstrumentCameraPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"camera",
 		func(
-			ctx context.Context, componentID instruments.CameraID, enabled bool, protocol, url string,
+			ctx context.Context, componentID instruments.CameraID, enabled bool, params url.Values,
 		) error {
+			protocol := params.Get("protocol")
+			url := params.Get("url")
 			return h.is.UpdateCamera(ctx, instruments.Camera{
 				ID:       componentID,
 				Enabled:  enabled,

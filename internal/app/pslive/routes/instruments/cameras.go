@@ -2,6 +2,7 @@ package instruments
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -10,9 +11,10 @@ import (
 func (h *Handlers) HandleInstrumentCamerasPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentsPost(
 		func(
-			ctx context.Context, id instruments.InstrumentID,
-			enabled bool, protocol, url string,
+			ctx context.Context, id instruments.InstrumentID, enabled bool, params url.Values,
 		) error {
+			protocol := params.Get("protocol")
+			url := params.Get("url")
 			_, err := h.is.AddCamera(ctx, instruments.Camera{
 				InstrumentID: id,
 				Enabled:      enabled,

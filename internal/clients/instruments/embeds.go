@@ -21,6 +21,7 @@ var MigrationFiles []string = []string{
 	"3-add-camera-controller-index-v0.1.15",
 	"4-add-enabled-flag-v0.3.4",
 	"5-enabled-not-null-v0.3.5",
+	"6-add-automation-jobs-v0.3.5",
 }
 
 // Embeds

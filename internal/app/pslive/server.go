@@ -231,6 +231,14 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 		return nil
 	})
 	eg.Go(func() error {
+		if err := workers.StartAutomationJobs(
+			ctx, s.Globals.Instruments, s.Globals.AutomationJobs,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(err, "couldn't start automation jobs"))
+		}
+		return nil
+	})
+	eg.Go(func() error {
 		if err := s.Globals.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(
 				err, "turbo streams broker encountered error while serving",
@@ -300,6 +308,12 @@ func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
 		s.Globals.Logger.Error(errors.Wrap(errPO, "couldn't close planktoscope clients"))
 		if err == nil {
 			err = errPO
+		}
+	}
+	if errAJ := s.Globals.AutomationJobs.Close(ctx); errAJ != nil {
+		s.Globals.Logger.Error(errors.Wrap(errAJ, "couldn't cancel automation jobs"))
+		if err == nil {
+			err = errAJ
 		}
 	}
 	return err

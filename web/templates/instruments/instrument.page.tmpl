@@ -56,6 +56,12 @@
           "Instrument" .Data.Instrument
           "Auth" .Auth
         }}
+        <h2>Automation Jobs</h2>
+        {{
+          template "instruments/config/automation-jobs.partial.tmpl" dict
+          "Instrument" .Data.Instrument
+          "Auth" .Auth
+        }}
       {{end}}
     </section>
   </main>

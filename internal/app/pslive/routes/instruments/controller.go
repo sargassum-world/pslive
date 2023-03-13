@@ -2,6 +2,7 @@ package instruments
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/clients/instruments"
@@ -13,8 +14,10 @@ func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 		"controller",
 		func(
 			ctx context.Context, controllerID instruments.ControllerID,
-			enabled bool, protocol, url string,
+			enabled bool, params url.Values,
 		) error {
+			protocol := params.Get("protocol")
+			url := params.Get("url")
 			if err := h.is.UpdateController(ctx, instruments.Controller{
 				ID:       controllerID,
 				Enabled:  enabled,

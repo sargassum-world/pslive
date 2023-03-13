@@ -6,5 +6,5 @@ select
   url           as url
 from instruments_controller as c
 where
-  c.protocol = $protocol and
-  c.enabled = true
+  c.enabled = true and
+  c.protocol = $protocol

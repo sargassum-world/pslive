@@ -1,0 +1,18 @@
+{{$instrument := (get . "Instrument")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="/instruments/{{$instrument.ID}}/config/automation-jobs">
+  {{range $automationJob := $instrument.AutomationJobs}}
+    {{
+      template "instruments/config/automation-job.partial.tmpl" dict
+      "Instrument" $instrument
+      "AutomationJob" $automationJob
+      "Auth" $auth
+    }}
+  {{end}}
+  {{
+    template "instruments/config/automation-job.partial.tmpl" dict
+    "Instrument" $instrument
+    "Auth" $auth
+  }}
+</turbo-frame>
