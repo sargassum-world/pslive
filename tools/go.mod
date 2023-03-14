@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/goreleaser/goreleaser v1.16.1
 	github.com/hairyhenderson/gomplate/v3 v3.11.4
-	github.com/open-policy-agent/opa v0.50.0
+	github.com/open-policy-agent/opa v0.49.2
 	mvdan.cc/gofumpt v0.4.0
 )
 

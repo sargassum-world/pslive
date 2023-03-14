@@ -26,7 +26,7 @@ allow_camera_post(subject, instrument_id, camera_id) if {
 	is_instrument_admin(subject, instrument_id)
 }
 
-allow_controller_get(subject, instrument_id, controller_id) if {
+allow_controller_get(_, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
 	is_valid_controller(instrument_id, controller_id)
 }
@@ -100,6 +100,6 @@ is_instrument_admin(subject, instrument_id) if {
 	subject.identity == instrument.admin_identity_id
 }
 
-is_instrument_operator(subject, instrument_id) if {
+is_instrument_operator(subject, _) if {
 	auth.is_authenticated(subject) # TODO: implement operator permissions
 }
