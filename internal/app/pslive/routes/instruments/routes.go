@@ -26,7 +26,7 @@ type Handlers struct {
 
 	is  *instruments.Store
 	pco *planktoscope.Orchestrator
-	ajo *instruments.AutomationJobOrchestrator
+	ijo *instruments.JobOrchestrator
 	ps  *presence.Store
 	cs  *chat.Store
 	vsb *videostreams.Broker
@@ -34,7 +34,7 @@ type Handlers struct {
 
 func New(
 	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
-	is *instruments.Store, pco *planktoscope.Orchestrator, ajo *instruments.AutomationJobOrchestrator,
+	is *instruments.Store, pco *planktoscope.Orchestrator, ijo *instruments.JobOrchestrator,
 	ps *presence.Store, cs *chat.Store, vsb *videostreams.Broker,
 ) *Handlers {
 	return &Handlers{
@@ -44,7 +44,7 @@ func New(
 		tsh: tsh,
 		is:  is,
 		pco: pco,
-		ajo: ajo,
+		ijo: ijo,
 		ps:  ps,
 		cs:  cs,
 		vsb: vsb,

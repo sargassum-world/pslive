@@ -221,24 +221,6 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 		return nil
 	})
 	eg.Go(func() error {
-		if err := workers.EstablishPlanktoscopeControllerConnections(
-			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
-		); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(
-				err, "couldn't establish planktoscope controller connections",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := workers.StartAutomationJobs(
-			ctx, s.Globals.Instruments, s.Globals.AutomationJobs,
-		); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(err, "couldn't start automation jobs"))
-		}
-		return nil
-	})
-	eg.Go(func() error {
 		if err := s.Globals.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(
 				err, "turbo streams broker encountered error while serving",
@@ -251,6 +233,32 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 			s.Globals.Logger.Error(errors.Wrap(
 				err, "video streams broker encountered error while serving",
 			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := workers.EstablishPlanktoscopeControllerConnections(
+			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(
+				err, "couldn't establish planktoscope controller connections",
+			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := s.Globals.InstrumentJobs.Orchestrate(ctx); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(
+				err, "instrument job orchestrator encountered error while orchestrating",
+			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := workers.StartInstrumentJobs(
+			ctx, s.Globals.Instruments, s.Globals.InstrumentJobs,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(err, "couldn't start automation jobs"))
 		}
 		return nil
 	})
@@ -310,12 +318,7 @@ func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
 			err = errPO
 		}
 	}
-	if errAJ := s.Globals.AutomationJobs.Close(ctx); errAJ != nil {
-		s.Globals.Logger.Error(errors.Wrap(errAJ, "couldn't cancel automation jobs"))
-		if err == nil {
-			err = errAJ
-		}
-	}
+	s.Globals.InstrumentJobs.Close()
 	return err
 }
 

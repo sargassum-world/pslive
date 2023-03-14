@@ -14,14 +14,14 @@ func (h *Handlers) HandleInstrumentAutomationJobsPost() auth.HTTPHandlerFunc {
 			ctx context.Context, iid instruments.InstrumentID,
 			enabled bool, name, description string, params url.Values,
 		) error {
-			specificationType := params.Get("type")
+			specType := params.Get("type")
 			specification := params.Get("specification")
-			automationJobID, err := h.is.AddAutomationJob(ctx, instruments.AutomationJob{
+			id, err := h.is.AddAutomationJob(ctx, instruments.AutomationJob{
 				InstrumentID:  iid,
 				Enabled:       enabled,
 				Name:          name,
 				Description:   description,
-				Type:          specificationType,
+				Type:          specType,
 				Specification: specification,
 			})
 			if err != nil {
@@ -30,7 +30,7 @@ func (h *Handlers) HandleInstrumentAutomationJobsPost() auth.HTTPHandlerFunc {
 			if !enabled {
 				return nil
 			}
-			return h.ajo.Add(automationJobID, specificationType, specification)
+			return h.ijo.Add(id, iid, name, specType, specification)
 		},
 	)
 }

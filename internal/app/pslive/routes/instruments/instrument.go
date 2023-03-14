@@ -74,7 +74,7 @@ func handleInstrumentComponentsPost(
 func handleInstrumentComponentPost[ComponentID ~int64](
 	typeName string,
 	componentUpdater func(
-		ctx context.Context, componentID ComponentID,
+		ctx context.Context, componentID ComponentID, instrumentID instruments.InstrumentID,
 		enabled bool, name, description string, params url.Values,
 	) error,
 	componentDeleter func(ctx context.Context, componentID ComponentID) error,
@@ -106,7 +106,9 @@ func handleInstrumentComponentPost[ComponentID ~int64](
 			if perr != nil {
 				return errors.Wrap(err, "couldn't parse form params")
 			}
-			if err = componentUpdater(ctx, componentID, enabled, name, description, params); err != nil {
+			if err = componentUpdater(
+				ctx, componentID, iid, enabled, name, description, params,
+			); err != nil {
 				return err
 			}
 			// TODO: deal with turbo streams

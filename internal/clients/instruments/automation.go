@@ -10,85 +10,155 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
-	"golang.org/x/sync/errgroup"
 )
 
-func ParseSpecification(name, raw string) (parsed Specification, err error) {
-	output := &Specification{}
+// Job Specification
+
+func ParseSpecification(name, raw string) (parsed ParsedSpecification, err error) {
+	output := &ParsedSpecification{}
 	if err = hclsimple.Decode(name+".hcl", []byte(raw), nil, output); err != nil {
-		return Specification{}, err
+		return ParsedSpecification{}, err
 	}
 	return *output, nil
 }
 
-// Automation Job
+// Orchestrated Job
 
-func NewParsedJob(
-	name, specificationType, specification string, logger godest.Logger,
-) (job *ParsedJob, err error) {
-	job = &ParsedJob{
-		Type:             specificationType,
-		RawSpecification: specification,
+type OrchestratedJob struct {
+	ID           AutomationJobID
+	InstrumentID InstrumentID
+	Name         string
+	Type         string
+	RawSpec      string
+	ParsedSpec   ParsedSpecification
+	startedJob   *gocron.Job
+	canceler     func()
+}
+
+func NewOrchestratedJob(
+	id AutomationJobID, instrumentID InstrumentID, name, specType, rawSpec string,
+) (job *OrchestratedJob, err error) {
+	job = &OrchestratedJob{
+		ID:           id,
+		InstrumentID: instrumentID,
+		Name:         name,
+		Type:         specType,
+		RawSpec:      rawSpec,
 	}
-	switch specificationType {
+	switch specType {
 	default:
-		return nil, errors.Errorf("unknown specification type %s", specificationType)
+		return nil, errors.Errorf("unknown specification type %s", specType)
 	case "hcl-v0.1.0":
-		if job.Specification, err = ParseSpecification(name, specification); err != nil {
-			return nil, errors.Wrapf(err, "couldn't parse %s specification", specificationType)
+		if job.ParsedSpec, err = ParseSpecification(name, rawSpec); err != nil {
+			return nil, errors.Wrapf(err, "couldn't parse %s specification", specType)
 		}
-		fmt.Printf("%+v\n", job.Specification)
 	}
 	return job, nil
 }
 
-func (j *ParsedJob) Start() error {
+func (j *OrchestratedJob) Run(ctx context.Context) error {
+	// TODO: implement
+	fmt.Printf("%+v\n", j.ParsedSpec.Action)
 	return nil
 }
 
-func (j *ParsedJob) Shutdown(ctx context.Context) error {
-	// TODO: if possible, use context for cancellations, rather than a separate Shutdown or Close
-	// method
-	return nil
+func (j *OrchestratedJob) Cancel() {
+	if j.canceler == nil {
+		return
+	}
+	j.canceler()
 }
 
-func (j *ParsedJob) Close() {
-}
+// Job Orchestrator
 
-// Automation Job Orchestrator
-
-type AutomationJobOrchestrator struct {
-	jobs      map[AutomationJobID]*ParsedJob
+type JobOrchestrator struct {
+	jobs      map[AutomationJobID]*OrchestratedJob
 	jobsMu    *sync.RWMutex
 	scheduler *gocron.Scheduler
+	toStart   chan *OrchestratedJob
 
 	logger godest.Logger
 }
 
-func NewAutomationJobOrchestrator(logger godest.Logger) *AutomationJobOrchestrator {
+func NewJobOrchestrator(logger godest.Logger) *JobOrchestrator {
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.StartAsync()
 	scheduler.SingletonModeAll()
-	return &AutomationJobOrchestrator{
-		jobs:      make(map[AutomationJobID]*ParsedJob),
+	return &JobOrchestrator{
+		jobs:      make(map[AutomationJobID]*OrchestratedJob),
 		jobsMu:    &sync.RWMutex{},
 		scheduler: scheduler,
+		toStart:   make(chan *OrchestratedJob),
 		logger:    logger,
 	}
 }
 
-func (o *AutomationJobOrchestrator) Add(
-	id AutomationJobID, specificationType, specification string,
+func (o *JobOrchestrator) startJob(ctx context.Context, job *OrchestratedJob) error {
+	schedule := job.ParsedSpec.Schedule
+	startTime, err := schedule.DecodeStart()
+	if err != nil {
+		return err
+	}
+	o.scheduler.Every(schedule.Interval)
+	if startTime != nil {
+		o.scheduler.StartAt(*startTime)
+	}
+
+	jobCtx, canceler := context.WithCancel(ctx)
+	job.canceler = canceler
+	job.startedJob, err = o.scheduler.Do(func() {
+		select {
+		case <-jobCtx.Done():
+			return
+		default:
+			if ctxErr := jobCtx.Err(); ctxErr != nil {
+				// TODO: log any relevant errors?
+				return
+			}
+
+			if jobErr := job.Run(jobCtx); jobErr != nil {
+				o.logger.Error(errors.Wrapf(jobErr, "job %d %s failed", job.ID, job.Name))
+			}
+		}
+	})
+	return errors.Wrapf(err, "couldn't start job %d %s", job.ID, job.Name)
+}
+
+func (o *JobOrchestrator) Orchestrate(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case job := <-o.toStart:
+			if err := ctx.Err(); err != nil {
+				// Context was also canceled and it should have priority
+				return err
+			}
+
+			o.logger.Infof("starting job %d %s", job.ID, job.Name)
+			if err := o.startJob(ctx, job); err != nil {
+				o.logger.Error(err)
+			}
+		}
+	}
+}
+
+func (o *JobOrchestrator) Add(
+	id AutomationJobID, instrumentID InstrumentID, name, specType, rawSpec string,
 ) error {
 	if _, ok := o.Get(id); ok {
-		o.logger.Warnf("skipped adding automation job %d because it's already running", id)
+		o.logger.Warnf("skipped adding job %d %s because it's already running", id, name)
 		return nil
 	}
 
-	job, err := NewParsedJob(fmt.Sprint(id), specificationType, specification, o.logger)
+	if name == "" {
+		name = fmt.Sprint(id)
+	}
+	job, err := NewOrchestratedJob(id, instrumentID, name, specType, rawSpec)
 	if err != nil {
+		// TODO: if there's an HCL parsing error, we should report diagnostics in the GUI
 		return errors.Wrapf(
-			err, "couldn't create automation job %d from %s specification", id, specificationType,
+			err, "couldn't create job %d %s", id, name,
 		)
 	}
 
@@ -96,81 +166,66 @@ func (o *AutomationJobOrchestrator) Add(
 	o.jobs[id] = job
 	o.jobsMu.Unlock()
 
-	go func() {
-		o.logger.Infof("starting automation job %d", id)
-		if err := job.Start(); err != nil {
-			o.logger.Error(errors.Wrapf(err, "couldn't starting automation job %d", id))
-		}
-	}()
+	o.logger.Debugf("adding job %d %s to start queue", id, name)
+	o.toStart <- job
 	return nil
 }
 
-func (o *AutomationJobOrchestrator) Get(id AutomationJobID) (c *ParsedJob, ok bool) {
+func (o *JobOrchestrator) Get(id AutomationJobID) (j *OrchestratedJob, ok bool) {
 	o.jobsMu.RLock()
 	defer o.jobsMu.RUnlock()
 
-	c, ok = o.jobs[id]
-	return c, ok
+	j, ok = o.jobs[id]
+	return j, ok
 }
 
-func (o *AutomationJobOrchestrator) Remove(ctx context.Context, id AutomationJobID) error {
+func (o *JobOrchestrator) Remove(id AutomationJobID) {
 	o.jobsMu.Lock()
 	defer o.jobsMu.Unlock()
 
 	job, ok := o.jobs[id]
 	if !ok {
-		return nil
+		return
 	}
-	o.logger.Infof("removing automation job %d", id)
-	err := job.Shutdown(ctx)
-	if err != nil {
-		job.Close()
-	}
+	o.logger.Debugf("removing job %d", id, job.Name)
+	job.Cancel()
+	o.scheduler.RemoveByReference(job.startedJob)
 	delete(o.jobs, id)
-	return err
+	o.logger.Infof("removed job %d %s", id, job.Name)
 }
 
-func (o *AutomationJobOrchestrator) Update(
-	ctx context.Context, id AutomationJobID, specificationType, specification string,
+func (o *JobOrchestrator) Update(
+	id AutomationJobID, instrumentID InstrumentID, name, specType, rawSpec string,
 ) error {
 	o.jobsMu.RLock()
 	_, ok := o.jobs[id]
 	o.jobsMu.RUnlock()
+	if name == "" {
+		name = fmt.Sprint(id)
+	}
 	if !ok {
-		return o.Add(id, specificationType, specification)
+		return o.Add(id, instrumentID, name, specType, rawSpec)
 	}
 
-	if err := o.Remove(ctx, id); err != nil {
-		return errors.Wrapf(err, "couldn't remove old automation job %d to update it", id)
-	}
+	o.Remove(id)
 	return errors.Wrapf(
-		o.Add(id, specificationType, specification),
-		"couldn't add new automation job %d to update it", id,
+		o.Add(id, instrumentID, name, specType, rawSpec),
+		"couldn't add new job %d %s to update it", id, name,
 	)
 }
 
-func (o *AutomationJobOrchestrator) Close(ctx context.Context) error {
+func (o *JobOrchestrator) Close() {
 	o.jobsMu.Lock()
 	defer o.jobsMu.Unlock()
 
-	eg, _ := errgroup.WithContext(ctx)
 	for _, job := range o.jobs {
-		eg.Go(func(c *ParsedJob) func() error {
-			return func() error {
-				// We pass the parent context to isolate failure of one job's graceful shutdown from the
-				// other jobs' graceful shutdowns
-				err := c.Shutdown(ctx)
-				if err != nil {
-					c.Close()
-				}
-				return err
-			}
-		}(job))
+		job.Cancel()
+		o.scheduler.RemoveByReference(job.startedJob)
 	}
-	eg.Go(func() error {
-		o.scheduler.Stop()
-		return nil
-	})
-	o.jobs = nil
-	return eg.Wait()
+	o.scheduler.Stop()
+
+	if o.toStart != nil {
+		close(o.toStart)
+		o.toStart = nil
+	}
 }

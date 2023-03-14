@@ -13,13 +13,13 @@ func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 	return handleInstrumentComponentPost(
 		"controller",
 		func(
-			ctx context.Context, controllerID instruments.ControllerID,
+			ctx context.Context, id instruments.ControllerID, iid instruments.InstrumentID,
 			enabled bool, name, description string, params url.Values,
 		) error {
 			protocol := params.Get("protocol")
 			url := params.Get("url")
 			if err := h.is.UpdateController(ctx, instruments.Controller{
-				ID:          controllerID,
+				ID:          id,
 				Enabled:     enabled,
 				Name:        name,
 				Description: description,
@@ -30,15 +30,15 @@ func (h *Handlers) HandleInstrumentControllerPost() auth.HTTPHandlerFunc {
 			}
 			// Note: when we have other controllers, we'll need to generalize this
 			if !enabled {
-				return h.pco.Remove(ctx, planktoscope.ClientID(controllerID))
+				return h.pco.Remove(ctx, planktoscope.ClientID(id))
 			}
-			return h.pco.Update(ctx, planktoscope.ClientID(controllerID), url)
+			return h.pco.Update(ctx, planktoscope.ClientID(id), url)
 		},
-		func(ctx context.Context, controllerID instruments.ControllerID) error {
-			if err := h.is.DeleteController(ctx, controllerID); err != nil {
+		func(ctx context.Context, id instruments.ControllerID) error {
+			if err := h.is.DeleteController(ctx, id); err != nil {
 				return err
 			}
-			if err := h.pco.Remove(ctx, planktoscope.ClientID(controllerID)); err != nil {
+			if err := h.pco.Remove(ctx, planktoscope.ClientID(id)); err != nil {
 				return err
 			}
 			return nil

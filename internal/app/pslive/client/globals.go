@@ -39,7 +39,7 @@ type Globals struct {
 
 	Instruments    *instruments.Store
 	Planktoscopes  *planktoscope.Orchestrator
-	AutomationJobs *instruments.AutomationJobOrchestrator
+	InstrumentJobs *instruments.JobOrchestrator
 	Presence       *presence.Store
 	Chat           *chat.Store
 	VSBroker       *videostreams.Broker
@@ -95,7 +95,7 @@ func NewGlobals(
 
 	g.Instruments = instruments.NewStore(g.DB)
 	g.Planktoscopes = planktoscope.NewOrchestrator(l)
-	g.AutomationJobs = instruments.NewAutomationJobOrchestrator(l)
+	g.InstrumentJobs = instruments.NewJobOrchestrator(l)
 	g.Presence = presence.NewStore()
 	g.Chat = chat.NewStore(g.DB)
 	g.VSBroker = videostreams.NewBroker(l)
