@@ -3,10 +3,17 @@ package instruments
 import (
 	"time"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/pkg/errors"
 )
 
 // Job Specification
+
+type ParsedSpecification struct {
+	Schedule Schedule `hcl:"schedule,block"`
+	// TODO: allow non-controller actions
+	Actions []Action `hcl:"action,block"`
+}
 
 type Schedule struct {
 	Interval string `hcl:"interval"`       // a string that parses with time.ParseDuration()
@@ -24,11 +31,23 @@ func (s Schedule) DecodeStart() (*time.Time, error) {
 }
 
 type Action struct {
-	Controller string `hcl:"controller"`
-	Command    string `hcl:"command"`
+	Type   string   `hcl:"type,label"`
+	Name   string   `hcl:"name,label"`
+	Remain hcl.Body `hcl:",remain"`
 }
 
-type ParsedSpecification struct {
-	Schedule Schedule `hcl:"schedule,block"`
-	Action   Action   `hcl:"action,block"`
+type SleepAction struct {
+	Duration string `hcl:"duration"`
+}
+
+type ControllerAction struct {
+	Controller string   `hcl:"controller"`
+	Command    string   `hcl:"command"`
+	Params     hcl.Body `hcl:",remain"`
+}
+
+type PlanktoscopePumpParams struct {
+	Forward  bool    `hcl:"forward"`
+	Volume   float64 `hcl:"volume"`
+	Flowrate float64 `hcl:"flowrate"`
 }

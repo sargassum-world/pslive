@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsimple"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
@@ -20,6 +21,62 @@ func ParseSpecification(name, raw string) (parsed ParsedSpecification, err error
 		return ParsedSpecification{}, err
 	}
 	return *output, nil
+}
+
+// Job Actions
+
+func RunSleepAction(ctx context.Context, a SleepAction) error {
+	duration, err := time.ParseDuration(a.Duration)
+	if err != nil {
+		return errors.Wrapf(err, "couldn't parse sleep duration %s", a.Duration)
+	}
+
+	timer := time.NewTimer(duration)
+	select {
+	case <-ctx.Done():
+		if !timer.Stop() {
+			<-timer.C
+		}
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func RunPlanktoscopePumpAction(ctx context.Context, p PlanktoscopePumpParams) error {
+	// TODO: implement
+	fmt.Printf("run pump: %+v\n", p)
+	return nil
+}
+
+func RunPlanktoscopeStopPumpAction(ctx context.Context) error {
+	// TODO: implement
+	fmt.Println("stop pump")
+	return nil
+}
+
+func RunPlanktoscopeControllerAction(ctx context.Context, a ControllerAction) error {
+	switch command := a.Command; command {
+	default:
+		return errors.Errorf("unrecognized planktoscope controller command %s", command)
+	case "pump":
+		var p PlanktoscopePumpParams
+		if err := gohcl.DecodeBody(a.Params, nil, &p); err != nil {
+			return errors.Wrapf(
+				err, "couldn't decode params of planktoscope controller command %s", command,
+			)
+		}
+		return RunPlanktoscopePumpAction(ctx, p)
+	case "stop-pump":
+		return RunPlanktoscopeStopPumpAction(ctx)
+	}
+}
+
+func RunControllerAction(ctx context.Context, a ControllerAction) error {
+	// TODO: search for the instrument controller by name
+	// TODO: check that the instrument uses the PlanktoScope v2.3 protocol
+	// TODO: get the PlanktoScope client
+	return RunPlanktoscopeControllerAction(ctx, a)
 }
 
 // Orchestrated Job
@@ -57,8 +114,28 @@ func NewOrchestratedJob(
 }
 
 func (j *OrchestratedJob) Run(ctx context.Context) error {
-	// TODO: implement
-	fmt.Printf("%+v\n", j.ParsedSpec.Action)
+	for i, action := range j.ParsedSpec.Actions {
+		switch actionType := action.Type; actionType {
+		default:
+			return errors.Errorf("action #%d (%s) is of unrecognized type %s", i, actionType, action.Name)
+		case "sleep":
+			var a SleepAction
+			if err := gohcl.DecodeBody(action.Remain, nil, &a); err != nil {
+				return errors.Wrapf(err, "couldn't decode sleep action #%d (%s)", i, action.Name)
+			}
+			if err := RunSleepAction(ctx, a); err != nil {
+				return errors.Wrapf(err, "couldn't run sleep action #%d (%s)", i, action.Name)
+			}
+		case "controller":
+			var a ControllerAction
+			if err := gohcl.DecodeBody(action.Remain, nil, &a); err != nil {
+				return errors.Wrapf(err, "couldn't decode controller action #%d (%s)", i, action.Name)
+			}
+			if err := RunControllerAction(ctx, a); err != nil {
+				return errors.Wrapf(err, "couldn't run controller action #%d (%s)", i, action.Name)
+			}
+		}
+	}
 	return nil
 }
 
@@ -73,9 +150,10 @@ func (j *OrchestratedJob) Cancel() {
 
 type JobOrchestrator struct {
 	jobs      map[AutomationJobID]*OrchestratedJob
-	jobsMu    *sync.RWMutex
+	mu        *sync.RWMutex
 	scheduler *gocron.Scheduler
 	toStart   chan *OrchestratedJob
+	canceler  func()
 
 	logger godest.Logger
 }
@@ -85,8 +163,8 @@ func NewJobOrchestrator(logger godest.Logger) *JobOrchestrator {
 	scheduler.StartAsync()
 	scheduler.SingletonModeAll()
 	return &JobOrchestrator{
+		mu:        &sync.RWMutex{},
 		jobs:      make(map[AutomationJobID]*OrchestratedJob),
-		jobsMu:    &sync.RWMutex{},
 		scheduler: scheduler,
 		toStart:   make(chan *OrchestratedJob),
 		logger:    logger,
@@ -99,6 +177,10 @@ func (o *JobOrchestrator) startJob(ctx context.Context, job *OrchestratedJob) er
 	if err != nil {
 		return err
 	}
+
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	o.scheduler.Every(schedule.Interval)
 	if startTime != nil {
 		o.scheduler.StartAt(*startTime)
@@ -125,6 +207,7 @@ func (o *JobOrchestrator) startJob(ctx context.Context, job *OrchestratedJob) er
 }
 
 func (o *JobOrchestrator) Orchestrate(ctx context.Context) error {
+	ctx, o.canceler = context.WithCancel(ctx)
 	for {
 		select {
 		case <-ctx.Done():
@@ -162,9 +245,9 @@ func (o *JobOrchestrator) Add(
 		)
 	}
 
-	o.jobsMu.Lock()
+	o.mu.Lock()
 	o.jobs[id] = job
-	o.jobsMu.Unlock()
+	o.mu.Unlock()
 
 	o.logger.Debugf("adding job %d %s to start queue", id, name)
 	o.toStart <- job
@@ -172,16 +255,16 @@ func (o *JobOrchestrator) Add(
 }
 
 func (o *JobOrchestrator) Get(id AutomationJobID) (j *OrchestratedJob, ok bool) {
-	o.jobsMu.RLock()
-	defer o.jobsMu.RUnlock()
+	o.mu.RLock()
+	defer o.mu.RUnlock()
 
 	j, ok = o.jobs[id]
 	return j, ok
 }
 
 func (o *JobOrchestrator) Remove(id AutomationJobID) {
-	o.jobsMu.Lock()
-	defer o.jobsMu.Unlock()
+	o.mu.Lock()
+	defer o.mu.Unlock()
 
 	job, ok := o.jobs[id]
 	if !ok {
@@ -197,9 +280,9 @@ func (o *JobOrchestrator) Remove(id AutomationJobID) {
 func (o *JobOrchestrator) Update(
 	id AutomationJobID, instrumentID InstrumentID, name, specType, rawSpec string,
 ) error {
-	o.jobsMu.RLock()
+	o.mu.RLock()
 	_, ok := o.jobs[id]
-	o.jobsMu.RUnlock()
+	o.mu.RUnlock()
 	if name == "" {
 		name = fmt.Sprint(id)
 	}
@@ -215,8 +298,10 @@ func (o *JobOrchestrator) Update(
 }
 
 func (o *JobOrchestrator) Close() {
-	o.jobsMu.Lock()
-	defer o.jobsMu.Unlock()
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	o.canceler()
 
 	for _, job := range o.jobs {
 		job.Cancel()
