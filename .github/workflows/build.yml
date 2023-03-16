@@ -2,7 +2,9 @@ name: build
 
 on:
   push: 
-    branches: [ main ]
+    branches: 
+      - main
+      - gh-readonly-queue/dev/**
   pull_request:
     branches: [ main ]
   workflow_dispatch:
