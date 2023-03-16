@@ -1,21 +1,21 @@
 {{$instrument := (get . "Instrument")}}
-{{$camera := (get . "Camera")}}
+{{$automationJob := (get . "AutomationJob")}}
 {{$auth := (get . "Auth")}}
-{{$frameID := (print "/instruments/" $instrument.ID "/config/cameras")}}
-{{if $camera}}
-  {{$frameID = (print $frameID "/" $camera.ID)}}
+{{$frameID := (print "/instruments/" $instrument.ID "/config/automation-jobs")}}
+{{if $automationJob}}
+  {{$frameID = (print $frameID "/" $automationJob.ID)}}
 {{end}}
-{{$formRoute := (print "/instruments/" $instrument.ID "/cameras")}}
-{{if $camera}}
-  {{$formRoute = (print $formRoute "/" $camera.ID)}}
+{{$formRoute := (print "/instruments/" $instrument.ID "/automation-jobs")}}
+{{if $automationJob}}
+  {{$formRoute = (print $formRoute "/" $automationJob.ID)}}
 {{end}}
 
 <turbo-frame id={{$frameID}}>
   <div class="card section-card">
     <div class="card-content">
-      {{if $camera}}
+      {{if $automationJob}}
         <h3>
-          Camera
+          Automation Job
           <form
             action={{$formRoute}}
             method="POST"
@@ -37,7 +37,7 @@
           </form>
         </h3>
       {{else}}
-        <h3>New Camera</h3>
+        <h3>New Automation Job</h3>
       {{end}}
       <form
         action={{$formRoute}}
@@ -47,19 +47,62 @@
         data-action="submit->form-submission#submit submit->csrf#addToken"
       >
         {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-        {{if $camera}}
+        {{if $automationJob}}
           <input type="hidden" name="state" value="updated">
         {{end}}
+
         <div class="field is-horizontal">
           <div class="field-label is-normal">
-            <label class="label" for="protocol">Protocol</label>
+            <label class="label" for="url">Name</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input
+                  type="text"
+                  class="input"
+                  name="name"
+                  placeholder="run-pump"
+                  {{if $automationJob}}
+                    value={{$automationJob.Name}}
+                  {{end}}
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="url">Description</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input
+                  type="text"
+                  class="input"
+                  name="description"
+                  placeholder="Keep the pump running"
+                  {{if $automationJob}}
+                    value={{$automationJob.Description}}
+                  {{end}}
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label" for="type">Type</label>
           </div>
           <div class="field-body">
             <div class="field">
               <div class="control">
                 <div class="select">
-                  <select name="protocol" required>
-                    <option value="mjpeg" selected>MJPEG Over HTTP</option>
+                  <select name="type" required>
+                    <option value="hcl-v0.1.0" selected>HCL v0.1.0</option>
                   </select>
                 </div>
               </div>
@@ -69,22 +112,20 @@
 
         <div class="field is-horizontal">
           <div class="field-label is-normal">
-            <label class="label" for="url">URL</label>
+            <label class="label" for="specification">Spec</label>
           </div>
           <div class="field-body">
             <div class="field">
               <div class="control">
-                <input
-                  type="url"
-                  class="input"
-                  name="url"
-                  pattern="http(s)?://.*"
-                  placeholder="https://example-proxy.cloud.syngnathus.sargassum.world/"
-                  {{if $camera}}
-                    value={{$camera.URL}}
-                  {{end}}
-                  required
+                <textarea
+                  class="textarea is-fullwidth"
+                  name="specification"
+                  rows="20"
                 >
+                  {{- if $automationJob -}}
+                    {{- $automationJob.Specification -}}
+                  {{- end -}}
+                </textarea>
               </div>
             </div>
           </div>
@@ -100,9 +141,9 @@
                     type="checkbox"
                     name="enabled"
                     value="true"
-                    {{if not $camera}}
+                    {{if not $automationJob}}
                       checked
-                    {{else if $camera.Enabled}}
+                    {{else if $automationJob.Enabled}}
                       checked
                     {{end}}
                   >
@@ -122,7 +163,7 @@
                   <input
                     type="submit"
                     class="button"
-                    {{if $camera}}
+                    {{if $automationJob}}
                       value="Update"
                     {{else}}
                       value="Add"

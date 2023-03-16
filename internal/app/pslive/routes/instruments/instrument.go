@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -27,7 +28,9 @@ func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 	const intWidth = 64
 	id, err := strconv.ParseInt(raw, intBase, intWidth)
 	if err != nil {
-		return 0, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid %s id", typeName))
+		return 0, echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+			"invalid %s id %s", typeName, raw,
+		))
 	}
 	return ID(id), err
 }
@@ -36,7 +39,8 @@ func parseID[ID ~int64](raw string, typeName string) (ID, error) {
 
 func handleInstrumentComponentsPost(
 	storeAdder func(
-		ctx context.Context, iid instruments.InstrumentID, url, protocol string, enabled bool,
+		ctx context.Context, iid instruments.InstrumentID,
+		enabled bool, name, description string, params url.Values,
 	) error,
 ) auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
@@ -45,14 +49,18 @@ func handleInstrumentComponentsPost(
 		if err != nil {
 			return err
 		}
-		url := c.FormValue("url")
-		protocol := c.FormValue("protocol")
 		enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
+		name := c.FormValue("name")
+		description := c.FormValue("description")
+		params, err := c.FormParams()
+		if err != nil {
+			return errors.Wrap(err, "couldn't parse form params")
+		}
 
 		// Run queries
-		// FIXME: there needs to be an authorization check to ensure that the user attempting to
-		// delete the instrument is an administrator of the instrument!
-		if err := storeAdder(c.Request().Context(), iid, url, protocol, enabled); err != nil {
+		if err := storeAdder(
+			c.Request().Context(), iid, enabled, name, description, params,
+		); err != nil {
 			return err
 		}
 
@@ -66,7 +74,8 @@ func handleInstrumentComponentsPost(
 func handleInstrumentComponentPost[ComponentID ~int64](
 	typeName string,
 	componentUpdater func(
-		ctx context.Context, componentID ComponentID, url, protocol string, enabled bool,
+		ctx context.Context, componentID ComponentID, instrumentID instruments.InstrumentID,
+		enabled bool, name, description string, params url.Values,
 	) error,
 	componentDeleter func(ctx context.Context, componentID ComponentID) error,
 ) auth.HTTPHandlerFunc {
@@ -90,16 +99,20 @@ func handleInstrumentComponentPost[ComponentID ~int64](
 				"invalid %s state %s", typeName, state,
 			))
 		case "updated":
-			protocol := c.FormValue("protocol")
-			url := c.FormValue("url")
 			enabled := strings.ToLower(c.FormValue("enabled")) == flagChecked
-			// FIXME: needs authorization check!
-			if err = componentUpdater(ctx, componentID, url, protocol, enabled); err != nil {
+			name := c.FormValue("name")
+			description := c.FormValue("description")
+			params, perr := c.FormParams()
+			if perr != nil {
+				return errors.Wrap(err, "couldn't parse form params")
+			}
+			if err = componentUpdater(
+				ctx, componentID, iid, enabled, name, description, params,
+			); err != nil {
 				return err
 			}
 			// TODO: deal with turbo streams
 		case "deleted":
-			// FIXME: needs authorization check!
 			if err = componentDeleter(ctx, componentID); err != nil {
 				return err
 			}
@@ -273,9 +286,6 @@ func (h *Handlers) HandleInstrumentPost() auth.HTTPHandlerFunc {
 				"invalid instrument state %s", state,
 			))
 		case "deleted":
-			// FIXME: there needs to be an authorization check to ensure that the user attempting to
-			// delete the instrument is an administrator of the instrument!
-
 			if err = h.is.DeleteInstrument(ctx, iid); err != nil {
 				return err
 			}
@@ -297,8 +307,6 @@ func (h *Handlers) HandleInstrumentNamePost() auth.HTTPHandlerFunc {
 		name := c.FormValue("name")
 
 		// Run queries
-		// FIXME: there needs to be an authorization check to ensure that the user attempting to
-		// delete the instrument is an administrator of the instrument!
 		if err := h.is.UpdateInstrumentName(c.Request().Context(), iid, name); err != nil {
 			return err
 		}
@@ -320,8 +328,6 @@ func (h *Handlers) HandleInstrumentDescriptionPost() auth.HTTPHandlerFunc {
 		description := c.FormValue("description")
 
 		// Run queries
-		// FIXME: there needs to be an authorization check to ensure that the user attempting to
-		// delete the instrument is an administrator of the instrument!
 		if err := h.is.UpdateInstrumentDescription(
 			c.Request().Context(), iid, description,
 		); err != nil {

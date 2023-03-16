@@ -27,4 +27,4 @@ allow_user_chat_post(subject, id) if {
 # Internal Attribute Checks
 
 # TODO: implement (right now we don't have a users db table)
-is_valid_user(user_id) = true
+is_valid_user(_) = true

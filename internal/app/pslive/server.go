@@ -68,7 +68,7 @@ func NewServer(logger godest.Logger) (s *Server, err error) {
 	if s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
-			s.Globals.ACSigner.Sign,
+			s.Globals.Base.ACSigner.Sign,
 		),
 	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make template renderer")
@@ -167,24 +167,24 @@ func (s *Server) Register(e *echo.Echo) error {
 	// Compression Middleware
 	e.Use(middleware.Decompress())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Level: s.Globals.Config.HTTP.GzipLevel,
+		Level: s.Globals.Base.Config.HTTP.GzipLevel,
 	}))
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(echo.WrapMiddleware(s.Globals.Sessions.NewCSRFMiddleware(
-		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Sessions)),
+	e.Use(echo.WrapMiddleware(s.Globals.Base.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Base.Sessions)),
 	)))
 	e.Use(gmw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 
 	// Authorization Middleware
-	e.Use(s.Globals.AuthzChecker.NewHTTPMiddleware(s.Globals.Sessions))
-	s.Globals.TSBroker.Use(s.Globals.AuthzChecker.NewTSMiddleware(s.Globals.Sessions))
+	e.Use(s.Globals.Base.AuthzChecker.NewHTTPMiddleware(s.Globals.Base.Sessions))
+	s.Globals.Base.TSBroker.Use(s.Globals.Base.AuthzChecker.NewTSMiddleware(s.Globals.Base.Sessions))
 
 	// Handlers
-	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
-	s.Handlers.Register(e, s.Globals.TSBroker, s.Globals.VSBroker, s.Embeds)
+	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Base.Sessions)
+	s.Handlers.Register(e, s.Globals.Base.TSBroker, s.Globals.VSBroker, s.Embeds)
 
 	// Gob encodings
 	auth.RegisterGobTypes()
@@ -198,11 +198,11 @@ func (s *Server) openDB(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't load database schema")
 	}
-	if err = s.Globals.DB.Open(); err != nil {
+	if err = s.Globals.Base.DB.Open(); err != nil {
 		return errors.Wrap(err, "couldn't open connection pool for database")
 	}
 	// TODO: close the store when the context is canceled, in order to allow flushing the WAL
-	if err = s.Globals.DB.Migrate(ctx, schema); err != nil {
+	if err = s.Globals.Base.DB.Migrate(ctx, schema); err != nil {
 		// TODO: close the store if the migration failed
 		return errors.Wrap(err, "couldn't perform database schema migrations")
 	}
@@ -213,26 +213,16 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		const interval = 10 * time.Minute
-		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
+		if err := s.Globals.Base.SessionsBacking.PeriodicallyCleanup(
 			ctx, interval,
 		); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
+			s.Globals.Base.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
 		}
 		return nil
 	})
 	eg.Go(func() error {
-		if err := workers.EstablishPlanktoscopeControllerConnections(
-			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
-		); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(
-				err, "couldn't establish planktoscope controller connections",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := s.Globals.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(
+		if err := s.Globals.Base.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
+			s.Globals.Base.Logger.Error(errors.Wrap(
 				err, "turbo streams broker encountered error while serving",
 			))
 		}
@@ -240,9 +230,35 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	})
 	eg.Go(func() error {
 		if err := s.Globals.VSBroker.Serve(ctx); err != nil && err != context.Canceled {
-			s.Globals.Logger.Error(errors.Wrap(
+			s.Globals.Base.Logger.Error(errors.Wrap(
 				err, "video streams broker encountered error while serving",
 			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := workers.EstablishPlanktoscopeControllerConnections(
+			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
+		); err != nil && err != context.Canceled {
+			s.Globals.Base.Logger.Error(errors.Wrap(
+				err, "couldn't establish planktoscope controller connections",
+			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := s.Globals.InstrumentJobs.Orchestrate(ctx); err != nil && err != context.Canceled {
+			s.Globals.Base.Logger.Error(errors.Wrap(
+				err, "instrument job orchestrator encountered error while orchestrating",
+			))
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if err := workers.StartInstrumentJobs(
+			ctx, s.Globals.Instruments, s.Globals.InstrumentJobs,
+		); err != nil && err != context.Canceled {
+			s.Globals.Base.Logger.Error(errors.Wrap(err, "couldn't start automation jobs"))
 		}
 		return nil
 	})
@@ -252,7 +268,7 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 const port = 3000 // TODO: configure this with env var
 
 func (s *Server) Run(e *echo.Echo) error {
-	s.Globals.Logger.Info("starting pslive server")
+	s.Globals.Base.Logger.Info("starting pslive server")
 	if err := s.openDB(context.Background()); err != nil {
 		return errors.Wrap(err, "couldn't open database")
 	}
@@ -263,9 +279,9 @@ func (s *Server) Run(e *echo.Echo) error {
 	// by calling the Close method.
 	eg, egctx := errgroup.WithContext(context.Background())
 	eg.Go(func() error {
-		s.Globals.Logger.Info("starting background workers")
+		s.Globals.Base.Logger.Info("starting background workers")
 		if err := s.runWorkersInContext(egctx); err != nil {
-			s.Globals.Logger.Error(errors.Wrap(
+			s.Globals.Base.Logger.Error(errors.Wrap(
 				err, "background worker encountered error",
 			))
 		}
@@ -273,7 +289,7 @@ func (s *Server) Run(e *echo.Echo) error {
 	})
 	eg.Go(func() error {
 		address := fmt.Sprintf(":%d", port)
-		s.Globals.Logger.Infof("starting http server on %s", address)
+		s.Globals.Base.Logger.Infof("starting http server on %s", address)
 		return e.Start(address)
 	})
 	if err := eg.Wait(); err != http.ErrServerClosed {
@@ -287,21 +303,22 @@ func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
 	// starting Echo, we need to call e.Server.RegisterOnShutdown with a function to gracefully close
 	// WebSocket connections!
 	if errEcho := e.Shutdown(ctx); errEcho != nil {
-		s.Globals.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
+		s.Globals.Base.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
 		err = errEcho
 	}
-	if errDB := s.Globals.DB.Close(); errDB != nil {
-		s.Globals.Logger.Error(errors.Wrap(errDB, "couldn't close database"))
+	if errDB := s.Globals.Base.DB.Close(); errDB != nil {
+		s.Globals.Base.Logger.Error(errors.Wrap(errDB, "couldn't close database"))
 		if err == nil {
 			err = errDB
 		}
 	}
 	if errPO := s.Globals.Planktoscopes.Close(ctx); errPO != nil {
-		s.Globals.Logger.Error(errors.Wrap(errPO, "couldn't close planktoscope clients"))
+		s.Globals.Base.Logger.Error(errors.Wrap(errPO, "couldn't close planktoscope clients"))
 		if err == nil {
 			err = errPO
 		}
 	}
+	s.Globals.InstrumentJobs.Close()
 	return err
 }
 

@@ -26,6 +26,7 @@ type Handlers struct {
 
 	is  *instruments.Store
 	pco *planktoscope.Orchestrator
+	ijo *instruments.JobOrchestrator
 	ps  *presence.Store
 	cs  *chat.Store
 	vsb *videostreams.Broker
@@ -33,7 +34,7 @@ type Handlers struct {
 
 func New(
 	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
-	is *instruments.Store, pco *planktoscope.Orchestrator,
+	is *instruments.Store, pco *planktoscope.Orchestrator, ijo *instruments.JobOrchestrator,
 	ps *presence.Store, cs *chat.Store, vsb *videostreams.Broker,
 ) *Handlers {
 	return &Handlers{
@@ -43,6 +44,7 @@ func New(
 		tsh: tsh,
 		is:  is,
 		pco: pco,
+		ijo: ijo,
 		ps:  ps,
 		cs:  cs,
 		vsb: vsb,
@@ -85,6 +87,10 @@ func (h *Handlers) Register(
 		h.r, ss, h.ModifyCameraMsgData(),
 	))
 	hr.POST("/instruments/:id/controllers/:controllerID/camera", h.HandleCameraPost())
+	hr.POST("/instruments/:id/automation-jobs", h.HandleInstrumentAutomationJobsPost())
+	hr.POST(
+		"/instruments/:id/automation-jobs/:automationJobID", h.HandleInstrumentAutomationJobPost(),
+	)
 	tsr.SUB("/instruments/:id/chat/messages", turbostreams.EmptyHandler)
 	tsr.MSG("/instruments/:id/chat/messages", handling.HandleTSMsg(h.r, ss))
 	// TODO: add a paginated GET handler for chat messages to support chat history infiniscroll

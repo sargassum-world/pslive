@@ -26,7 +26,7 @@ allow_camera_post(subject, instrument_id, camera_id) if {
 	is_instrument_admin(subject, instrument_id)
 }
 
-allow_controller_get(subject, instrument_id, controller_id) if {
+allow_controller_get(_, instrument_id, controller_id) if {
 	is_valid_instrument(instrument_id)
 	is_valid_controller(instrument_id, controller_id)
 }
@@ -49,6 +49,17 @@ allow_controller_pump_post(subject, instrument_id, controller_id) if {
 
 allow_controller_camera_post(subject, instrument_id, controller_id) if {
 	allow_controller_module_post(subject, instrument_id, controller_id)
+}
+
+allow_automation_job_get(instrument_id, automation_job_id) if {
+	is_valid_instrument(instrument_id)
+	is_valid_automation_job(instrument_id, automation_job_id)
+}
+
+allow_automation_job_post(subject, instrument_id, automation_job_id) if {
+	is_valid_instrument(instrument_id)
+	is_valid_automation_job(instrument_id, automation_job_id)
+	is_instrument_admin(subject, instrument_id)
 }
 
 allow_instrument_chat_post(subject, instrument_id) if {
@@ -76,6 +87,12 @@ is_valid_controller(instrument_id, controller_id) if {
 	to_number(instrument_id) == controller.instrument_id
 }
 
+is_valid_automation_job(instrument_id, automation_job_id) if {
+	automation_job := input.context.db.instruments_automation_job[_]
+	to_number(automation_job_id) == automation_job.id
+	to_number(instrument_id) == automation_job.instrument_id
+}
+
 is_instrument_admin(subject, instrument_id) if {
 	auth.is_authenticated(subject)
 	instrument := input.context.db.instruments_instrument[_]
@@ -83,6 +100,6 @@ is_instrument_admin(subject, instrument_id) if {
 	subject.identity == instrument.admin_identity_id
 }
 
-is_instrument_operator(subject, instrument_id) if {
+is_instrument_operator(subject, _) if {
 	auth.is_authenticated(subject) # TODO: implement operator permissions
 }

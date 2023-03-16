@@ -1,6 +1,8 @@
 update instruments_controller
 set
-  url = $url,
+  enabled = $enabled,
+  name = $name,
+  description = $description,
   protocol = $protocol,
-  enabled = $enabled
+  url = $url
 where instruments_controller.id = $id

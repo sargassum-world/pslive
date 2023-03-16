@@ -19,7 +19,7 @@ allow_private_chat_post(subject, first, second) if {
 # Internal Attribute Checks
 
 # TODO: implement (right now we don't have a users db table)
-is_valid_user(user_id) = true
+is_valid_user(_) = true
 
 is_valid_chat(first, second) if {
 	first != second

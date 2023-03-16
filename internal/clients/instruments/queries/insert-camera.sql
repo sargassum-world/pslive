@@ -1,2 +1,2 @@
-insert into instruments_camera (url, protocol, instrument_id, enabled)
-values ($url, $protocol, $instrument_id, $enabled);
+insert into instruments_camera (instrument_id, enabled, name, description, protocol, url)
+values ($instrument_id, $enabled, $name, $description, $protocol, $url);

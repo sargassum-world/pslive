@@ -366,6 +366,30 @@ allow if {
 }
 
 matching_routes contains route if {
+	"POST" == input.operation.method
+	["instruments", id, "automation-jobs"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "POST /instruments/:id/automation-jobs"
+}
+
+allow if {
+	"POST" == input.operation.method
+	["instruments", id, "automation-jobs"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_instrument_post(input.subject, id)
+}
+
+matching_routes contains route if {
+	"POST" == input.operation.method
+	["instruments", id, "automation-jobs", automation_job_id] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "POST /instruments/:id/automation-jobs/:automation_job_id"
+}
+
+allow if {
+	"POST" == input.operation.method
+	["instruments", id, "automation-jobs", automation_job_id] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_automation_job_post(input.subject, id, automation_job_id)
+}
+
+matching_routes contains route if {
 	"GET" == input.operation.method
 	["instruments", id, "chat", "messages"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "GET /instruments/:id/chat/messages"
