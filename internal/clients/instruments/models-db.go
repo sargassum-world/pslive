@@ -157,6 +157,13 @@ func (c Controller) newProtocolSelection() map[string]interface{} {
 	}
 }
 
+func (c Controller) newInstrumentAndNameSelection() map[string]interface{} {
+	return map[string]interface{}{
+		"$instrument_id": c.InstrumentID,
+		"$name":          c.Name,
+	}
+}
+
 // Controllers
 
 type controllersSelector struct {

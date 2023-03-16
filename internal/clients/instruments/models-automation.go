@@ -30,6 +30,8 @@ func (s Schedule) DecodeStart() (*time.Time, error) {
 	return &start, errors.Wrapf(err, "couldn't decode start time %s as rfc3339 timestamp", s.Start)
 }
 
+// Actions
+
 type Action struct {
 	Type   string   `hcl:"type,label"`
 	Name   string   `hcl:"name,label"`
@@ -44,10 +46,4 @@ type ControllerAction struct {
 	Controller string   `hcl:"controller"`
 	Command    string   `hcl:"command"`
 	Params     hcl.Body `hcl:",remain"`
-}
-
-type PlanktoscopePumpParams struct {
-	Forward  bool    `hcl:"forward"`
-	Volume   float64 `hcl:"volume"`
-	Flowrate float64 `hcl:"flowrate"`
 }

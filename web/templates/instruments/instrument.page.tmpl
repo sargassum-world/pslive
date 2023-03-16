@@ -38,6 +38,7 @@
         "Meta" .Meta
       }}
       {{if eq .Data.Instrument.AdminID .Auth.Identity.User}}
+        <!-- TODO: expose logs and errors from automation jobs, if there are any jobs -->
         <h2>Basic Settings</h2>
         {{
           template "instruments/config/basics.partial.tmpl" dict

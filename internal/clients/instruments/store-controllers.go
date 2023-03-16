@@ -49,7 +49,7 @@ func (s *Store) GetInstrumentControllersByName(
 		Controller{
 			InstrumentID: instrumentID,
 			Name:         name,
-		}.newProtocolSelection(),
+		}.newInstrumentAndNameSelection(),
 		sel.Step,
 	); err != nil {
 		return nil, errors.Wrapf(

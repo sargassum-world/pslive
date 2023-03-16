@@ -32,12 +32,12 @@ func New(r godest.TemplateRenderer, globals *client.Globals) *Handlers {
 func (h *Handlers) Register(
 	er godest.EchoRouter, tsr turbostreams.Router, vsr vsc.Router, em godest.Embeds,
 ) {
-	ss := h.globals.Sessions
-	oc := h.globals.Ory
-	azc := h.globals.AuthzChecker
-	tsh := h.globals.TSBroker.Hub()
-	acc := h.globals.ACCancellers
-	l := h.globals.Logger
+	ss := h.globals.Base.Sessions
+	oc := h.globals.Base.Ory
+	azc := h.globals.Base.AuthzChecker
+	tsh := h.globals.Base.TSBroker.Hub()
+	acc := h.globals.Base.ACCancellers
+	l := h.globals.Base.Logger
 	is := h.globals.Instruments
 	ps := h.globals.Presence
 	cs := h.globals.Chat
@@ -46,7 +46,8 @@ func (h *Handlers) Register(
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
 	cable.New(
-		h.r, ss, h.globals.CSRFChecker, acc, h.globals.ACSigner, h.globals.TSBroker, vsb, l,
+		h.r, ss, h.globals.Base.CSRFChecker, acc, h.globals.Base.ACSigner, h.globals.Base.TSBroker,
+		vsb, l,
 	).Register(er)
 	home.New(h.r, oc, is, ps).Register(er, ss)
 	auth.New(h.r, ss, oc, acc, ps, l).Register(er)

@@ -22,7 +22,7 @@ import (
 	"github.com/sargassum-world/pslive/internal/clients/videostreams"
 )
 
-type Globals struct {
+type BaseGlobals struct {
 	Config conf.Config
 	Cache  clientcache.Cache
 	DB     *database.DB
@@ -37,21 +37,26 @@ type Globals struct {
 	ACSigner     actioncable.Signer
 	TSBroker     *turbostreams.Broker
 
-	Instruments    *instruments.Store
-	Planktoscopes  *planktoscope.Orchestrator
-	InstrumentJobs *instruments.JobOrchestrator
-	Presence       *presence.Store
-	Chat           *chat.Store
-	VSBroker       *videostreams.Broker
-
 	Logger godest.Logger
 }
 
-func NewGlobals(
+type Globals struct {
+	Base *BaseGlobals
+
+	Instruments    *instruments.Store
+	Planktoscopes  *planktoscope.Orchestrator
+	InstrumentJobs *instruments.JobOrchestrator
+
+	Presence *presence.Store
+	Chat     *chat.Store
+	VSBroker *videostreams.Broker
+}
+
+func NewBaseGlobals(
 	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules []opa.Module,
 	l godest.Logger,
-) (g *Globals, err error) {
-	g = &Globals{}
+) (g *BaseGlobals, err error) {
+	g = &BaseGlobals{}
 	g.Config, err = conf.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
@@ -93,13 +98,36 @@ func NewGlobals(
 	g.ACSigner = actioncable.NewSigner(acsConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
-	g.Instruments = instruments.NewStore(g.DB)
+	g.Logger = l
+	return g, nil
+}
+
+func NewGlobals(
+	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules []opa.Module,
+	l godest.Logger,
+) (g *Globals, err error) {
+	g = &Globals{}
+	g.Base, err = NewBaseGlobals(persistenceEmbeds, regoRoutesPackage, regoModules, l)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up base globals")
+	}
+
+	g.Instruments = instruments.NewStore(g.Base.DB)
 	g.Planktoscopes = planktoscope.NewOrchestrator(l)
-	g.InstrumentJobs = instruments.NewJobOrchestrator(l)
+	instrumentControllerActionRunners := instruments.NewControllerActionRunnerStore(
+		g.Instruments,
+		map[string]instruments.ControllerActionRunnerGetter{
+			"planktoscope-v2.3": NewPlanktoScopeControllerActionRunnerGetter(g.Planktoscopes),
+		},
+	)
+	g.InstrumentJobs = instruments.NewJobOrchestrator(map[string]instruments.ActionHandler{
+		"sleep":      instruments.HandleSleepAction,
+		"controller": instrumentControllerActionRunners.HandleControllerAction,
+	}, l)
+
 	g.Presence = presence.NewStore()
-	g.Chat = chat.NewStore(g.DB)
+	g.Chat = chat.NewStore(g.Base.DB)
 	g.VSBroker = videostreams.NewBroker(l)
 
-	g.Logger = l
 	return g, nil
 }
