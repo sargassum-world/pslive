@@ -24,9 +24,15 @@ builds:
   goarm:
     - 7
 archives:
-- format_overrides:
+  - id: "pslive"
+    builds: ["pslive"]
+    name_template: "pslive"
+    format_overrides:
     - goos: windows
       format: zip
+  - id: "pslocal"
+    builds: ["pslocal"]
+    name_template: "pslocal"
 release:
   github:
   prerelease: auto
