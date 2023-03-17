@@ -20,7 +20,9 @@ builds:
     - linux
   goarch:
     - amd64
-    - armhf
+    - arm
+  goarm:
+    - 7
 archives:
 - format_overrides:
     - goos: windows
