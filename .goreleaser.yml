@@ -4,6 +4,7 @@ before:
 builds:
 - id: "pslive"
   main: ./cmd/pslive
+  binary: pslive
   env:
     - CGO_ENABLED=0
   goos:
@@ -14,6 +15,7 @@ builds:
     - amd64
 - id: "pslocal"
   main: ./cmd/pslocal
+  binary: pslocal
   env:
     - CGO_ENABLED=0
   goos:
