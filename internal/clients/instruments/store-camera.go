@@ -12,15 +12,8 @@ import (
 var rawInsertCameraQuery string
 var insertCameraQuery string = strings.TrimSpace(rawInsertCameraQuery)
 
-func (s *Store) AddCamera(ctx context.Context, c Camera) (cameraID int64, err error) {
-	rowID, err := s.db.ExecuteInsertionForID(ctx, insertCameraQuery, c.newInsertion())
-	if err != nil {
-		return 0, errors.Wrapf(err, "couldn't add camera for instrument %d", c.InstrumentID)
-	}
-	// TODO: instead of returning the raw ID, return the frontend-facing ID as a salted SHA-256 hash
-	// of the ID to mitigate the insecure direct object reference vulnerability and avoid leaking
-	// info about instrument creation
-	return rowID, err
+func (s *Store) AddCamera(ctx context.Context, c Camera) (cameraID CameraID, err error) {
+	return executeComponentInsert[CameraID](ctx, insertCameraQuery, c, s.db)
 }
 
 //go:embed queries/update-camera.sql
@@ -28,10 +21,7 @@ var rawUpdateCameraQuery string
 var updateCameraQuery string = strings.TrimSpace(rawUpdateCameraQuery)
 
 func (s *Store) UpdateCamera(ctx context.Context, c Camera) (err error) {
-	return errors.Wrapf(
-		s.db.ExecuteUpdate(ctx, updateCameraQuery, c.newUpdate()),
-		"couldn't update camera %d", c.ID,
-	)
+	return executeUpdate[CameraID](ctx, updateCameraQuery, c, s.db)
 }
 
 //go:embed queries/delete-camera.sql
@@ -39,10 +29,7 @@ var rawDeleteCameraQuery string
 var deleteCameraQuery string = strings.TrimSpace(rawDeleteCameraQuery)
 
 func (s *Store) DeleteCamera(ctx context.Context, id CameraID) (err error) {
-	return errors.Wrapf(
-		s.db.ExecuteDelete(ctx, deleteCameraQuery, Camera{ID: id}.newDelete()),
-		"couldn't delete camera %d", id,
-	)
+	return executeDelete[CameraID](ctx, deleteCameraQuery, Camera{ID: id}, s.db)
 }
 
 //go:embed queries/select-camera.sql

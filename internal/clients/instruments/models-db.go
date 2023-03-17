@@ -12,6 +12,34 @@ type (
 	AutomationJobID int64
 )
 
+type Identifiable[ID ~int64] interface {
+	GetID() ID
+}
+
+type Subcomponent interface {
+	GetInstrumentID() InstrumentID
+}
+
+type Insertable[ID ~int64] interface {
+	Identifiable[ID]
+	NewInsertion() map[string]interface{}
+}
+
+type SubcomponentInsertable[ID ~int64] interface {
+	Subcomponent
+	Insertable[ID]
+}
+
+type Updateable[ID ~int64] interface {
+	Identifiable[ID]
+	NewUpdate() map[string]interface{}
+}
+
+type Deletable[ID ~int64] interface {
+	Identifiable[ID]
+	NewDelete() map[string]interface{}
+}
+
 // Camera
 
 type Camera struct {
@@ -22,6 +50,14 @@ type Camera struct {
 	Description  string
 	Protocol     string
 	URL          string
+}
+
+func (c Camera) GetID() CameraID {
+	return c.ID
+}
+
+func (c Camera) GetInstrumentID() InstrumentID {
+	return c.InstrumentID
 }
 
 func (c Camera) addParams(params map[string]interface{}) (fullParams map[string]interface{}) {
@@ -41,15 +77,15 @@ func (c Camera) addParams(params map[string]interface{}) (fullParams map[string]
 	return fullParams
 }
 
-func (c Camera) newInsertion() map[string]interface{} {
+func (c Camera) NewInsertion() map[string]interface{} {
 	return c.addParams(map[string]interface{}{"$instrument_id": c.InstrumentID})
 }
 
-func (c Camera) newUpdate() map[string]interface{} {
+func (c Camera) NewUpdate() map[string]interface{} {
 	return c.addParams(map[string]interface{}{"$id": c.ID})
 }
 
-func (c Camera) newDelete() map[string]interface{} {
+func (c Camera) NewDelete() map[string]interface{} {
 	return map[string]interface{}{
 		"$id": c.ID,
 	}
@@ -120,6 +156,14 @@ type Controller struct {
 	URL          string
 }
 
+func (c Controller) GetID() ControllerID {
+	return c.ID
+}
+
+func (c Controller) GetInstrumentID() InstrumentID {
+	return c.InstrumentID
+}
+
 func (c Controller) addParams(params map[string]interface{}) (fullParams map[string]interface{}) {
 	fullParams = make(map[string]interface{})
 	for key, value := range params {
@@ -137,15 +181,15 @@ func (c Controller) addParams(params map[string]interface{}) (fullParams map[str
 	return fullParams
 }
 
-func (c Controller) newInsertion() map[string]interface{} {
+func (c Controller) NewInsertion() map[string]interface{} {
 	return c.addParams(map[string]interface{}{"$instrument_id": c.InstrumentID})
 }
 
-func (c Controller) newUpdate() map[string]interface{} {
+func (c Controller) NewUpdate() map[string]interface{} {
 	return c.addParams(map[string]interface{}{"$id": c.ID})
 }
 
-func (c Controller) newDelete() map[string]interface{} {
+func (c Controller) NewDelete() map[string]interface{} {
 	return map[string]interface{}{
 		"$id": c.ID,
 	}
@@ -223,6 +267,14 @@ type AutomationJob struct {
 	Specification string
 }
 
+func (j AutomationJob) GetID() AutomationJobID {
+	return j.ID
+}
+
+func (j AutomationJob) GetInstrumentID() InstrumentID {
+	return j.InstrumentID
+}
+
 func (j AutomationJob) addParams(
 	params map[string]interface{},
 ) (fullParams map[string]interface{}) {
@@ -242,15 +294,15 @@ func (j AutomationJob) addParams(
 	return fullParams
 }
 
-func (j AutomationJob) newInsertion() map[string]interface{} {
+func (j AutomationJob) NewInsertion() map[string]interface{} {
 	return j.addParams(map[string]interface{}{"$instrument_id": j.InstrumentID})
 }
 
-func (j AutomationJob) newUpdate() map[string]interface{} {
+func (j AutomationJob) NewUpdate() map[string]interface{} {
 	return j.addParams(map[string]interface{}{"$id": j.ID})
 }
 
-func (j AutomationJob) newDelete() map[string]interface{} {
+func (j AutomationJob) NewDelete() map[string]interface{} {
 	return map[string]interface{}{
 		"$id": j.ID,
 	}
@@ -315,6 +367,10 @@ type Instrument struct {
 	AutomationJobs map[AutomationJobID]AutomationJob
 }
 
+func (i Instrument) GetID() InstrumentID {
+	return i.ID
+}
+
 func (i Instrument) newInsertion() map[string]interface{} {
 	return map[string]interface{}{
 		"$name":        i.Name,
@@ -337,7 +393,7 @@ func (i Instrument) newDescriptionUpdate() map[string]interface{} {
 	}
 }
 
-func (i Instrument) newDelete() map[string]interface{} {
+func (i Instrument) NewDelete() map[string]interface{} {
 	return map[string]interface{}{
 		"$id": i.ID,
 	}

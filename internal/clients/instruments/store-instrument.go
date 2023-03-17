@@ -12,7 +12,9 @@ import (
 var rawInsertInstrumentQuery string
 var insertInstrumentQuery string = strings.TrimSpace(rawInsertInstrumentQuery)
 
-func (s *Store) AddInstrument(ctx context.Context, i Instrument) (instrumentID int64, err error) {
+func (s *Store) AddInstrument(
+	ctx context.Context, i Instrument,
+) (instrumentID InstrumentID, err error) {
 	rowID, err := s.db.ExecuteInsertionForID(ctx, insertInstrumentQuery, i.newInsertion())
 	if err != nil {
 		return 0, errors.Wrapf(err, "couldn't add instrument with admin %s", i.AdminID)
@@ -20,7 +22,7 @@ func (s *Store) AddInstrument(ctx context.Context, i Instrument) (instrumentID i
 	// TODO: instead of returning the raw ID, return the frontend-facing ID as a salted SHA-256 hash
 	// of the ID to mitigate the insecure direct object reference vulnerability and avoid leaking
 	// info about instrument creation
-	return rowID, err
+	return InstrumentID(rowID), err
 }
 
 //go:embed queries/update-instrument-name.sql
@@ -60,10 +62,7 @@ var rawDeleteInstrumentQuery string
 var deleteInstrumentQuery string = strings.TrimSpace(rawDeleteInstrumentQuery)
 
 func (s *Store) DeleteInstrument(ctx context.Context, id InstrumentID) (err error) {
-	return errors.Wrapf(
-		s.db.ExecuteDelete(ctx, deleteInstrumentQuery, Instrument{ID: id}.newDelete()),
-		"couldn't delete instrument %d", id,
-	)
+	return executeDelete[InstrumentID](ctx, deleteInstrumentQuery, Instrument{ID: id}, s.db)
 }
 
 //go:embed queries/select-instrument.sql
