@@ -12,6 +12,16 @@ builds:
     - windows
   goarch:
     - amd64
+builds:
+- id: "pslocal"
+  main: ./cmd/pslocal
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+  goarch:
+    - amd64
+    - armhf
 archives:
 - format_overrides:
     - goos: windows

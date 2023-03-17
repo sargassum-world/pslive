@@ -83,9 +83,13 @@ release: install buildweb
 	$(call print-target)
 	goreleaser --rm-dist
 
-.PHONY: run
+.PHONY: run-live
 run: ## go run
 	@go run -race ./cmd/pslive
+
+.PHONY: run-local
+run-local: ## go run
+	@go run -race ./cmd/pslocal
 
 .PHONY: go-clean
 go-clean: ## go clean build, test and modules caches
