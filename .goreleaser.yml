@@ -12,7 +12,6 @@ builds:
     - windows
   goarch:
     - amd64
-builds:
 - id: "pslocal"
   main: ./cmd/pslocal
   env:
