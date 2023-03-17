@@ -109,6 +109,10 @@ func (c *Client) getIdentifierFromOry(
 }
 
 func (c *Client) GetIdentifier(ctx context.Context, id IdentityID) (IdentityIdentifier, error) {
+	if c.Config.NoAuth {
+		return IdentityIdentifier(id), nil
+	}
+
 	if identifier, cacheHit := c.getIdentifierFromCache(id); cacheHit {
 		return identifier, nil // empty identifier indicates nonexistent identifier
 	}
@@ -116,6 +120,10 @@ func (c *Client) GetIdentifier(ctx context.Context, id IdentityID) (IdentityIden
 }
 
 func (c *Client) GetIdentity(ctx context.Context, id IdentityID) (Identity, error) {
+	if c.Config.NoAuth {
+		return Identity{}, nil
+	}
+
 	identity, res, err := c.Ory.V0alpha2Api.AdminGetIdentity(ctx, string(id)).Execute()
 	if err != nil {
 		return Identity{}, errors.Wrapf(err, "couldn't get identity of %s", id)
@@ -143,6 +151,10 @@ func (c *Client) GetIdentity(ctx context.Context, id IdentityID) (Identity, erro
 // Identities
 
 func (c *Client) GetIdentities(ctx context.Context) ([]Identity, error) {
+	if c.Config.NoAuth {
+		return nil, nil
+	}
+
 	oryIdentities, res, err := c.Ory.V0alpha2Api.AdminListIdentities(ctx).Execute()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't get identities")

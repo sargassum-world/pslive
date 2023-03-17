@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/actioncable"
+	"github.com/sargassum-world/godest/authn"
 	"github.com/sargassum-world/godest/clientcache"
 	"github.com/sargassum-world/godest/database"
 	"github.com/sargassum-world/godest/opa"
@@ -23,13 +24,13 @@ import (
 )
 
 type BaseGlobals struct {
-	Config conf.Config
-	Cache  clientcache.Cache
-	DB     *database.DB
+	Cache clientcache.Cache
+	DB    *database.DB
 
 	Sessions        *session.Store
 	SessionsBacking *sqlitestore.SqliteStore
 	CSRFChecker     *session.CSRFTokenChecker
+	Authn           *authn.Client
 	Ory             *ory.Client
 	AuthzChecker    *auth.AuthzChecker
 
@@ -41,7 +42,8 @@ type BaseGlobals struct {
 }
 
 type Globals struct {
-	Base *BaseGlobals
+	Config conf.Config
+	Base   *BaseGlobals
 
 	Instruments    *instruments.Store
 	Planktoscopes  *planktoscope.Orchestrator
@@ -53,15 +55,12 @@ type Globals struct {
 }
 
 func NewBaseGlobals(
-	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules []opa.Module,
+	config conf.Config, persistenceEmbeds database.Embeds,
+	regoRoutesPackage string, regoModules []opa.Module,
 	l godest.Logger,
 ) (g *BaseGlobals, err error) {
 	g = &BaseGlobals{}
-	g.Config, err = conf.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up application config")
-	}
-	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
+	if g.Cache, err = clientcache.NewRistrettoCache(config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
 	storeConfig, err := database.GetConfig()
@@ -79,6 +78,12 @@ func NewBaseGlobals(
 	}
 	g.Sessions, g.SessionsBacking = sqlitestore.NewStore(g.DB, sessionsConfig)
 	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
+
+	authnConfig, err := authn.GetConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up local authn config")
+	}
+	g.Authn = authn.NewClient(authnConfig)
 	oryConfig, err := ory.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up ory config")
@@ -103,11 +108,14 @@ func NewBaseGlobals(
 }
 
 func NewGlobals(
-	persistenceEmbeds database.Embeds, regoRoutesPackage string, regoModules []opa.Module,
+	config conf.Config, persistenceEmbeds database.Embeds,
+	regoRoutesPackage string, regoModules []opa.Module,
 	l godest.Logger,
 ) (g *Globals, err error) {
-	g = &Globals{}
-	g.Base, err = NewBaseGlobals(persistenceEmbeds, regoRoutesPackage, regoModules, l)
+	g = &Globals{
+		Config: config,
+	}
+	g.Base, err = NewBaseGlobals(config, persistenceEmbeds, regoRoutesPackage, regoModules, l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up base globals")
 	}

@@ -77,6 +77,10 @@ func (c *Client) makeSelfServiceRequest(
 func (c *Client) InitializeLoginFlow(
 	ctx context.Context,
 ) (*ory.SelfServiceLoginFlow, *http.Cookie, error) {
+	if c.Config.NoAuth {
+		return nil, nil, nil
+	}
+
 	flow, res, err := c.Ory.V0alpha2Api.InitializeSelfServiceLoginFlowForBrowsers(ctx).Execute()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "couldn't initialize Ory Kratos self-service login flow")
@@ -112,6 +116,10 @@ func (c *Client) makeSubmitLoginFlowRequest(
 func (c *Client) SubmitLoginFlow(
 	ctx context.Context, flow, csrfToken, identifier, password string, cookies []*http.Cookie,
 ) (*ory.SuccessfulSelfServiceLoginWithoutBrowser, []*http.Cookie, error) {
+	if c.Config.NoAuth {
+		return nil, nil, nil
+	}
+
 	req, err := c.makeSubmitLoginFlowRequest(ctx, flow, csrfToken, identifier, password, cookies)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "couldn't make Ory Kratos submit login flow request")
@@ -159,6 +167,10 @@ func (c *Client) makeSubmitLogoutFlowRequest(
 func (c *Client) PerformLogout(
 	ctx context.Context, cookies []*http.Cookie,
 ) ([]*http.Cookie, error) {
+	if c.Config.NoAuth {
+		return nil, nil
+	}
+
 	// Initialize logout flow
 	var merged string
 	for _, cookie := range filterCookies(cookies, "ory_session_") {

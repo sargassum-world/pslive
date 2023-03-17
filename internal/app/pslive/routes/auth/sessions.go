@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
 	"github.com/sargassum-world/godest/actioncable"
+	"github.com/sargassum-world/godest/authn"
 	"github.com/sargassum-world/godest/session"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
@@ -38,7 +39,8 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 }
 
 type LoginViewData struct {
-	NoAuth         bool
+	NoLocalAuth    bool
+	NoOryAuth      bool
 	ReturnURL      string
 	ErrorMessages  []string
 	OryFlow        string
@@ -46,6 +48,44 @@ type LoginViewData struct {
 	OryRegisterURL string
 	OryRecoverURL  string
 	UserIdentifier ory.IdentityIdentifier
+}
+
+func handleOryLoginFlow(
+	c echo.Context, loginViewData LoginViewData, oc *ory.Client,
+) (vd LoginViewData, err error) {
+	if oc.Config.NoAuth {
+		return loginViewData, nil
+	}
+
+	ctx := c.Request().Context()
+	flow, cookie, err := oc.InitializeLoginFlow(ctx)
+	if err != nil {
+		return loginViewData, err
+	}
+	cookie.Domain = ""
+	// TODO: adjust the Secure field based on session store config options
+	c.SetCookie(cookie)
+	loginViewData.OryFlow = flow.Id
+	for _, node := range flow.Ui.Nodes {
+		inputAttrs := node.Attributes.UiNodeInputAttributes
+		if inputAttrs != nil && inputAttrs.Name == "csrf_token" {
+			if csrfToken, ok := inputAttrs.Value.(string); ok {
+				loginViewData.OryCSRF = csrfToken
+			}
+		}
+	}
+	if loginViewData.OryRegisterURL, err = oc.GetPath(
+		ctx, "V0alpha2ApiService.GetSelfServiceRegistrationFlow",
+		"/ui/registration",
+	); err != nil {
+		return loginViewData, err
+	}
+	if loginViewData.OryRecoverURL, err = oc.GetPath(
+		ctx, "V0alpha2ApiService.GetSelfServiceRecoveryFlow", "/ui/recovery",
+	); err != nil {
+		return loginViewData, err
+	}
+	return loginViewData, nil
 }
 
 func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
@@ -61,40 +101,18 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 			return serr
 		}
 
-		flow, cookie, err := h.oc.InitializeLoginFlow(c.Request().Context())
-		if err != nil {
-			return err
-		}
-		cookie.Domain = ""
-		// TODO: adjust the Secure field based on session store config options
-		c.SetCookie(cookie)
-
 		// Make login page
 		// TODO: instead have a SSO-style way to login on accounts.sargassum.world
 		loginViewData := LoginViewData{
+			NoLocalAuth:   h.ac.Config.NoAuth,
+			NoOryAuth:     h.oc.Config.NoAuth,
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
-			OryFlow:       flow.Id,
 		}
-		for _, node := range flow.Ui.Nodes {
-			inputAttrs := node.Attributes.UiNodeInputAttributes
-			if inputAttrs != nil && inputAttrs.Name == "csrf_token" {
-				if csrfToken, ok := inputAttrs.Value.(string); ok {
-					loginViewData.OryCSRF = csrfToken
-				}
-			}
-		}
-		if loginViewData.OryRegisterURL, err = h.oc.GetPath(
-			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRegistrationFlow",
-			"/ui/registration",
-		); err != nil {
+		if loginViewData, err = handleOryLoginFlow(c, loginViewData, h.oc); err != nil {
 			return err
 		}
-		if loginViewData.OryRecoverURL, err = h.oc.GetPath(
-			c.Request().Context(), "V0alpha2ApiService.GetSelfServiceRecoveryFlow", "/ui/recovery",
-		); err != nil {
-			return err
-		}
+
 		if a.Identity.Authenticated {
 			if loginViewData.UserIdentifier, err = h.oc.GetIdentifier(
 				c.Request().Context(), a.Identity.User,
@@ -171,12 +189,11 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, ss *session.S
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
-func handleLogin(c echo.Context, oc *ory.Client, ss *session.Store, l godest.Logger) error {
+func handleOryLogin(
+	c echo.Context, identifier, password, returnURL string, omitCSRFToken bool,
+	oc *ory.Client, ss *session.Store, l godest.Logger,
+) error {
 	// Parse params
-	identifier := c.FormValue("identifier")
-	password := c.FormValue("password")
-	returnURL := c.FormValue("return")
-	omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
 	oryFlow := c.FormValue("ory-flow")
 	oryCSRFToken := c.FormValue("ory-csrf-token")
 
@@ -206,24 +223,41 @@ func handleLogin(c echo.Context, oc *ory.Client, ss *session.Store, l godest.Log
 	)
 }
 
-func handleLogout(
-	c echo.Context,
-	oc *ory.Client, ss *session.Store, acc *actioncable.Cancellers, ps *presence.Store,
+func handleLocalLogin(
+	c echo.Context, identifier, password, returnURL string, omitCSRFToken bool,
+	ac *authn.Client, ss *session.Store, l godest.Logger,
 ) error {
-	// Invalidate the session cookie
-	// TODO: add a client-side controller to automatically submit a logout request after the
-	// idle timeout expires, and display an inactivity logout message
-	sess, err := ss.Get(c.Request())
+	identified, err := ac.CheckCredentials(identifier, password)
 	if err != nil {
-		return err
+		l.Error(errors.Wrapf(err, "login failed for identifier %s", identifier))
+		return handleAuthenticationFailure(c, returnURL, ss)
 	}
-	ps.Forget(presence.SessionID(sess.ID))
-	acc.Cancel(sess.ID)
-	session.Invalidate(sess)
-	if err = sess.Save(c.Request(), c.Response()); err != nil {
-		return err
+	if !identified {
+		l.Warnf("login failed for identifier %s", identifier)
+		return handleAuthenticationFailure(c, returnURL, ss)
 	}
+	return handleAuthenticationSuccess(c, ory.IdentityID(identifier), returnURL, omitCSRFToken, ss)
+}
 
+func handleLogin(
+	c echo.Context, ac *authn.Client, oc *ory.Client, ss *session.Store, l godest.Logger,
+) error {
+	// Parse params
+	identifier := c.FormValue("identifier")
+	password := c.FormValue("password")
+	returnURL := c.FormValue("return")
+	omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
+
+	if !oc.Config.NoAuth && (ac.Config.NoAuth || identifier != ac.Config.AdminUsername) {
+		return handleOryLogin(c, identifier, password, returnURL, omitCSRFToken, oc, ss, l)
+	}
+	if oc.Config.NoAuth && ac.Config.NoAuth {
+		identifier = ac.Config.AdminUsername
+	}
+	return handleLocalLogin(c, identifier, password, returnURL, omitCSRFToken, ac, ss, l)
+}
+
+func handleOryLogout(c echo.Context, oc *ory.Client) error {
 	// Perform Ory Kratos logout
 	cookies, err := oc.PerformLogout(c.Request().Context(), c.Request().Cookies())
 	if err != nil {
@@ -242,6 +276,29 @@ func handleLogout(
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
+func handleLogout(
+	c echo.Context, oc *ory.Client, ss *session.Store,
+	acc *actioncable.Cancellers, ps *presence.Store,
+) error {
+	// Invalidate the session cookie
+	// TODO: add a client-side controller to automatically submit a logout request after the
+	// idle timeout expires, and display an inactivity logout message
+	sess, err := ss.Get(c.Request())
+	if err != nil {
+		return err
+	}
+	ps.Forget(presence.SessionID(sess.ID))
+	acc.Cancel(sess.ID)
+	session.Invalidate(sess)
+	if err = sess.Save(c.Request(), c.Response()); err != nil {
+		return err
+	}
+
+	// Local logout needs no extra handling - only Ory needs handling. It's a no-op if Ory Auth is
+	// disabled, so we always run it.
+	return handleOryLogout(c, oc)
+}
+
 func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		state := c.FormValue("state")
@@ -251,7 +308,7 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 				"invalid session %s", state,
 			))
 		case "authenticated":
-			return handleLogin(c, h.oc, h.ss, h.l)
+			return handleLogin(c, h.ac, h.oc, h.ss, h.l)
 		case "unauthenticated":
 			return handleLogout(c, h.oc, h.ss, h.acc, h.ps)
 		}

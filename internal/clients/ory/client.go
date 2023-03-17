@@ -29,6 +29,9 @@ func NewClient(c Config, cache clientcache.Cache, l godest.Logger) *Client {
 }
 
 func (c *Client) GetPath(ctx context.Context, endpoint, route string) (string, error) {
+	if c.Config.NoAuth {
+		return "", nil
+	}
 	basePath, err := c.Config.KratosAPI.ServerURLWithContext(ctx, endpoint)
 	return basePath + route, errors.Wrap(err, "couldn't look up base path for Ory API")
 }

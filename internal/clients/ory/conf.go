@@ -9,11 +9,17 @@ import (
 const envPrefix = "ORY_"
 
 type Config struct {
+	NoAuth            bool
 	KratosAPI         *ory.Configuration
 	NetworkCostWeight float32
 }
 
 func GetConfig() (c Config, err error) {
+	c.NoAuth, err = getNoAuth()
+	if err != nil {
+		return Config{}, errors.Wrap(err, "couldn't make authentication config")
+	}
+
 	c.KratosAPI = ory.NewConfiguration()
 
 	serverURL, err := env.GetURL(envPrefix+"KRATOS_SERVER", "")
@@ -35,4 +41,8 @@ func GetConfig() (c Config, err error) {
 		return Config{}, errors.Wrap(err, "couldn't make Ory API network cost config")
 	}
 	return c, nil
+}
+
+func getNoAuth() (bool, error) {
+	return env.GetBool(envPrefix + "NOAUTH")
 }
