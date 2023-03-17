@@ -21,6 +21,26 @@
           </div>
         </article>
       {{end}}
+      {{if and .Data.NoOryAuth .Data.NoLocalAuth}}
+        <div class="message is-danger card-width is-block">
+          <div class="message-header">
+            <p>Security Warning</p>
+          </div>
+          <div class="message-body">
+            This server was started without authentication, so everyone can sign in as
+            admin without a username or password!
+          </div>
+        </div>
+      {{else if .Data.NoOryAuth}}
+        <div class="message card-width is-block">
+          <div class="message-header">
+            <p>Authentication Information</p>
+          </div>
+          <div class="message-body">
+            Only the admin account is enabled on this server.
+          </div>
+        </div>
+      {{end}}
       {{if .Auth.Identity.Authenticated}}
         <article class="message is-success card-width is-block">
           <div class="message-body">
@@ -75,20 +95,37 @@
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
               <input type="hidden" name="state" value="authenticated">
               <input type="hidden" name="return" value="{{.Data.ReturnURL}}">
-              <input type="hidden" name="ory-flow" value="{{.Data.OryFlow}}">
-              <input type="hidden" name="ory-csrf-token" value="{{.Data.OryCSRF}}">
-              <div class="field">
-                <label class="label" for="identifier">Username or Email Address</label>
-                <div class="control">
-                  <input class="input" type="text" id="identifier" name="identifier" required autofocus>
+              {{if not .Data.NoOryAuth}}
+                <input type="hidden" name="ory-flow" value="{{.Data.OryFlow}}">
+                <input type="hidden" name="ory-csrf-token" value="{{.Data.OryCSRF}}">
+              {{end}}
+              {{if not (and .Data.NoOryAuth .Data.NoLocalAuth)}}
+                <div class="field">
+                  <label class="label" for="identifier">Username or Email Address</label>
+                  <div class="control">
+                    <input
+                      class="input"
+                      type="text"
+                      id="identifier"
+                      name="identifier"
+                      required
+                      autofocus
+                    >
+                  </div>
                 </div>
-              </div>
-              <div class="field">
-                <label class="label" for="password">Password</label>
-                <div class="control">
-                  <input class="input" type="password" id="password" name="password" required>
+                <div class="field">
+                  <label class="label" for="password">Password</label>
+                  <div class="control">
+                    <input
+                      class="input"
+                      type="password"
+                      id="password"
+                      name="password"
+                      required
+                    >
+                  </div>
                 </div>
-              </div>
+              {{end}}
               <div class="field">
                 <div class="control" data-form-submission-target="submitter">
                   <input
@@ -99,16 +136,18 @@
                   >
                 </div>
               </div>
-              <div class="field">
-                <p>
-                  Forgot your password?
-                  <a href="{{.Data.OryRecoverURL}}" target="_blank">Recover your account</a>
-                </p>
-                <p>
-                  Don't have an account?
-                  <a href="{{.Data.OryRegisterURL}}" target="_blank">Register</a>
-                </p>
-              </div>
+              {{if not .Data.NoOryAuth}}
+                <div class="field">
+                  <p>
+                    Forgot your password?
+                    <a href="{{.Data.OryRecoverURL}}" target="_blank">Recover your account</a>
+                  </p>
+                  <p>
+                    Don't have an account?
+                    <a href="{{.Data.OryRegisterURL}}" target="_blank">Register</a>
+                  </p>
+                </div>
+              {{end}}
             </form>
           </div>
         </div>

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/gorilla/csrf"
@@ -24,10 +23,10 @@ import (
 	"github.com/sargassum-world/pslive/db"
 	"github.com/sargassum-world/pslive/internal/app/pslive/auth"
 	"github.com/sargassum-world/pslive/internal/app/pslive/client"
+	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes"
 	"github.com/sargassum-world/pslive/internal/app/pslive/routes/assets"
 	"github.com/sargassum-world/pslive/internal/app/pslive/tmplfunc"
-	"github.com/sargassum-world/pslive/internal/app/pslive/workers"
 	"github.com/sargassum-world/pslive/web"
 )
 
@@ -38,6 +37,7 @@ type Server struct {
 	Inlines  godest.Inlines
 	Renderer godest.TemplateRenderer
 	Handlers *routes.Handlers
+	Workers  []Worker
 }
 
 func RegoDeps() []opa.Module {
@@ -54,11 +54,13 @@ func NewRegoModules() []opa.Module {
 	)
 }
 
-func NewServer(logger godest.Logger) (s *Server, err error) {
-	s = &Server{}
+func NewServer(config conf.Config, workers []Worker, logger godest.Logger) (s *Server, err error) {
+	s = &Server{
+		Workers: workers,
+	}
 	s.DBEmbeds = db.NewEmbeds()
 	if s.Globals, err = client.NewGlobals(
-		s.DBEmbeds, "data.sargassum.pslive.web.policies", NewRegoModules(), logger,
+		config, s.DBEmbeds, "data.sargassum.pslive.web.policies", NewRegoModules(), logger,
 	); err != nil {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
@@ -167,7 +169,7 @@ func (s *Server) Register(e *echo.Echo) error {
 	// Compression Middleware
 	e.Use(middleware.Decompress())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Level: s.Globals.Base.Config.HTTP.GzipLevel,
+		Level: s.Globals.Config.HTTP.GzipLevel,
 	}))
 
 	// Other Middleware
@@ -211,57 +213,16 @@ func (s *Server) openDB(ctx context.Context) error {
 
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
-	eg.Go(func() error {
-		const interval = 10 * time.Minute
-		if err := s.Globals.Base.SessionsBacking.PeriodicallyCleanup(
-			ctx, interval,
-		); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := s.Globals.Base.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(
-				err, "turbo streams broker encountered error while serving",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := s.Globals.VSBroker.Serve(ctx); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(
-				err, "video streams broker encountered error while serving",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := workers.EstablishPlanktoscopeControllerConnections(
-			ctx, s.Globals.Instruments, s.Globals.Planktoscopes,
-		); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(
-				err, "couldn't establish planktoscope controller connections",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := s.Globals.InstrumentJobs.Orchestrate(ctx); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(
-				err, "instrument job orchestrator encountered error while orchestrating",
-			))
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		if err := workers.StartInstrumentJobs(
-			ctx, s.Globals.Instruments, s.Globals.InstrumentJobs,
-		); err != nil && err != context.Canceled {
-			s.Globals.Base.Logger.Error(errors.Wrap(err, "couldn't start automation jobs"))
-		}
-		return nil
-	})
+	for _, worker := range s.Workers {
+		eg.Go(func(w Worker) func() error {
+			return func() error {
+				if err := w(ctx, s); err != nil {
+					s.Globals.Base.Logger.Error(errors.Wrap(err, "worker failed"))
+				}
+				return nil
+			}
+		}(worker))
+	}
 	return eg.Wait()
 }
 

@@ -10,14 +10,37 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-world/pslive/internal/app/pslive"
+	"github.com/sargassum-world/pslive/internal/app/pslive/conf"
 )
 
 const shutdownTimeout = 5 // sec
 
+func overrideConfigDefaults() error {
+	// TODO: override the defaults in a cleaner way
+	if os.Getenv("ORY_NOAUTH") == "" || os.Getenv("ORY_NOAUTH") == "false" {
+		// If we have Ory for authentication, we want to discourage use of the local admin account
+		if err := os.Setenv("AUTHN_NOAUTH", "true"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
-	// Prepare server
 	e := echo.New()
-	server, err := pslive.NewServer(e.Logger)
+
+	if err := overrideConfigDefaults(); err != nil {
+		e.Logger.Fatal(err, "couldn't override application config defaults")
+	}
+
+	// Get config
+	config, err := conf.GetConfig()
+	if err != nil {
+		e.Logger.Fatal(err, "couldn't set up application config")
+	}
+
+	// Prepare server
+	server, err := pslive.NewServer(config, pslive.DefaultWorkers(), e.Logger)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}

@@ -4,6 +4,7 @@ before:
 builds:
 - id: "pslive"
   main: ./cmd/pslive
+  binary: pslive
   env:
     - CGO_ENABLED=0
   goos:
@@ -12,10 +13,28 @@ builds:
     - windows
   goarch:
     - amd64
+- id: "pslocal"
+  main: ./cmd/pslocal
+  binary: pslocal
+  env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+  goarch:
+    - amd64
+    - arm
+  goarm:
+    - 7
 archives:
-- format_overrides:
+  - id: "pslive"
+    builds: ["pslive"]
+    name_template: "pslive_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
     - goos: windows
       format: zip
+  - id: "pslocal"
+    builds: ["pslocal"]
+    name_template: "pslocal_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 release:
   github:
   prerelease: auto

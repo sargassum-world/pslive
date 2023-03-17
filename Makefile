@@ -72,20 +72,24 @@ diff: ## git diff
 	RES=$$(git status --porcelain) ; if [ -n "$$RES" ]; then echo $$RES && exit 1 ; fi
 
 .PHONY: build
-build: ## goreleaser --snapshot --skip-publish --rm-dist
+build: ## goreleaser --snapshot --skip-publish --clean
 build: install buildweb
 	$(call print-target)
-	goreleaser --snapshot --skip-publish --rm-dist
+	goreleaser --snapshot --skip-publish --clean
 
 .PHONY: release
-release: ## goreleaser --rm-dist
+release: ## goreleaser --clean
 release: install buildweb
 	$(call print-target)
-	goreleaser --rm-dist
+	goreleaser --clean
 
-.PHONY: run
+.PHONY: run-live
 run: ## go run
 	@go run -race ./cmd/pslive
+
+.PHONY: run-local
+run-local: ## go run
+	@go run -race ./cmd/pslocal
 
 .PHONY: go-clean
 go-clean: ## go clean build, test and modules caches

@@ -3,6 +3,7 @@ package users
 
 import (
 	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/authn"
 	"github.com/sargassum-world/godest/session"
 	"github.com/sargassum-world/godest/turbostreams"
 
@@ -17,6 +18,7 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
+	ac  *authn.Client
 	oc  *ory.Client
 	azc *auth.AuthzChecker
 
@@ -28,11 +30,12 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, oc *ory.Client, azc *auth.AuthzChecker, tsh *turbostreams.Hub,
-	is *instruments.Store, ps *presence.Store, cs *chat.Store,
+	r godest.TemplateRenderer, ac *authn.Client, oc *ory.Client, azc *auth.AuthzChecker,
+	tsh *turbostreams.Hub, is *instruments.Store, ps *presence.Store, cs *chat.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
+		ac:  ac,
 		oc:  oc,
 		azc: azc,
 		tsh: tsh,

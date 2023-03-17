@@ -178,7 +178,10 @@ func (o *JobOrchestrator) startJob(ctx context.Context, job *OrchestratedJob) er
 }
 
 func (o *JobOrchestrator) Orchestrate(ctx context.Context) error {
+	o.mu.Lock()
 	ctx, o.canceler = context.WithCancel(ctx)
+	o.mu.Unlock()
+
 	for {
 		select {
 		case <-ctx.Done():

@@ -86,6 +86,6 @@ func (h *Handlers) HandleInstrumentsPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", int64(id)))
 	}
 }

@@ -33,6 +33,7 @@ func (h *Handlers) Register(
 	er godest.EchoRouter, tsr turbostreams.Router, vsr vsc.Router, em godest.Embeds,
 ) {
 	ss := h.globals.Base.Sessions
+	ac := h.globals.Base.Authn
 	oc := h.globals.Base.Ory
 	azc := h.globals.Base.AuthzChecker
 	tsh := h.globals.Base.TSBroker.Hub()
@@ -50,12 +51,12 @@ func (h *Handlers) Register(
 		vsb, l,
 	).Register(er)
 	home.New(h.r, oc, is, ps).Register(er, ss)
-	auth.New(h.r, ss, oc, acc, ps, l).Register(er)
+	auth.New(h.r, ss, ac, oc, acc, ps, l).Register(er)
 	instruments.New(
 		h.r, oc, azc, tsh, is, h.globals.Planktoscopes, h.globals.InstrumentJobs, ps, cs, vsb,
 	).Register(er, tsr, vsr, ss)
 	privatechat.New(h.r, oc, azc, tsh, ps, cs).Register(er, tsr, ss)
-	users.New(h.r, oc, azc, tsh, is, ps, cs).Register(er, tsr, ss)
+	users.New(h.r, ac, oc, azc, tsh, is, ps, cs).Register(er, tsr, ss)
 	videostreams.New(vsb).Register(er, vsr)
 
 	tsr.PUB("/*", turbostreams.EmptyHandler)

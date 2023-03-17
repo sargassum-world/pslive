@@ -31,9 +31,12 @@
         {{else}}
           <a href="/instruments/{{$instrument.ID}}" data-turbo-frame="_top">
             {{$instrument.Name}}
-          </a>:
+          </a>
         {{end}}
-        {{index (splitList "\n" $instrument.Description) 0}}
+        {{$description := index (splitList "\n" $instrument.Description) 0}}
+        {{if gt (len $description) 0}}
+          : {{$description}}
+        {{end}}
         <!-- TODO: show these as network entity cards instead -->
       </li>
     {{else}}
