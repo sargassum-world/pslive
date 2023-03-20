@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
-	github.com/open-policy-agent/opa v0.49.2
+	github.com/open-policy-agent/opa v0.50.1
 	github.com/ory/client-go v0.2.0-alpha.60
 	github.com/paulbellamy/ratecounter v0.2.0
 	github.com/pkg/errors v0.9.1
