@@ -23,7 +23,7 @@ require (
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/image v0.6.0
 	golang.org/x/sync v0.1.0
-	zombiezen.com/go/sqlite v0.12.0
+	zombiezen.com/go/sqlite v0.13.0
 )
 
 require (
@@ -53,7 +53,7 @@ require (
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
@@ -77,8 +77,8 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	modernc.org/libc v1.21.5 // indirect
+	modernc.org/libc v1.22.3 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
-	modernc.org/memory v1.4.0 // indirect
-	modernc.org/sqlite v1.20.0 // indirect
+	modernc.org/memory v1.5.0 // indirect
+	modernc.org/sqlite v1.21.1 // indirect
 )
