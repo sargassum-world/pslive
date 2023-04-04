@@ -40,11 +40,32 @@ release:
   prerelease: auto
 dockers:
   -
+    id: pslive
+    ids:
+      - pslive
+    dockerfile: "Dockerfile.pslive"
     image_templates:
-    - "ghcr.io/sargassum-world/{{ .ProjectName }}:latest"
-    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}"
-    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}"
-    - "ghcr.io/sargassum-world/{{ .ProjectName }}:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    - "ghcr.io/sargassum-world/pslive:latest"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+  -
+    id: pslocal
+    ids:
+      - pslocal
+    dockerfile: "Dockerfile.pslocal"
+    image_templates:
+    - "ghcr.io/sargassum-world/pslocal:latest"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     build_flag_templates:
     - "--pull"
     - "--label=org.opencontainers.image.created={{.Date}}"
