@@ -61,6 +61,8 @@ dockers:
     ids:
       - pslocal
     dockerfile: "Dockerfile.pslocal"
+    goarch: arm
+    goarm: 7
     image_templates:
     - "ghcr.io/sargassum-world/pslocal:latest"
     - "ghcr.io/sargassum-world/pslocal:{{ .Major }}"
