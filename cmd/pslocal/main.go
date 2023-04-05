@@ -64,13 +64,17 @@ func initializeFromEmpty(ctx context.Context, server *pslive.Server) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't add default instrument for local planktoscope")
 	}
+	localhost := "localhost"
+	if l := os.Getenv("LOCALHOST_DEFAULT"); l != "" {
+		localhost = l
+	}
 	if _, err = is.AddCamera(ctx, instruments.Camera{
 		InstrumentID: iid,
 		Enabled:      true,
 		Name:         "preview",
 		Description:  "The picamera preview stream",
 		Protocol:     "mjpeg",
-		URL:          "http://localhost:8000",
+		URL:          fmt.Sprintf("http://%s:8000", localhost),
 	}); err != nil {
 		return errors.Wrap(err, "couldn't add default camera for local planktoscope")
 	}
@@ -80,7 +84,7 @@ func initializeFromEmpty(ctx context.Context, server *pslive.Server) error {
 		Name:         "controller",
 		Description:  "The MQTT control API",
 		Protocol:     "planktoscope-v2.3",
-		URL:          "mqtt://localhost:1883",
+		URL:          fmt.Sprintf("mqtt://%s:1883", localhost),
 	}
 	controllerID, err := is.AddController(ctx, controller)
 	if err != nil {
