@@ -13,7 +13,7 @@ builds:
     - linux_arm64
     - linux_arm_7
     - darwin_amd64_v1
-    - darwin_arm64_v1
+    - darwin_arm64
     - windows_amd64_v1
 - id: pslocal
   main: ./cmd/pslocal
