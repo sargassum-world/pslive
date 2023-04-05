@@ -18,7 +18,7 @@ If you want to develop on the Rego policies (for authorization & access control)
 
 ### Building
 
-Because the build pipeline builds Docker images, you will need to either have Docker Desktop or (on Ubuntu) to have installed qemu-user-static or have set up tonistiigi/binfmt. You will need a version of Docker with buildx support.
+Because the build pipeline builds Docker images, you will need to either have Docker Desktop or (on Ubuntu) to have installed QEMU (either with qemu-user-static from apt or by running [tonistiigi/binfmt](https://hub.docker.com/r/tonistiigi/binfmt)). You will need a version of Docker with buildx support.
 
 To execute the full build pipeline, run `make`; to build the docker images, run `make build` (make sure you've already run `make install`). Note that `make build` will also automatically regenerate the webapp build artifacts, which means you also need to have first installed Node.js as described in the "Development" section. The resulting built binaries can be found in directories within the dist directory corresponding to OS and CPU architecture (e.g. `./dist/pslive_window_amd64/pslive.exe` or `./dist/pslive_linux_amd64/pslive`)
 
