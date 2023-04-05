@@ -1,77 +1,211 @@
 before:
   hooks:
     - go mod download
+
 builds:
-- id: "pslive"
+- id: pslive
   main: ./cmd/pslive
   binary: pslive
   env:
     - CGO_ENABLED=0
-  goos:
-    - darwin
-    - linux
-    - windows
-  goarch:
-    - amd64
-- id: "pslocal"
+  targets:
+    - linux_amd64_v1
+    - linux_arm64
+    - linux_arm_7
+    - darwin_amd64_v1
+    - darwin_arm64_v1
+    - windows_amd64_v1
+- id: pslocal
   main: ./cmd/pslocal
   binary: pslocal
   env:
     - CGO_ENABLED=0
-  goos:
-    - linux
-  goarch:
-    - amd64
-    - arm
-  goarm:
-    - 7
+  targets:
+    - linux_amd64_v1
+    - linux_arm64
+    - linux_arm_7
+
 archives:
-  - id: "pslive"
+  - id: pslive
     builds: ["pslive"]
     name_template: "pslive_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
     - goos: windows
       format: zip
-  - id: "pslocal"
+  - id: pslocal
     builds: ["pslocal"]
     name_template: "pslocal_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
 release:
   github:
   prerelease: auto
+
 dockers:
-  -
-    id: pslive
+  # pslive
+  - id: pslive-amd64
     ids:
       - pslive
     dockerfile: "Dockerfile.pslive"
+    use: buildx
     image_templates:
-    - "ghcr.io/sargassum-world/pslive:latest"
-    - "ghcr.io/sargassum-world/pslive:{{ .Major }}"
-    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}"
-    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    - "ghcr.io/sargassum-world/pslive:latest-amd64"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}-amd64"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-amd64"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-amd64"
     build_flag_templates:
     - "--pull"
+    - "--platform=linux/amd64"
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.name={{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{.GitURL}}"
-  -
-    id: pslocal
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+  - id: pslive-arm64v8
     ids:
-      - pslocal
-    dockerfile: "Dockerfile.pslocal"
+      - pslive
+    dockerfile: "Dockerfile.pslive"
+    use: buildx
+    goarch: arm64
+    image_templates:
+    - "ghcr.io/sargassum-world/pslive:latest-arm64v8"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}-arm64v8"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-arm64v8"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-arm64v8"
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/arm64/v8"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+  - id: pslive-armv7
+    ids:
+      - pslive
+    dockerfile: "Dockerfile.pslive"
+    use: buildx
     goarch: arm
     goarm: 7
     image_templates:
-    - "ghcr.io/sargassum-world/pslocal:latest"
-    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}"
-    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}"
-    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    - "ghcr.io/sargassum-world/pslive:latest-armv7"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}-armv7"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-armv7"
+    - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-armv7"
     build_flag_templates:
     - "--pull"
+    - "--platform=linux/arm/v7"
     - "--label=org.opencontainers.image.created={{.Date}}"
     - "--label=org.opencontainers.image.name={{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
     - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+
+  # pslocal
+  - id: pslocal-amd64
+    ids:
+      - pslocal
+    dockerfile: "Dockerfile.pslocal"
+    use: buildx
+    image_templates:
+    - "ghcr.io/sargassum-world/pslocal:latest-amd64"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-amd64"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-amd64"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-amd64"
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/amd64"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+  - id: pslocal-arm64v8
+    ids:
+      - pslocal
+    dockerfile: "Dockerfile.pslocal"
+    use: buildx
+    goarch: arm64
+    image_templates:
+    - "ghcr.io/sargassum-world/pslocal:latest-arm64v8"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-arm64v8"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-arm64v8"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-arm64v8"
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/arm64/v8"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+  - id: pslocal-armv7
+    ids:
+      - pslocal
+    dockerfile: "Dockerfile.pslocal"
+    use: buildx
+    goarch: arm
+    goarm: 7
+    image_templates:
+    - "ghcr.io/sargassum-world/pslocal:latest-armv7"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-armv7"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-armv7"
+    - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-armv7"
+    build_flag_templates:
+    - "--pull"
+    - "--platform=linux/arm/v7"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--label=org.opencontainers.image.licenses=(Apache-2.0 OR BlueOak-1.0.0)"
+
+docker_manifests:
+  # pslive
+  - name_template: "ghcr.io/sargassum-world/pslive:latest"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslive:latest-amd64"
+      - "ghcr.io/sargassum-world/pslive:latest-arm64v8"
+      - "ghcr.io/sargassum-world/pslive:latest-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslive:{{ .Major }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}-amd64"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-amd64"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslive:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-armv7"
+
+  # pslocal
+  - name_template: "ghcr.io/sargassum-world/pslocal:latest"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslocal:latest-amd64"
+      - "ghcr.io/sargassum-world/pslocal:latest-arm64v8"
+      - "ghcr.io/sargassum-world/pslocal:latest-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslocal:{{ .Major }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-amd64"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}-armv7"
+  - name_template: "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    image_templates:
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-amd64"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-arm64v8"
+      - "ghcr.io/sargassum-world/pslocal:{{ .Major }}.{{ .Minor }}.{{ .Patch }}-armv7"
