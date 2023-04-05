@@ -13,12 +13,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Golang with cache
+      - name: Set up Golang with cache
         uses: magnetikonline/action-golang-cache@v4
         with:
           go-version-file: go.mod
 
-      - name: "Docker login"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Docker login
         uses: docker/login-action@v2
         with:
           registry: ghcr.io

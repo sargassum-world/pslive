@@ -10,7 +10,7 @@ For a multi-user deployment, run the pslive binary with the appropriate environm
 
 ### Development
 
-To install various backend development tools, run `make install`.
+To install various backend development tools, run `make install`. You will need to have installed Go first.
 
 Before you start the server for the first time, you'll need to generate the webapp build artifacts by running `make buildweb` (which requires you to have first installed [Node.js v16](https://nodejs.org/en/) (lts/gallium) and [Yarn Classic](https://classic.yarnpkg.com/lang/en/)). Then you can start the server using golang's `go run` by setting some environment variables and running `make run-live`. You will need to have installed golang first. Any time you modify the webapp files (in the web/app directory), you'll need to run `make buildweb` again to rebuild the bundled CSS and JS. Whenever you use a CSS selector in a template file (in the web/templates directory), you should *also* run `make buildweb`, because the build process for the bundled CSS omits any selectors not used by the templates.
 
@@ -18,7 +18,9 @@ If you want to develop on the Rego policies (for authorization & access control)
 
 ### Building
 
-To execute the full build pipeline, run `make`; to build the docker images, run `make build`. You will need to have installed golang and golangci-lint first; `make build` *should* automatically install golangci-lint, but this might not work; if not, you'll need to install it manually. Note that `make build` will also automatically regenerate the webapp build artifacts. The resulting built binaries can be found in directories within the dist directory corresponding to OS and CPU architecture (e.g. `./dist/pslive_window_amd64/pslive.exe` or `./dist/pslive_linux_amd64/pslive`)
+Because the build pipeline builds Docker images, you will need to either have Docker Desktop or (on Ubuntu) to have installed QEMU (either with qemu-user-static from apt or by running [tonistiigi/binfmt](https://hub.docker.com/r/tonistiigi/binfmt)). You will need a version of Docker with buildx support.
+
+To execute the full build pipeline, run `make`; to build the docker images, run `make build` (make sure you've already run `make install`). Note that `make build` will also automatically regenerate the webapp build artifacts, which means you also need to have first installed Node.js as described in the "Development" section. The resulting built binaries can be found in directories within the dist directory corresponding to OS and CPU architecture (e.g. `./dist/pslive_window_amd64/pslive.exe` or `./dist/pslive_linux_amd64/pslive`)
 
 ### External Services
 
