@@ -8,7 +8,7 @@ require (
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eclipse/paho.mqtt.golang v1.4.2
-	github.com/go-co-op/gocron v1.19.0
+	github.com/go-co-op/gocron v1.22.1
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
