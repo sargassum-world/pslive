@@ -10,7 +10,7 @@
     "lint:fix": "prettier --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern && eslint --fix src/**/*.{js,svelte} --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-commonjs": "^24.1.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-replace": "^5.0.2",
     "@sargassum-world/styles": "^0.2.2",
