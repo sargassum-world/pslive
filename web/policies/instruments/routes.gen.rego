@@ -366,6 +366,52 @@ allow if {
 }
 
 matching_routes contains route if {
+	"SUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "SUB /instruments/:id/controllers/:controller_id/imager"
+}
+
+allow if {
+	"SUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_controller_get(id, id, controller_id)
+}
+
+matching_routes contains route if {
+	"PUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "PUB /instruments/:id/controllers/:controller_id/imager"
+}
+
+allow if {
+	"PUB" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"MSG" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "MSG /instruments/:id/controllers/:controller_id/imager"
+}
+
+allow if {
+	"MSG" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+}
+
+matching_routes contains route if {
+	"POST" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	route := "POST /instruments/:id/controllers/:controller_id/imager"
+}
+
+allow if {
+	"POST" == input.operation.method
+	["instruments", id, "controllers", controller_id, "imager"] = split(trim_prefix(input.resource.path, "/"), "/")
+	allow_controller_imager_post(input.subject, id, controller_id)
+}
+
+matching_routes contains route if {
 	"POST" == input.operation.method
 	["instruments", id, "automation-jobs"] = split(trim_prefix(input.resource.path, "/"), "/")
 	route := "POST /instruments/:id/automation-jobs"

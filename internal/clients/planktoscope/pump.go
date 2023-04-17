@@ -38,6 +38,7 @@ func (c *Client) handlePumpStatusUpdate(_ string, rawPayload []byte) error {
 	}
 	switch status := payload.Status; status {
 	default:
+		// TODO: write the status to the imager state for display in the GUI
 		return errors.Errorf("unknown status %s", status)
 	case "Started":
 		newState.Pumping = true

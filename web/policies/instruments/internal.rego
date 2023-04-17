@@ -51,6 +51,10 @@ allow_controller_camera_post(subject, instrument_id, controller_id) if {
 	allow_controller_module_post(subject, instrument_id, controller_id)
 }
 
+allow_controller_imager_post(subject, instrument_id, controller_id) if {
+	allow_controller_module_post(subject, instrument_id, controller_id)
+}
+
 allow_automation_job_get(instrument_id, automation_job_id) if {
 	is_valid_instrument(instrument_id)
 	is_valid_automation_job(instrument_id, automation_job_id)
