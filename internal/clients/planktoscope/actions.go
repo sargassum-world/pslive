@@ -2,6 +2,7 @@ package planktoscope
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -52,12 +53,19 @@ type PlanktoscopeImagingParams struct {
 	SampleID   string  `hcl:"sample_id"` // TODO: move the sample ID somewhere else?
 	Forward    bool    `hcl:"forward"`
 	StepVolume float64 `hcl:"step_volume"`
-	StepDelay  float64 `hcl:"step_sleep"`
+	StepDelay  float64 `hcl:"step_delay"`
 	Steps      uint64  `hcl:"steps"`
 }
 
 func (c *Client) RunImagingAction(ctx context.Context, p PlanktoscopeImagingParams) error {
-	token, err := c.StartImaging(p.Forward, p.StepVolume, p.StepDelay, p.Steps)
+	token, err := c.SetMetadata(p.SampleID, time.Now())
+	if err != nil {
+		return err
+	}
+	if token.Wait(); token.Error() != nil {
+		return token.Error()
+	}
+	token, err = c.StartImaging(p.Forward, p.StepVolume, p.StepDelay, p.Steps)
 	if err != nil {
 		return errors.Wrap(err, "couldn't send command to start imaging")
 	}
