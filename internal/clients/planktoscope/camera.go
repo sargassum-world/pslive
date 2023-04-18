@@ -53,8 +53,8 @@ func (c *Client) handleCameraSettingsUpdate(_ string, rawPayload []byte) error {
 	if err := json.Unmarshal(rawPayload, &payload); err != nil {
 		return errors.Wrapf(err, "unparseable payload")
 	}
-	if payload.Action != "settings" {
-		return nil
+	if action := payload.Action; action != "settings" {
+		return errors.Errorf("unknown action %s", action)
 	}
 
 	newSettings := CameraSettings{}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/labstack/echo/v4"
@@ -36,6 +37,7 @@ func replacePumpStream(
 			"ControllerID": cid,
 			"PumpSettings": state.PumpSettings,
 			"Pump":         state.Pump,
+			"Imaging":      state.Imager.Imaging,
 			"Auth":         a,
 		},
 	}
@@ -367,11 +369,205 @@ func (h *Handlers) HandleCameraPost() auth.HTTPHandlerFunc {
 	}
 }
 
+// Imager
+
+const imagerPartial = "instruments/planktoscope/imager.partial.tmpl"
+
+func replaceImagerStream(
+	iid instruments.InstrumentID, cid instruments.ControllerID, a auth.Auth,
+	pc *planktoscope.Client,
+) turbostreams.Message {
+	state := pc.GetState()
+	return turbostreams.Message{
+		Action:   turbostreams.ActionReplace,
+		Target:   fmt.Sprintf("/instruments/%d/controllers/%d/imager", iid, cid),
+		Template: imagerPartial,
+		Data: map[string]interface{}{
+			"InstrumentID":   iid,
+			"ControllerID":   cid,
+			"ImagerSettings": state.ImagerSettings,
+			"Imager":         state.Imager,
+			"Auth":           a,
+		},
+	}
+}
+
+func handleImagerSettings(
+	sampleID, imagingRaw, direction, stepVolumeRaw, stepDelayRaw, stepsRaw string,
+	pc *planktoscope.Client,
+) (err error) {
+	imaging := strings.ToLower(imagingRaw) == "start"
+	var token mqtt.Token
+	if !imaging {
+		if token, err = pc.StopImaging(); err != nil {
+			return err
+		}
+	} else {
+		// TODO: use echo's request binding functionality instead of strconv.ParseFloat
+		// TODO: perform input validation and handle invalid inputs
+		forward := strings.ToLower(direction) == "forward"
+		const floatWidth = 64
+		stepVolume, err := strconv.ParseFloat(stepVolumeRaw, floatWidth)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(
+				err, "couldn't parse step volume",
+			))
+		}
+		stepDelay, err := strconv.ParseFloat(stepDelayRaw, floatWidth)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(
+				err, "couldn't parse step delay",
+			))
+		}
+		const base = 10
+		const bitSize = 64
+		steps, err := strconv.ParseUint(stepsRaw, base, bitSize)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse steps"))
+		}
+		if token, err = pc.SetMetadata(sampleID, time.Now()); err != nil {
+			return err
+		}
+		// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
+		// warning message that we couldn't update the imaging metadata
+		if token.Wait(); token.Error() != nil {
+			return token.Error()
+		}
+		if token, err = pc.StartImaging(forward, stepVolume, stepDelay, steps); err != nil {
+			return err
+		}
+	}
+
+	stateUpdated := pc.ImagerStateBroadcasted()
+	// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
+	// warning message that we haven't heard any imager state updates from the planktoscope.
+	if token.Wait(); token.Error() != nil {
+		return token.Error()
+	}
+	<-stateUpdated
+	return nil
+}
+
+func (h *Handlers) HandleImagerPub() turbostreams.HandlerFunc {
+	t := imagerPartial
+	h.r.MustHave(t)
+	return func(c *turbostreams.Context) error {
+		// Parse params & run queries
+		iid, cid, pc, err := getPlanktoscopeClientForPub(c, h.pco)
+		if err != nil {
+			return err
+		}
+
+		// Publish on MQTT update
+		for {
+			ctx := c.Context()
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-pc.ImagerStateBroadcasted():
+				if err := ctx.Err(); err != nil {
+					// Context was also canceled and it should have priority
+					return err
+				}
+				// We insert an empty Auth object because the MSG handler will add the auth object for each
+				// client
+				message := replaceImagerStream(iid, cid, auth.Auth{}, pc)
+				c.Publish(message)
+			}
+		}
+	}
+}
+
+type PlanktoscopeImagerViewAuthz struct {
+	Set bool
+}
+
+func getPlanktoscopeImagerViewAuthz(
+	ctx context.Context, iid instruments.InstrumentID, cid instruments.ControllerID,
+	a auth.Auth, azc *auth.AuthzChecker,
+) (authz PlanktoscopeImagerViewAuthz, err error) {
+	path := fmt.Sprintf("/instruments/%d/controllers/%d/imager", iid, cid)
+	if authz.Set, err = azc.Allow(ctx, a, path, http.MethodPost, nil); err != nil {
+		return PlanktoscopeImagerViewAuthz{}, errors.Wrap(
+			err, "couldn't check authz for setting imager",
+		)
+	}
+	return authz, nil
+}
+
+func (h *Handlers) ModifyImagerMsgData() handling.DataModifier {
+	return func(
+		ctx context.Context, a auth.Auth, data map[string]interface{},
+	) (modifications map[string]interface{}, err error) {
+		iid, cid, err := getIDsForModificationMiddleware(data)
+		if err != nil {
+			return nil, err
+		}
+		modifications = make(map[string]interface{})
+		if modifications["Authorizations"], err = getPlanktoscopeImagerViewAuthz(
+			ctx, iid, cid, a, h.azc,
+		); err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't check authz for imager of controller %d of instrument %d", cid, iid,
+			)
+		}
+		return modifications, nil
+	}
+}
+
+func (h *Handlers) HandleImagerPost() auth.HTTPHandlerFunc {
+	t := imagerPartial
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		iid, err := parseID[instruments.InstrumentID](c.Param("id"), "instrument")
+		if err != nil {
+			return err
+		}
+		cid, err := parseID[instruments.ControllerID](c.Param("controllerID"), "controller")
+		if err != nil {
+			return err
+		}
+
+		// Run queries
+		instrument, err := h.is.GetInstrument(c.Request().Context(), iid)
+		if err != nil {
+			return err
+		}
+		pc, ok := h.pco.Get(planktoscope.ClientID(cid))
+		if !ok {
+			return errors.Errorf(
+				"planktoscope client for controller %d on instrument %d not found for imager post",
+				cid, iid,
+			)
+		}
+		if err = handleImagerSettings(
+			instrument.Name, c.FormValue("imaging"), c.FormValue("direction"),
+			c.FormValue("step-volume"), c.FormValue("step-delay"), c.FormValue("steps"), pc,
+		); err != nil {
+			return err
+		}
+
+		// We rely on Turbo Streams over websockets, so we return an empty response here to avoid a race
+		// condition of two Turbo Stream replace messages (where the one from this POST response could
+		// be stale and overwrite a fresher message over websockets by arriving later).
+		// FIXME: is there a cleaner way to avoid the race condition which would work even if the
+		// WebSocket connection is misbehaving?
+		if turbostreams.Accepted(c.Request().Header) {
+			return h.r.TurboStream(c.Response())
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/instruments/%d", iid))
+	}
+}
+
 // Controller
 
 type PlanktoscopeControllerViewAuthz struct {
 	Pump   PlanktoscopePumpViewAuthz
 	Camera PlanktoscopeCameraViewAuthz
+	Imager PlanktoscopeImagerViewAuthz
 }
 
 func getPlanktoscopeControllerViewAuthz(
@@ -387,6 +583,11 @@ func getPlanktoscopeControllerViewAuthz(
 		ctx, iid, cid, a, azc,
 	); err != nil {
 		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for camera")
+	}
+	if authz.Imager, err = getPlanktoscopeImagerViewAuthz(
+		ctx, iid, cid, a, azc,
+	); err != nil {
+		return PlanktoscopeControllerViewAuthz{}, errors.Wrap(err, "couldn't check authz for imager")
 	}
 	return authz, nil
 }

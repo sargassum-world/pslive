@@ -32,6 +32,9 @@ type Client struct {
 	pumpSettings   PumpSettings
 	cameraB        *Broadcaster
 	cameraSettings CameraSettings
+	imager         Imager
+	imagerB        *Broadcaster
+	imagerSettings ImagerSettings
 }
 
 func NewClient(c Config, l godest.Logger) (client *Client, err error) {
@@ -47,6 +50,8 @@ func NewClient(c Config, l godest.Logger) (client *Client, err error) {
 	client.pumpSettings = DefaultPumpSettings()
 	client.cameraB = NewBroadcaster()
 	client.cameraSettings = DefaultCameraSettings()
+	client.imagerB = NewBroadcaster()
+	client.imagerSettings = DefaultImagerSettings()
 
 	c.MQTT.SetOnConnectHandler(client.handleConnected)
 	c.MQTT.SetConnectionLostHandler(client.handleConnectionLost)
@@ -63,6 +68,8 @@ func (c *Client) GetState() Planktoscope {
 		Pump:           c.pump,
 		PumpSettings:   c.pumpSettings,
 		CameraSettings: c.cameraSettings,
+		Imager:         c.imager,
+		ImagerSettings: c.imagerSettings,
 	}
 }
 
@@ -92,6 +99,7 @@ func (c *Client) handleConnectionLost(_ mqtt.Client, err error) {
 
 	c.pump.StateKnown = false
 	c.cameraSettings.StateKnown = false
+	c.imager.StateKnown = false
 	c.Logger.Warn(errors.Wrap(err, "connection lost"))
 	// TODO: notify clients that control has been lost
 }
@@ -105,7 +113,7 @@ func (c *Client) handleReconnecting(_ mqtt.Client, _ *mqtt.ClientOptions) {
 	})
 }
 
-func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
+func (c *Client) handleMessage(topic mqtt.Client, m mqtt.Message) {
 	broker := c.Config.URL
 	rawPayload := string(m.Payload())
 
@@ -119,6 +127,7 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 			return
 		}
 		c.Logger.Infof("%s/%s: %v", broker, m.Topic(), payload)
+		return
 	case "status/pump":
 		if err := c.handlePumpStatusUpdate(topic, m.Payload()); err != nil {
 			c.Logger.Errorf(errors.Wrapf(
@@ -131,10 +140,14 @@ func (c *Client) handleMessage(_ mqtt.Client, m mqtt.Message) {
 				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
 			).Error())
 		}
+	case "status/imager":
+		if err := c.handleImagerStatusUpdate(topic, m.Payload()); err != nil {
+			c.Logger.Errorf(errors.Wrapf(
+				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
+			).Error())
+		}
 	case "imager/image":
-		// Because the PlanktoScope API never doesn't report the camera settings in a status message,
-		// we must instead listen for imager camera settings update commands
-		if err := c.handleCameraSettingsUpdate(topic, m.Payload()); err != nil {
+		if err := c.handleImagerUpdate(topic, m.Payload()); err != nil {
 			c.Logger.Errorf(errors.Wrapf(
 				err, "%s/%s: invalid payload %s", broker, topic, rawPayload,
 			).Error())

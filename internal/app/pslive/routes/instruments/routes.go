@@ -87,6 +87,12 @@ func (h *Handlers) Register(
 		h.r, ss, h.ModifyCameraMsgData(),
 	))
 	hr.POST("/instruments/:id/controllers/:controllerID/camera", h.HandleCameraPost())
+	tsr.SUB("/instruments/:id/controllers/:controllerID/imager", turbostreams.EmptyHandler)
+	tsr.PUB("/instruments/:id/controllers/:controllerID/imager", h.HandleImagerPub())
+	tsr.MSG("/instruments/:id/controllers/:controllerID/imager", handling.HandleTSMsg(
+		h.r, ss, h.ModifyImagerMsgData(),
+	))
+	hr.POST("/instruments/:id/controllers/:controllerID/imager", h.HandleImagerPost())
 	hr.POST("/instruments/:id/automation-jobs", h.HandleInstrumentAutomationJobsPost())
 	hr.POST(
 		"/instruments/:id/automation-jobs/:automationJobID", h.HandleInstrumentAutomationJobPost(),

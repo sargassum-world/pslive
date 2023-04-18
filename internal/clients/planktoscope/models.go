@@ -8,6 +8,8 @@ type Planktoscope struct {
 	Pump           Pump
 	PumpSettings   PumpSettings
 	CameraSettings CameraSettings
+	Imager         Imager
+	ImagerSettings ImagerSettings
 }
 
 // Pump
@@ -58,5 +60,32 @@ func DefaultCameraSettings() CameraSettings {
 		AutoWhiteBalance:     true,
 		WhiteBalanceRedGain:  defaultWhiteBalanceRedGain,
 		WhiteBalanceBlueGain: defaultWhiteBalanceBlueGain,
+	}
+}
+
+// Imager
+
+type Imager struct {
+	StateKnown bool
+	Imaging    bool
+	Start      time.Time
+}
+
+type ImagerSettings struct {
+	Forward    bool
+	StepVolume float64
+	StepDelay  float64
+	Steps      uint64
+}
+
+func DefaultImagerSettings() ImagerSettings {
+	const defaultStepVolume = 0.4
+	const defaultStepDelay = 0.5
+	const defaultSteps = 100
+	return ImagerSettings{
+		Forward:    true,
+		StepVolume: defaultStepVolume,
+		StepDelay:  defaultStepDelay,
+		Steps:      defaultSteps,
 	}
 }

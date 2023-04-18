@@ -1,8 +1,7 @@
 {{$instrumentID := (get . "InstrumentID")}}
 {{$controllerID := (get . "ControllerID")}}
-{{$pumpSettings := (get . "PumpSettings")}}
-{{$pump := (get . "Pump")}}
-{{$imaging := (get . "Imaging")}}
+{{$imagerSettings := (get . "ImagerSettings")}}
+{{$imager := (get . "Imager")}}
 {{$authorizations := (get . "Authorizations")}}
 {{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 {{$auth := (get . "Auth")}}
@@ -10,22 +9,22 @@
 {{if $withTurboStreamSource}}
   {{
     template "shared/turbo-cable-stream-source.partial.tmpl"
-    (print "/instruments/" $instrumentID "/controllers/" $controllerID "/pump")
+    (print "/instruments/" $instrumentID "/controllers/" $controllerID "/imager")
   }}
 {{end}}
-<turbo-frame id="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/pump">
+<turbo-frame id="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/imager">
   <div class="card section-card wide-card">
     <div class="card-content">
       <h3>
-        Pump
-        {{if not $pump.StateKnown}}
+        Imager
+        {{if not $imager.StateKnown}}
           <span class="tag is-warning">Unknown</span>
         {{else}}
-          <span class="tag is-info">{{if $pump.Pumping}}Started{{else}}Stopped{{end}}</span>
+          <span class="tag is-info">{{if $imager.Imaging}}Started{{else}}Stopped{{end}}</span>
         {{end}}
       </h3>
       <form
-        action="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/pump"
+        action="/instruments/{{$instrumentID}}/controllers/{{$controllerID}}/imager"
         method="POST"
         data-controller="form-submission csrf"
         data-action="submit->form-submission#submit submit->csrf#addToken"
@@ -44,8 +43,8 @@
                     type="radio"
                     name="direction"
                     value="forward"
-                    {{if $pumpSettings.Forward}}checked{{end}}
-                    {{if or (not $authorizations.Set) $imaging}}disabled{{end}}
+                    {{if $imagerSettings.Forward}}checked{{end}}
+                    {{if not $authorizations.Set}}disabled{{end}}
                   />
                   Forward
                 </label>
@@ -54,8 +53,8 @@
                     type="radio"
                     name="direction"
                     value="backward"
-                    {{if not $pumpSettings.Forward}}checked{{end}}
-                    {{if or (not $authorizations.Set) $imaging}}disabled{{end}}
+                    {{if not $imagerSettings.Forward}}checked{{end}}
+                    {{if not $authorizations.Set}}disabled{{end}}
                   />
                   Backward
                 </label>
@@ -66,7 +65,7 @@
 
         <div class="field is-horizontal">
           <div class="field-label is-normal">
-            <label class="label">Volume</label>
+            <label class="label">Step Volume</label>
           </div>
           <div class="field-body">
             <div class="field">
@@ -75,11 +74,11 @@
                   <input
                     type="number"
                     class="input"
-                    name="volume"
-                    min="0.01"
-                    step="0.01"
-                    {{if or (not $authorizations.Set) $imaging}}disabled{{end}}
-                    value="{{$pumpSettings.Volume}}"
+                    name="step-volume"
+                    min="0.001"
+                    step="0.001"
+                    {{if not $authorizations.Set}}disabled{{end}}
+                    value="{{$imagerSettings.StepVolume}}"
                   />
                 </div>
                 <div class="control">
@@ -92,7 +91,7 @@
 
         <div class="field is-horizontal">
           <div class="field-label is-normal">
-            <label class="label">Flow Rate</label>
+            <label class="label">Step Delay</label>
           </div>
           <div class="field-body">
             <div class="field">
@@ -101,17 +100,37 @@
                   <input
                     type="number"
                     class="input"
-                    name="flowrate"
-                    min="0"
-                    max="10"
-                    step="0.01"
-                    {{if or (not $authorizations.Set) $imaging}}disabled{{end}}
-                    value="{{$pumpSettings.Flowrate}}"
+                    name="step-delay"
+                    min="0.1"
+                    step="0.1"
+                    {{if not $authorizations.Set}}disabled{{end}}
+                    value="{{$imagerSettings.StepDelay}}"
                   />
                 </div>
                 <div class="control">
-                  <span class="button is-static">mL/min</span>
+                  <span class="button is-static">s</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field is-horizontal">
+          <div class="field-label is-normal">
+            <label class="label">Steps</label>
+          </div>
+          <div class="field-body">
+            <div class="field">
+              <div class="control">
+                <input
+                  type="number"
+                  class="input"
+                  name="steps"
+                  min="1"
+                  step="1"
+                  {{if not $authorizations.Set}}disabled{{end}}
+                  value="{{$imagerSettings.Steps}}"
+                />
               </div>
             </div>
           </div>
@@ -127,9 +146,9 @@
                     <input
                       class="button"
                       type="submit"
-                      name="pumping"
+                      name="imaging"
                       value="Stop"
-                      {{if or (and $pump.StateKnown (not $pump.Pumping)) $imaging}}disabled{{end}}
+                      {{if and $imager.StateKnown (not $imager.Imaging)}}disabled{{end}}
                       data-form-submission-target="submit"
                     />
                   </div>
@@ -137,13 +156,9 @@
                     <input
                       class="button"
                       type="submit"
-                      name="pumping"
-                      {{if and $pump.StateKnown $pump.Pumping}}
-                        value="Restart"
-                      {{else}}
-                        value="Start"
-                      {{end}}
-                      {{if $imaging}}disabled{{end}}
+                      name="imaging"
+                      value="Start"
+                      {{if and $imager.StateKnown $imager.Imaging}}disabled{{end}}
                       data-form-submission-target="submit"
                     />
                   </div>

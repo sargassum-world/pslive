@@ -11,6 +11,7 @@
     "ControllerID" $controllerID
     "Pump" $controller.Pump
     "PumpSettings" $controller.PumpSettings
+    "Imaging" $controller.Imager.Imaging
     "Authorizations" $authorizations.Pump
     "Auth" $auth
     "WithTurboStreamSource" true
@@ -21,6 +22,16 @@
     "ControllerID" $controllerID
     "CameraSettings" $controller.CameraSettings
     "Authorizations" $authorizations.Camera
+    "Auth" $auth
+    "WithTurboStreamSource" true
+  }}
+  {{
+    template "instruments/planktoscope/imager.partial.tmpl" dict
+    "InstrumentID" $instrument.ID
+    "ControllerID" $controllerID
+    "Imager" $controller.Imager
+    "ImagerSettings" $controller.ImagerSettings
+    "Authorizations" $authorizations.Imager
     "Auth" $auth
     "WithTurboStreamSource" true
   }}
