@@ -64,11 +64,10 @@ func (c *Client) updateImagerSettings(newSettings ImagerSettings) {
 	c.imagerB.BroadcastNext()
 }
 
-func (c *Client) handleImagerConfigUpdate(_ string, rawPayload []byte) error {
-	// TODO: implement
-	c.Logger.Info(string(rawPayload))
-	return nil
-}
+const (
+	imageCommand = "image"
+	stopCommand  = "stop"
+)
 
 func (c *Client) handleImagerImagingUpdate(_ string, rawPayload []byte) error {
 	type ImageCommand struct {
@@ -86,17 +85,17 @@ func (c *Client) handleImagerImagingUpdate(_ string, rawPayload []byte) error {
 	switch action := payload.Action; action {
 	default:
 		return errors.Errorf("unknown action %s", action)
-	case "stop":
+	case stopCommand:
 		// No settings to update
 		break
-	case "image":
+	case imageCommand:
 		// Parse direction
 		switch direction := payload.Direction; direction {
 		default:
 			return errors.Errorf("unknown direction %s", direction)
-		case "FORWARD":
+		case forwardDirection:
 			newSettings.Forward = true
-		case "BACKWARD":
+		case backwardDirection:
 			newSettings.Forward = false
 		}
 
@@ -124,22 +123,18 @@ func (c *Client) handleImagerUpdate(topic string, rawPayload []byte) error {
 	default:
 		var payload interface{}
 		if err := json.Unmarshal(rawPayload, &payload); err != nil {
-			c.Logger.Errorf("%s/%s: unparseable payload %s", broker, topic, rawPayload)
+			c.Logger.Errorf("%s/%s: unknown payload %s", broker, topic, rawPayload)
 			return nil
 		}
 		c.Logger.Infof("%s/%s: %v", broker, topic, payload)
-	case "stop":
+	case stopCommand:
 		// No settings to update
 		break
 	case "settings":
 		if err := c.handleCameraSettingsUpdate(topic, rawPayload); err != nil {
 			return errors.Wrap(err, "invalid camera settings command")
 		}
-	case "update_config":
-		if err := c.handleImagerConfigUpdate(topic, rawPayload); err != nil {
-			return errors.Wrap(err, "invalid imager config update command")
-		}
-	case "image":
+	case imageCommand:
 		if err := c.handleImagerImagingUpdate(topic, rawPayload); err != nil {
 			return errors.Wrap(err, "invalid imager config update command")
 		}
@@ -153,7 +148,7 @@ func (c *Client) StopImaging() (mqtt.Token, error) {
 	command := struct {
 		Action string `json:"action"`
 	}{
-		Action: "stop",
+		Action: stopCommand,
 	}
 	marshaled, err := json.Marshal(command)
 	if err != nil {
@@ -173,15 +168,15 @@ func (c *Client) StartImaging(
 		StepDelay  float64 `json:"sleep"`
 		Steps      uint64  `json:"nb_frame"`
 	}{
-		Action:     "image",
+		Action:     imageCommand,
 		StepVolume: stepVolume,
 		StepDelay:  stepDelay,
 		Steps:      steps,
 	}
 	if forward {
-		command.Direction = "FORWARD"
+		command.Direction = forwardDirection
 	} else {
-		command.Direction = "BACKWARD"
+		command.Direction = backwardDirection
 	}
 	marshaled, err := json.Marshal(command)
 	if err != nil {

@@ -79,6 +79,11 @@ func parseFloat(n interface{}) (float64, error) {
 	}
 }
 
+const (
+	forwardDirection  = "FORWARD"
+	backwardDirection = "BACKWARD"
+)
+
 func (c *Client) handlePumpActuatorUpdate(_ string, rawPayload []byte) error {
 	type PumpCommand struct {
 		Action    string `json:"action"`
@@ -103,9 +108,9 @@ func (c *Client) handlePumpActuatorUpdate(_ string, rawPayload []byte) error {
 		switch direction := payload.Direction; direction {
 		default:
 			return errors.Errorf("unknown direction %s", direction)
-		case "FORWARD":
+		case forwardDirection:
 			newSettings.Forward = true
-		case "BACKWARD":
+		case backwardDirection:
 			newSettings.Forward = false
 		}
 
@@ -158,9 +163,9 @@ func (c *Client) StartPump(forward bool, volume, flowrate float64) (mqtt.Token, 
 		Flowrate: flowrate,
 	}
 	if forward {
-		command.Direction = "FORWARD"
+		command.Direction = forwardDirection
 	} else {
-		command.Direction = "BACKWARD"
+		command.Direction = backwardDirection
 	}
 	marshaled, err := json.Marshal(command)
 	if err != nil {
