@@ -8,7 +8,7 @@ require (
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eclipse/paho.mqtt.golang v1.4.2
-	github.com/go-co-op/gocron v1.19.0
+	github.com/go-co-op/gocron v1.22.2
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
@@ -21,7 +21,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/godest v0.5.1
 	github.com/unrolled/secure v1.13.0
-	golang.org/x/image v0.6.0
+	golang.org/x/image v0.7.0
 	golang.org/x/sync v0.1.0
 	zombiezen.com/go/sqlite v0.13.0
 )
@@ -72,7 +72,7 @@ require (
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
