@@ -2,6 +2,7 @@ package planktoscope
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/eclipse/paho.mqtt.golang"
@@ -9,8 +10,11 @@ import (
 
 // Send Commands
 
-func (c *Client) SetMetadata(sampleID string, acquisitionTime time.Time) (mqtt.Token, error) {
+func (c *Client) SetMetadata(
+	sampleProjectID, sampleID string, acquisitionTime time.Time,
+) (mqtt.Token, error) {
 	type Metadata struct {
+		SampleProjectID      string `json:"sample_project"`
 		SampleID             string `json:"sample_id"`
 		SampleCollectionDate string `json:"object_date"`
 		SampleCollectionTime string `json:"object_time"`
@@ -22,7 +26,8 @@ func (c *Client) SetMetadata(sampleID string, acquisitionTime time.Time) (mqtt.T
 	}{
 		Action: "update_config",
 		Metadata: Metadata{
-			SampleID:             sampleID,
+			SampleProjectID:      sampleProjectID,
+			SampleID:             fmt.Sprintf("%s_%s", sampleProjectID, sampleID),
 			SampleCollectionDate: acquisitionTime.Format("2006-01-02"),
 			SampleCollectionTime: acquisitionTime.Format("15:04:05"),
 			AcquisitionID:        acquisitionTime.Format(time.RFC3339),

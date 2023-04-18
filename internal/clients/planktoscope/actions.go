@@ -50,15 +50,16 @@ func (c *Client) RunStopPumpAction(ctx context.Context) error {
 // Imager Actions
 
 type PlanktoscopeImagingParams struct {
-	SampleID   string  `hcl:"sample_id"` // TODO: move the sample ID somewhere else?
-	Forward    bool    `hcl:"forward"`
-	StepVolume float64 `hcl:"step_volume"`
-	StepDelay  float64 `hcl:"step_delay"`
-	Steps      uint64  `hcl:"steps"`
+	SampleProjectID string  `hcl:"sample_project_id"` // TODO: move the project ID somewhere else?
+	SampleID        string  `hcl:"sample_id"`         // TODO: move the sample ID somewhere else?
+	Forward         bool    `hcl:"forward"`
+	StepVolume      float64 `hcl:"step_volume"`
+	StepDelay       float64 `hcl:"step_delay"`
+	Steps           uint64  `hcl:"steps"`
 }
 
 func (c *Client) RunImagingAction(ctx context.Context, p PlanktoscopeImagingParams) error {
-	token, err := c.SetMetadata(p.SampleID, time.Now())
+	token, err := c.SetMetadata(p.SampleProjectID, p.SampleID, time.Now())
 	if err != nil {
 		return err
 	}

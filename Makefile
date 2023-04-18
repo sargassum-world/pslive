@@ -84,7 +84,7 @@ release: install buildweb
 	goreleaser --clean
 
 .PHONY: run-live
-run: ## go run
+run-live: ## go run
 	@go run -race ./cmd/pslive
 
 .PHONY: run-local
