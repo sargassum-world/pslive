@@ -393,7 +393,7 @@ func replaceImagerStream(
 }
 
 func handleImagerSettings(
-	sampleID, imagingRaw, direction, stepVolumeRaw, stepDelayRaw, stepsRaw string,
+	sampleProjectID, sampleID, imagingRaw, direction, stepVolumeRaw, stepDelayRaw, stepsRaw string,
 	pc *planktoscope.Client,
 ) (err error) {
 	imaging := strings.ToLower(imagingRaw) == "start"
@@ -425,7 +425,7 @@ func handleImagerSettings(
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, errors.Wrap(err, "couldn't parse steps"))
 		}
-		if token, err = pc.SetMetadata(sampleID, time.Now()); err != nil {
+		if token, err = pc.SetMetadata(sampleProjectID, sampleID, time.Now()); err != nil {
 			return err
 		}
 		// TODO: instead of waiting forever, have a timeout before redirecting and displaying a
@@ -542,7 +542,7 @@ func (h *Handlers) HandleImagerPost() auth.HTTPHandlerFunc {
 			)
 		}
 		if err = handleImagerSettings(
-			instrument.Name, c.FormValue("imaging"), c.FormValue("direction"),
+			instrument.Name, "gui", c.FormValue("imaging"), c.FormValue("direction"),
 			c.FormValue("step-volume"), c.FormValue("step-delay"), c.FormValue("steps"), pc,
 		); err != nil {
 			return err

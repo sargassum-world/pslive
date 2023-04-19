@@ -79,7 +79,7 @@ type ImagerSettings struct {
 }
 
 func DefaultImagerSettings() ImagerSettings {
-	const defaultStepVolume = 0.4
+	const defaultStepVolume = 0.04
 	const defaultStepDelay = 0.5
 	const defaultSteps = 100
 	return ImagerSettings{
