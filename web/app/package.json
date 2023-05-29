@@ -29,7 +29,7 @@
     "rollup-plugin-terser": "^7.0.0",
     "sass": "^1.62.0",
     "svelte": "^3.58.0",
-    "svelte-check": "^3.2.0",
+    "svelte-check": "^3.4.3",
     "svelte-dark-mode": "^2.0.0",
     "svelte-preprocess": "^5.0.3"
   },
