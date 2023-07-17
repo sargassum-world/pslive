@@ -21,7 +21,7 @@
     "prettier": "^2.8.8",
     "prettier-plugin-svelte": "^2.10.0",
     "purify-css": "^1.2.5",
-    "rollup": "^3.21.0",
+    "rollup": "^3.26.3",
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-css-only": "^4.3.0",
     "rollup-plugin-scss": "^3.0.0",
